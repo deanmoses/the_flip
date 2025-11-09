@@ -47,7 +47,7 @@
                     <thead>
                         <tr>
                             <th>Game</th>
-                            <th>Problem Type</th>
+                            <th>Problem</th>
                             <th>Status</th>
                             <th>Reported</th>
                             <th>Reporter</th>
@@ -57,7 +57,15 @@
                         {% for report in page_obj %}
                         <tr onclick="window.location='{% url 'report_detail' report.pk %}'" class="clickable-row">
                             <td><strong>{{ report.game.name }}</strong></td>
-                            <td>{{ report.get_problem_type_display }}</td>
+                            <td>
+                                {% if report.problem_type == 'other' and report.problem_text %}
+                                    {{ report.problem_text|truncatechars:80 }}
+                                {% elif report.problem_text %}
+                                    {{ report.get_problem_type_display }} - {{ report.problem_text|truncatechars:80 }}
+                                {% else %}
+                                    {{ report.get_problem_type_display }}
+                                {% endif %}
+                            </td>
                             <td>
                                 <span class="badge badge-{{ report.status }}">
                                     {{ report.get_status_display }}
