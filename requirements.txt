@@ -9,3 +9,6 @@ gunicorn==23.0.0
 
 # Static Files Serving
 whitenoise==6.8.2
+
+# QR Code Generation
+qrcode[pil]==8.0

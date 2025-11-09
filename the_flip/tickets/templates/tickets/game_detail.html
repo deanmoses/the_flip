@@ -1,0 +1,264 @@
+{% extends 'tickets/base.html' %}
+
+{% block title %}{{ game.name }} - The Flip{% endblock %}
+
+{% block content %}
+<style>
+    @media print {
+        .navbar, .footer, .no-print, .recent-reports {
+            display: none !important;
+        }
+
+        .qr-code-container {
+            text-align: center;
+            page-break-after: avoid;
+        }
+
+        .qr-code-container img {
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .game-info {
+            margin-bottom: 20px;
+        }
+
+        body {
+            background: white;
+        }
+
+        .main-content {
+            padding: 0;
+        }
+
+        .container {
+            max-width: 100%;
+        }
+    }
+
+    .game-detail-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .game-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #ddd;
+        padding-bottom: 20px;
+    }
+
+    .game-info {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+    }
+
+    .game-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+
+    .info-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .info-label {
+        font-weight: bold;
+        color: #666;
+        font-size: 0.9em;
+        margin-bottom: 5px;
+    }
+
+    .info-value {
+        font-size: 1.1em;
+    }
+
+    .qr-section {
+        background: white;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+
+    .qr-code-container {
+        text-align: center;
+    }
+
+    .qr-code-container h2 {
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    .qr-code-container img {
+        max-width: 300px;
+        width: 100%;
+        border: 1px solid #ddd;
+        padding: 10px;
+        background: white;
+    }
+
+    .qr-url {
+        margin-top: 15px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 4px;
+        word-break: break-all;
+        font-family: monospace;
+        font-size: 0.9em;
+    }
+
+    .print-instructions {
+        margin-top: 20px;
+        padding: 15px;
+        background: #e7f3ff;
+        border-left: 4px solid #2196F3;
+        border-radius: 4px;
+    }
+
+    .btn-print {
+        margin-top: 20px;
+        padding: 12px 30px;
+        font-size: 1.1em;
+        background: #2196F3;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .btn-print:hover {
+        background: #1976D2;
+    }
+
+    .recent-reports {
+        margin-top: 40px;
+    }
+
+    .recent-reports h2 {
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #ddd;
+    }
+
+    .report-item {
+        background: #f8f9fa;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 4px;
+        border-left: 4px solid #ddd;
+    }
+
+    .report-item.open {
+        border-left-color: #f44336;
+    }
+
+    .report-item.closed {
+        border-left-color: #4CAF50;
+    }
+
+    .report-meta {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+        font-size: 0.9em;
+        color: #666;
+    }
+</style>
+
+<div class="game-detail-container">
+    <div class="game-header no-print">
+        <h1>{{ game.name }}</h1>
+        <a href="{% url 'game_list' %}" class="btn btn-secondary">Back to Games</a>
+    </div>
+
+    <div class="game-info">
+        <div class="game-info-grid">
+            <div class="info-item">
+                <span class="info-label">Name</span>
+                <span class="info-value">{{ game.name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Manufacturer</span>
+                <span class="info-value">{{ game.manufacturer|default:"—" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Year</span>
+                <span class="info-value">{{ game.year|default:"—" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Type</span>
+                <span class="info-value">{{ game.get_type_display }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Status</span>
+                <span class="info-value">
+                    {% if game.is_active %}
+                        <span class="badge badge-open">Active</span>
+                    {% else %}
+                        <span class="badge badge-closed">Inactive</span>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="qr-section">
+        <div class="qr-code-container">
+            <h2>QR Code for Problem Reporting</h2>
+            <p>Scan this QR code to report problems with this game</p>
+
+            <img src="data:image/png;base64,{{ qr_code_data }}" alt="QR Code for {{ game.name }}">
+
+            <div class="qr-url">
+                <strong>URL:</strong> {{ qr_url }}
+            </div>
+
+            <div class="print-instructions no-print">
+                <strong>Instructions:</strong> Click the button below to print this QR code.
+                You can then attach it to the game so visitors can easily report problems by scanning with their phones.
+            </div>
+
+            <button onclick="window.print()" class="btn-print no-print">Print QR Code</button>
+        </div>
+    </div>
+
+    <div class="recent-reports no-print">
+        <h2>Recent Problem Reports (Last 10)</h2>
+
+        {% if recent_reports %}
+            {% for report in recent_reports %}
+                <div class="report-item {{ report.status }}">
+                    <div>
+                        <strong>
+                            {% if report.problem_type == 'other' and report.problem_text %}
+                                {{ report.problem_text|truncatechars:100 }}
+                            {% elif report.problem_text %}
+                                {{ report.get_problem_type_display }} - {{ report.problem_text|truncatechars:100 }}
+                            {% else %}
+                                {{ report.get_problem_type_display }}
+                            {% endif %}
+                        </strong>
+                    </div>
+                    <div class="report-meta">
+                        <span>
+                            <span class="badge badge-{{ report.status }}">{{ report.get_status_display }}</span>
+                        </span>
+                        <span>{{ report.created_at|date:"M d, Y g:i A" }}</span>
+                        <span>By: {{ report.reported_by_name|default:"Anonymous" }}</span>
+                        <a href="{% url 'report_detail' report.pk %}">View Details</a>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No problem reports for this game yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

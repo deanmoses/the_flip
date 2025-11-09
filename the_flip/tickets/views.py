@@ -1,8 +1,14 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.views import LoginView
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.urls import reverse
+import qrcode
+import qrcode.image.svg
+from io import BytesIO
+import base64
 
 from .models import Game, ProblemReport
 from .forms import ReportFilterForm, ReportUpdateForm, ProblemReportCreateForm
@@ -176,4 +182,102 @@ def report_create(request, game_id=None):
     return render(request, 'tickets/report_create.html', {
         'form': form,
         'game': game,
+    })
+
+
+@login_required
+def game_list(request):
+    """
+    Display list of all games/machines.
+    Only accessible to authenticated staff and maintainers.
+    """
+    # Check permission (staff users or maintainers)
+    if not (request.user.is_staff or hasattr(request.user, 'maintainer')):
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('report_list')
+
+    games = Game.objects.all().order_by('name')
+
+    # Search functionality
+    search = request.GET.get('search', '')
+    if search:
+        games = games.filter(
+            Q(name__icontains=search) |
+            Q(manufacturer__icontains=search)
+        )
+
+    # Filter by type
+    game_type = request.GET.get('type', '')
+    if game_type:
+        games = games.filter(type=game_type)
+
+    # Filter by active status
+    is_active = request.GET.get('is_active', '')
+    if is_active == 'true':
+        games = games.filter(is_active=True)
+    elif is_active == 'false':
+        games = games.filter(is_active=False)
+
+    # Pagination
+    paginator = Paginator(games, 50)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Get type choices for filter dropdown
+    type_choices = Game.TYPE_CHOICES
+
+    return render(request, 'tickets/game_list.html', {
+        'page_obj': page_obj,
+        'search': search,
+        'game_type': game_type,
+        'is_active': is_active,
+        'type_choices': type_choices,
+    })
+
+
+@login_required
+def game_detail(request, pk):
+    """
+    Display game details with QR code.
+    Only accessible to authenticated staff and maintainers.
+    """
+    # Check permission (staff users or maintainers)
+    if not (request.user.is_staff or hasattr(request.user, 'maintainer')):
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('report_list')
+
+    game = get_object_or_404(Game, pk=pk)
+
+    # Generate QR code
+    # The QR code will link to the report creation page for this game
+    qr_url = request.build_absolute_uri(
+        reverse('report_create_qr', args=[game.id])
+    )
+
+    # Create QR code
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(qr_url)
+    qr.make(fit=True)
+
+    # Create image
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    # Convert to base64 for embedding in HTML
+    buffer = BytesIO()
+    img.save(buffer, format='PNG')
+    img_str = base64.b64encode(buffer.getvalue()).decode()
+
+    # Get recent reports for this game
+    recent_reports = ProblemReport.objects.filter(game=game).order_by('-created_at')[:10]
+
+    return render(request, 'tickets/game_detail.html', {
+        'game': game,
+        'qr_code_data': img_str,
+        'qr_url': qr_url,
+        'recent_reports': recent_reports,
     })

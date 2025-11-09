@@ -1,0 +1,103 @@
+{% extends 'tickets/base.html' %}
+
+{% block title %}Games - The Flip{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Games</h1>
+    <div class="stats">
+        <span class="stat-badge">{{ page_obj.paginator.count }} Total</span>
+    </div>
+</div>
+
+<div class="report-list-container">
+    <aside class="filters-sidebar">
+        <h3>Filters</h3>
+        <form method="get" class="filter-form">
+            <div class="form-group">
+                <label>Search</label>
+                <input type="text" name="search" value="{{ search }}" placeholder="Game name or manufacturer">
+            </div>
+
+            <div class="form-group">
+                <label>Type</label>
+                <select name="type">
+                    <option value="">All Types</option>
+                    {% for code, name in type_choices %}
+                        <option value="{{ code }}" {% if game_type == code %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Status</label>
+                <select name="is_active">
+                    <option value="">All</option>
+                    <option value="true" {% if is_active == 'true' %}selected{% endif %}>Active</option>
+                    <option value="false" {% if is_active == 'false' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Apply Filters</button>
+            <a href="{% url 'game_list' %}" class="btn btn-secondary">Clear</a>
+        </form>
+    </aside>
+
+    <div class="reports-main">
+        {% if page_obj %}
+            <div class="reports-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Manufacturer</th>
+                            <th>Year</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for game in page_obj %}
+                        <tr onclick="window.location='{% url 'game_detail' game.pk %}'" class="clickable-row">
+                            <td><strong>{{ game.name }}</strong></td>
+                            <td>{{ game.manufacturer|default:"—" }}</td>
+                            <td>{{ game.year|default:"—" }}</td>
+                            <td>{{ game.get_type_display }}</td>
+                            <td>
+                                {% if game.is_active %}
+                                    <span class="badge badge-open">Active</span>
+                                {% else %}
+                                    <span class="badge badge-closed">Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if page_obj.has_other_pages %}
+            <div class="pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" class="page-link">First</a>
+                    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" class="page-link">Previous</a>
+                {% endif %}
+
+                <span class="page-current">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </span>
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" class="page-link">Next</a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" class="page-link">Last</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="no-results">
+                <p>No games found.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
