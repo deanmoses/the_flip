@@ -50,8 +50,6 @@
                     <thead>
                         <tr>
                             <th>Name</th>
-                            <th>Manufacturer</th>
-                            <th>Year</th>
                             <th>Type</th>
                             <th>Status</th>
                         </tr>
@@ -59,9 +57,12 @@
                     <tbody>
                         {% for game in page_obj %}
                         <tr onclick="window.location='{% url 'game_detail' game.pk %}'" class="clickable-row">
-                            <td><strong>{{ game.name }}</strong></td>
-                            <td>{{ game.manufacturer|default:"—" }}</td>
-                            <td>{{ game.year|default:"—" }}</td>
+                            <td>
+                                <strong>{{ game.name }}</strong>
+                                {% if game.year or game.manufacturer %}
+                                    ({% if game.year %}{{ game.year }}{% endif %}{% if game.year and game.manufacturer %} {% endif %}{% if game.manufacturer %}{{ game.manufacturer }}{% endif %})
+                                {% endif %}
+                            </td>
                             <td>{{ game.get_type_display }}</td>
                             <td>
                                 {% if game.is_active %}
