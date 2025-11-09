@@ -30,7 +30,7 @@ class ReportFilterForm(forms.Form):
     )
 
     game = forms.ModelChoiceField(
-        queryset=Game.objects.filter(is_active=True).order_by('name'),
+        queryset=Game.objects.exclude(status=Game.STATUS_BROKEN).order_by('name'),
         required=False,
         empty_label='All Games',
         widget=forms.Select(attrs={'class': 'form-select'})
@@ -49,9 +49,16 @@ class ReportFilterForm(forms.Form):
 class ReportUpdateForm(forms.ModelForm):
     """Form for adding updates to problem reports (maintainers only)."""
 
+    game_status = forms.ChoiceField(
+        choices=[('', '-- No Change --')] + list(Game.STATUS_CHOICES),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Update Game Status (optional)'
+    )
+
     class Meta:
         model = ReportUpdate
-        fields = ['text']
+        fields = ['text', 'game_status']
         widgets = {
             'text': forms.Textarea(attrs={
                 'rows': 4,
@@ -80,7 +87,7 @@ class ProblemReportCreateForm(forms.ModelForm):
             self.fields['game'].initial = game
         else:
             # General scenario: show dropdown
-            self.fields['game'].queryset = Game.objects.filter(is_active=True).order_by('name')
+            self.fields['game'].queryset = Game.objects.exclude(status=Game.STATUS_BROKEN).order_by('name')
             # Customize the label to show "Name (Year Manufacturer)"
             self.fields['game'].label_from_instance = lambda obj: f"{obj.name} ({obj.year} {obj.manufacturer})"
 

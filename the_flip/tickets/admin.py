@@ -13,13 +13,16 @@ class GameAdminForm(forms.ModelForm):
         # Set the type field to use only the defined choices without a blank option
         self.fields['type'].choices = Game.TYPE_CHOICES
         self.fields['type'].required = True
+        # Set the status field to use only the defined choices without a blank option
+        self.fields['status'].choices = Game.STATUS_CHOICES
+        self.fields['status'].required = True
 
 
 @admin.register(Game)
 class GameAdmin(admin.ModelAdmin):
     form = GameAdminForm
-    list_display = ['name', 'manufacturer', 'year', 'type', 'system', 'pinside_rating', 'is_active']
-    list_filter = ['type', 'is_active', 'system']
+    list_display = ['name', 'manufacturer', 'year', 'type', 'system', 'pinside_rating', 'status']
+    list_filter = ['type', 'status', 'system']
     search_fields = ['name', 'manufacturer', 'system']
     readonly_fields = ['created_at', 'updated_at']
     fieldsets = (
@@ -33,7 +36,7 @@ class GameAdmin(admin.ModelAdmin):
             'fields': ('pinside_rating',)
         }),
         ('Status', {
-            'fields': ('is_active',)
+            'fields': ('status',)
         }),
         ('Metadata', {
             'fields': ('created_at', 'updated_at', 'created_by', 'updated_by'),

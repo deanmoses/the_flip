@@ -14,6 +14,18 @@ class Game(models.Model):
         (TYPE_SS, "Solid State"),
     ]
 
+    STATUS_GOOD = "good"
+    STATUS_UNKNOWN = "unknown"
+    STATUS_FIXING = "fixing"
+    STATUS_BROKEN = "broken"
+
+    STATUS_CHOICES = [
+        (STATUS_GOOD, "Good"),
+        (STATUS_UNKNOWN, "Unknown"),
+        (STATUS_FIXING, "Fixing"),
+        (STATUS_BROKEN, "Broken"),
+    ]
+
     name = models.CharField(max_length=200)
     manufacturer = models.CharField(max_length=200, blank=True)
     year = models.PositiveIntegerField(null=True, blank=True)
@@ -39,7 +51,12 @@ class Game(models.Model):
         blank=True,
         help_text="Pinside rating (e.g., 8.34)",
     )
-    is_active = models.BooleanField(default=True, db_index=True,)
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_UNKNOWN,
+        db_index=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
@@ -175,6 +192,29 @@ class ProblemReport(models.Model):
             text=text,
         )
 
+    def set_game_status(self, game_status: str, maintainer: "Maintainer | None", text: str = ""):
+        """
+        Change the game's status AND record that change
+        in the update history.
+        """
+        if game_status not in dict(Game.STATUS_CHOICES):
+            raise ValueError(f"Invalid game status: {game_status}")
+
+        old_game_status = self.game.status
+        if old_game_status == game_status and not text:
+            # Nothing to do
+            return None
+
+        self.game.status = game_status
+        self.game.save(update_fields=["status"])
+
+        return ReportUpdate.objects.create(
+            report=self,
+            maintainer=maintainer,
+            game_status=game_status,
+            text=text,
+        )
+
 
 class ReportUpdate(models.Model):
     report = models.ForeignKey(
@@ -198,6 +238,15 @@ class ReportUpdate(models.Model):
     status = models.CharField(
         max_length=20,
         choices=ProblemReport.STATUS_CHOICES,
+        null=True,
+        blank=True,
+    )
+
+    # If set, this update *also* changed the game's status.
+    # If null, the game status was not changed.
+    game_status = models.CharField(
+        max_length=20,
+        choices=Game.STATUS_CHOICES,
         null=True,
         blank=True,
     )

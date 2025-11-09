@@ -22,6 +22,13 @@
         </div>
 
         <div class="info-card">
+            <h3>Game Status</h3>
+            <p>
+                <span class="badge badge-{{ report.game.status }}">{{ report.game.get_status_display }}</span>
+            </p>
+        </div>
+
+        <div class="info-card">
             <h3>Reported By</h3>
             <p>{{ report.reported_by_name|default:"Anonymous" }}</p>
             {% if report.reported_by_contact %}
@@ -63,7 +70,12 @@
                             <span class="update-time">{{ update.created_at|date:"M d, Y g:i A" }}</span>
                             {% if update.status %}
                                 <span class="badge badge-{{ update.status }} badge-small">
-                                    Changed to {{ update.get_status_display }}
+                                    Report: {{ update.get_status_display }}
+                                </span>
+                            {% endif %}
+                            {% if update.game_status %}
+                                <span class="badge badge-{{ update.game_status }} badge-small">
+                                    Game: {{ update.get_game_status_display }}
                                 </span>
                             {% endif %}
                         </div>
@@ -91,6 +103,14 @@
                     {{ form.text }}
                     {% if form.text.errors %}
                         <div class="form-errors">{{ form.text.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    {{ form.game_status.label_tag }}
+                    {{ form.game_status }}
+                    {% if form.game_status.errors %}
+                        <div class="form-errors">{{ form.game_status.errors }}</div>
                     {% endif %}
                 </div>
 

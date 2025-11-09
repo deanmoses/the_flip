@@ -228,11 +228,7 @@
             <div class="info-item">
                 <span class="info-label">Status</span>
                 <span class="info-value">
-                    {% if game.is_active %}
-                        <span class="badge badge-open">Active</span>
-                    {% else %}
-                        <span class="badge badge-closed">Inactive</span>
-                    {% endif %}
+                    <span class="badge badge-{{ game.status }}">{{ game.get_status_display }}</span>
                 </span>
             </div>
         </div>

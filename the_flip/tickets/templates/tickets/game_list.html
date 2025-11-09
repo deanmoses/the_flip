@@ -31,10 +31,11 @@
 
             <div class="form-group">
                 <label>Status</label>
-                <select name="is_active">
-                    <option value="">All</option>
-                    <option value="true" {% if is_active == 'true' %}selected{% endif %}>Active</option>
-                    <option value="false" {% if is_active == 'false' %}selected{% endif %}>Inactive</option>
+                <select name="status">
+                    <option value="">All Statuses</option>
+                    {% for code, name in status_choices %}
+                        <option value="{{ code }}" {% if status == code %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
                 </select>
             </div>
 
@@ -65,11 +66,7 @@
                             </td>
                             <td>{{ game.get_type_display }}</td>
                             <td>
-                                {% if game.is_active %}
-                                    <span class="badge badge-open">Active</span>
-                                {% else %}
-                                    <span class="badge badge-closed">Inactive</span>
-                                {% endif %}
+                                <span class="badge badge-{{ game.status }}">{{ game.get_status_display }}</span>
                             </td>
                         </tr>
                         {% endfor %}

@@ -115,8 +115,16 @@ def report_detail(request, pk):
             form = ReportUpdateForm(request.POST)
             if form.is_valid():
                 text = form.cleaned_data['text']
-                report.add_note(maintainer, text)
-                messages.success(request, 'Update added successfully.')
+                game_status = form.cleaned_data.get('game_status')
+
+                # If game status was changed, use set_game_status
+                if game_status:
+                    report.set_game_status(game_status, maintainer, text)
+                    messages.success(request, f'Update added and game status changed to {dict(Game.STATUS_CHOICES)[game_status]}.')
+                else:
+                    # No game status change, just add a note
+                    report.add_note(maintainer, text)
+                    messages.success(request, 'Update added successfully.')
                 return redirect('report_detail', pk=pk)
 
         elif 'close_report' in request.POST:
@@ -214,27 +222,27 @@ def game_list(request):
     if game_type:
         games = games.filter(type=game_type)
 
-    # Filter by active status
-    is_active = request.GET.get('is_active', '')
-    if is_active == 'true':
-        games = games.filter(is_active=True)
-    elif is_active == 'false':
-        games = games.filter(is_active=False)
+    # Filter by status
+    status = request.GET.get('status', '')
+    if status:
+        games = games.filter(status=status)
 
     # Pagination
     paginator = Paginator(games, 50)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Get type choices for filter dropdown
+    # Get choices for filter dropdowns
     type_choices = Game.TYPE_CHOICES
+    status_choices = Game.STATUS_CHOICES
 
     return render(request, 'tickets/game_list.html', {
         'page_obj': page_obj,
         'search': search,
         'game_type': game_type,
-        'is_active': is_active,
+        'status': status,
         'type_choices': type_choices,
+        'status_choices': status_choices,
     })
 
 

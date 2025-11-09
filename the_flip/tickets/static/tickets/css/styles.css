@@ -312,6 +312,27 @@ textarea.form-control {
     color: #383d41;
 }
 
+/* Game Status Badges */
+.badge-good {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.badge-unknown {
+    background-color: #e2e3e5;
+    color: #383d41;
+}
+
+.badge-fixing {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.badge-broken {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
 .badge-large {
     font-size: 1rem;
     padding: 0.5rem 1rem;
