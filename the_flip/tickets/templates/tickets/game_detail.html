@@ -237,28 +237,8 @@
         </div>
     </div>
 
-    <div class="qr-section">
-        <div class="qr-code-container">
-            <h2>QR Code for Problem Reporting</h2>
-            <p>Scan this QR code to report a problem with this game</p>
-
-            <img src="data:image/png;base64,{{ qr_code_data }}" alt="QR Code for {{ game.name }}">
-
-            <div class="qr-url">
-                <strong>URL:</strong> {{ qr_url }}
-            </div>
-
-            <div class="print-instructions no-print">
-                <strong>Instructions:</strong> Click the button below to print this QR code.
-                You can then attach it to the game so visitors can easily report problems by scanning with their phones.
-            </div>
-
-            <button onclick="window.print()" class="btn-print no-print">Print QR Code</button>
-        </div>
-    </div>
-
     <div class="recent-reports no-print">
-        <h2>Recent Problem Reports (Last 10)</h2>
+        <h2>Recent Problem Reports</h2>
 
         {% if recent_reports %}
             {% for report in recent_reports %}
@@ -287,6 +267,27 @@
         {% else %}
             <p>No problem reports for this game yet.</p>
         {% endif %}
+    </div>
+
+    <h2 class="no-print" style="margin-top: 40px; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #ddd; color: #2c3e50;">QR Code</h2>
+
+    <div class="qr-section">
+        <div class="qr-code-container">
+            <p>Scan this QR code to report a problem with this game</p>
+
+            <img src="data:image/png;base64,{{ qr_code_data }}" alt="QR Code for {{ game.name }}">
+
+            <div class="qr-url">
+                <strong>URL:</strong> {{ qr_url }}
+            </div>
+
+            <div class="print-instructions no-print">
+                <strong>Instructions:</strong> Click the button below to print this QR code.
+                You can then attach it to the game so visitors can easily report problems by scanning with their phones.
+            </div>
+
+            <button onclick="window.print()" class="btn-print no-print">Print QR Code</button>
+        </div>
     </div>
 </div>
 {% endblock %}
