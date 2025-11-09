@@ -75,3 +75,8 @@ Maintainers need both a Django user account and a Maintainer profile:
 3. Maintainer can now log in and manage reports
 
 Alternatively, staff users (with `is_staff=True`) can also manage reports without a Maintainer profile.
+
+
+## Deploying the Public Prototype
+
+The prototype at https://the-flip.onrender.com is deployed every time this repo's main branch is pushed to Github.
