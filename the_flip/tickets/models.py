@@ -1,26 +1,44 @@
 from django.db import models
 from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 
 
 class Game(models.Model):
-    TYPE_MECHANICAL = "M"
+    TYPE_PM = "PM"
     TYPE_EM = "EM"
     TYPE_SS = "SS"
-    TYPE_DMD = "DMD"
-    TYPE_LCD = "LCD"
 
     TYPE_CHOICES = [
-        (TYPE_MECHANICAL, "Mechanical"),
+        (TYPE_PM, "Pure Mechanical"),
         (TYPE_EM, "Electro-Mechanical"),
         (TYPE_SS, "Solid State"),
-        (TYPE_DMD, "Dot Matrix Display"),
-        (TYPE_LCD, "LCD"),
     ]
 
     name = models.CharField(max_length=200)
     manufacturer = models.CharField(max_length=200, blank=True)
     year = models.PositiveIntegerField(null=True, blank=True)
-    type = models.CharField(max_length=3, choices=TYPE_CHOICES)
+    month = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(12)],
+        help_text="Month of manufacture (1-12)",
+    )
+    type = models.CharField(max_length=2, choices=TYPE_CHOICES)
+    system = models.CharField(max_length=100, blank=True, help_text="e.g., MPU_1, System 7, Fliptronics 2")
+    scoring = models.CharField(max_length=100, blank=True, help_text="e.g., Manual, Reels, DMD, Video")
+    flipper_count = models.CharField(
+        max_length=10,
+        blank=True,
+        validators=[RegexValidator(regex=r'^\d+$', message='Must be a number')],
+        help_text="Number of flippers (e.g., 0, 2, 3, 4)",
+    )
+    pinside_rating = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Pinside rating (e.g., 8.34)",
+    )
     is_active = models.BooleanField(default=True, db_index=True,)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

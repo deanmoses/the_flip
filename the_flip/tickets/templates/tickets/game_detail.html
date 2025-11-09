@@ -185,10 +185,46 @@
 
     <div class="game-info no-print">
         <div class="game-info-grid">
+            {% if game.year or game.month %}
+            <div class="info-item">
+                <span class="info-label">Manufactured</span>
+                <span class="info-value">
+                    {% if game.month %}
+                        {{ game.month }}/{{ game.year }}
+                    {% else %}
+                        {{ game.year }}
+                    {% endif %}
+                </span>
+            </div>
+            {% endif %}
             <div class="info-item">
                 <span class="info-label">Type</span>
                 <span class="info-value">{{ game.get_type_display }}</span>
             </div>
+            {% if game.system %}
+            <div class="info-item">
+                <span class="info-label">System</span>
+                <span class="info-value">{{ game.system }}</span>
+            </div>
+            {% endif %}
+            {% if game.scoring %}
+            <div class="info-item">
+                <span class="info-label">Scoring</span>
+                <span class="info-value">{{ game.scoring }}</span>
+            </div>
+            {% endif %}
+            {% if game.flipper_count %}
+            <div class="info-item">
+                <span class="info-label">Flipper Count</span>
+                <span class="info-value">{{ game.flipper_count }}</span>
+            </div>
+            {% endif %}
+            {% if game.pinside_rating %}
+            <div class="info-item">
+                <span class="info-label">Pinside Rating</span>
+                <span class="info-value">{{ game.pinside_rating }}</span>
+            </div>
+            {% endif %}
             <div class="info-item">
                 <span class="info-label">Status</span>
                 <span class="info-value">

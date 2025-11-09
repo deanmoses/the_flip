@@ -4,10 +4,28 @@ from .models import Game, Maintainer, ProblemReport, ReportUpdate
 
 @admin.register(Game)
 class GameAdmin(admin.ModelAdmin):
-    list_display = ['name', 'manufacturer', 'year', 'type', 'is_active']
-    list_filter = ['type', 'is_active']
-    search_fields = ['name', 'manufacturer']
+    list_display = ['name', 'manufacturer', 'year', 'type', 'system', 'pinside_rating', 'is_active']
+    list_filter = ['type', 'is_active', 'system']
+    search_fields = ['name', 'manufacturer', 'system']
     readonly_fields = ['created_at', 'updated_at']
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('name', 'manufacturer', 'year', 'month', 'type')
+        }),
+        ('Technical Details', {
+            'fields': ('system', 'scoring', 'flipper_count')
+        }),
+        ('Rating', {
+            'fields': ('pinside_rating',)
+        }),
+        ('Status', {
+            'fields': ('is_active',)
+        }),
+        ('Metadata', {
+            'fields': ('created_at', 'updated_at', 'created_by', 'updated_by'),
+            'classes': ('collapse',)
+        }),
+    )
 
 
 @admin.register(Maintainer)
