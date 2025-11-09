@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: the-flip
+    runtime: python
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "cd the_flip && gunicorn the_flip.wsgi:application"
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: false
+      - key: ALLOWED_HOSTS
+        value: the-flip.onrender.com
+      - key: PYTHON_VERSION
+        value: 3.13.2

@@ -3,3 +3,9 @@ Django==5.2.8
 
 # Configuration Management
 python-decouple==3.8
+
+# Production Server
+gunicorn==23.0.0
+
+# Static Files Serving
+whitenoise==6.8.2
