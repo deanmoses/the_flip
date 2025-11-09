@@ -30,8 +30,9 @@
         {% endif %}
 
         <div class="form-group">
-            {{ form.game }}
-            {% if not game %}
+            {% if game %}
+                {{ form.game }}
+            {% else %}
                 {{ form.game.label_tag }}
                 {{ form.game }}
                 {% if form.game.errors %}
