@@ -116,6 +116,3 @@ class ProblemReportCreateForm(forms.ModelForm):
             'reported_by_name': 'Your name',
             'reported_by_contact': 'Contact information',
         }
-        help_texts = {
-            'problem_text': 'Please provide as much detail as possible so we can fix the issue.',
-        }
