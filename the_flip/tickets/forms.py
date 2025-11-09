@@ -18,7 +18,7 @@ class ReportFilterForm(forms.Form):
     status = forms.ChoiceField(
         choices=STATUS_CHOICES,
         required=False,
-        initial='all',
+        initial='open',
         widget=forms.Select(attrs={'class': 'form-select'})
     )
 
