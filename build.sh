@@ -14,6 +14,9 @@ python manage.py migrate
 # Collect static files
 python manage.py collectstatic --no-input
 
+# Create default admin user and maintainer
+python manage.py create_default_admin
+
 # Populate sample games
 python manage.py populate_sample_games
 
