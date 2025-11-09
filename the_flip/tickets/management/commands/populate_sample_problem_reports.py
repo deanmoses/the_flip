@@ -86,8 +86,8 @@ class Command(BaseCommand):
 
         self.stdout.write('')
 
-        # Get all games to assign reports to
-        games = list(Game.objects.filter(is_active=True))
+        # Get all non-broken games to assign reports to (is_active field removed in favor of status)
+        games = list(Game.objects.exclude(status=Game.STATUS_BROKEN))
         if not games:
             self.stdout.write(
                 self.style.ERROR(
