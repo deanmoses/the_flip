@@ -237,6 +237,52 @@ class Command(BaseCommand):
                     'Tested 15 scoops - all successful. Fixed!',
                 ]
             },
+            {
+                'type': ProblemReport.PROBLEM_OTHER,
+                'text': 'Right flipper making grinding noise when pressed.',
+                'reporter_name': 'Steve Chen',
+                'reporter_contact': 'steve.c@email.com',
+                'updates': []
+            },
+            {
+                'type': ProblemReport.PROBLEM_NO_CREDITS,
+                'text': 'Accepts quarters but only gives 1 credit instead of 2.',
+                'reporter_name': 'Maria Lopez',
+                'updates': []
+            },
+            {
+                'type': ProblemReport.PROBLEM_STUCK_BALL,
+                'text': 'Ball drained but game didn\'t register it. Still waiting for ball.',
+                'reporter_name': '',
+                'updates': []
+            },
+            {
+                'type': ProblemReport.PROBLEM_OTHER,
+                'text': 'All playfield lights flickering intermittently.',
+                'reporter_name': 'Chris Johnson',
+                'reporter_contact': '555-7890',
+                'updates': []
+            },
+            {
+                'type': ProblemReport.PROBLEM_OTHER,
+                'text': 'Ball launcher feels very weak. Barely makes it up the ramp.',
+                'reporter_name': 'Emily White',
+                'updates': []
+            },
+            {
+                'type': ProblemReport.PROBLEM_NO_CREDITS,
+                'text': 'Machine stuck in free play mode. Won\'t accept credits.',
+                'reporter_name': 'Robert King',
+                'reporter_contact': 'r.king@email.com',
+                'updates': []
+            },
+            {
+                'type': ProblemReport.PROBLEM_OTHER,
+                'text': 'Top right bumper not firing at all.',
+                'reporter_name': 'Jennifer Mills',
+                'reporter_contact': '555-4321',
+                'updates': []
+            },
         ]
 
         created_reports = 0
