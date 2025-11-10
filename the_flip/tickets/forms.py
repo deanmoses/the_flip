@@ -65,18 +65,14 @@ class ReportUpdateForm(forms.ModelForm):
         current_game_status = kwargs.pop('current_game_status', None)
         super().__init__(*args, **kwargs)
 
-        # Build choices excluding the current game status
-        all_status_choices = [
-            (Game.STATUS_GOOD, 'Good'),
-            (Game.STATUS_FIXING, 'Fixing'),
-            (Game.STATUS_BROKEN, 'Broken'),
-        ]
-
-        # Filter out the current status
+        # Build choices from Game.STATUS_CHOICES, excluding UNKNOWN and current status
         available_choices = [('', '-- No Change --')]
-        for status_code, status_label in all_status_choices:
-            if status_code != current_game_status:
-                available_choices.append((status_code, status_label))
+        for status_code, status_label in Game.STATUS_CHOICES:
+            if status_code in {Game.STATUS_UNKNOWN}:  # Skip unknown status for updates
+                continue
+            if status_code == current_game_status:
+                continue
+            available_choices.append((status_code, status_label))
 
         self.fields['game_status'].choices = available_choices
 
