@@ -68,14 +68,17 @@
                                 {% endif %}
                             </strong>
                             <span class="update-time">{{ update.created_at|date:"M d, Y g:i A" }}</span>
-                            {% if update.status %}
-                                <span class="badge badge-{{ update.status }} badge-small">
-                                    Report: {{ update.get_status_display }}
-                                </span>
-                            {% endif %}
                             {% if update.game_status %}
                                 <span class="badge badge-{{ update.game_status }} badge-small">
                                     Game: {{ update.get_game_status_display }}
+                                </span>
+                            {% endif %}
+                            {% if update.game_status and update.status %}
+                                <span style="margin: 0 8px; color: #999;">→</span>
+                            {% endif %}
+                            {% if update.status %}
+                                <span class="badge badge-{{ update.status }} badge-small">
+                                    Report: {{ update.get_status_display }}
                                 </span>
                             {% endif %}
                         </div>
