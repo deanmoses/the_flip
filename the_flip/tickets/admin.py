@@ -1,6 +1,32 @@
 from django.contrib import admin
+from django.contrib.admin import AdminSite
 from django import forms
 from .models import Game, Maintainer, ProblemReport, ReportUpdate
+
+
+class CustomAdminSite(AdminSite):
+    def get_app_list(self, request, app_label=None):
+        """
+        Return a sorted list of all the installed apps with custom model ordering.
+        """
+        app_list = super().get_app_list(request, app_label)
+
+        # Custom ordering for Game Maintenance models
+        model_order = {
+            'Games': 1,
+            'Problem Reports': 2,
+            'Problem Report Updates': 3,
+        }
+
+        for app in app_list:
+            if app['app_label'] == 'tickets':
+                app['models'].sort(key=lambda x: model_order.get(x['name'], 999))
+
+        return app_list
+
+
+# Override the default admin site
+admin.site.__class__ = CustomAdminSite
 
 
 class GameAdminForm(forms.ModelForm):

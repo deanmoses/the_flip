@@ -160,6 +160,8 @@ class ProblemReport(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        verbose_name = "Problem Report"
+        verbose_name_plural = "Problem Reports"
 
     def __str__(self):
         return f"{self.game.name} – {self.get_problem_type_display()}"
@@ -274,6 +276,8 @@ class ReportUpdate(models.Model):
 
     class Meta:
         ordering = ["created_at"]
+        verbose_name = "Problem Report Update"
+        verbose_name_plural = "Problem Report Updates"
 
     def __str__(self):
         label = f"Update on report {self.report_id}"
