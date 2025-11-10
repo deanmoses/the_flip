@@ -31,6 +31,7 @@ class Command(BaseCommand):
                 "scoring": "manual",
                 "flipper_count": "0",
                 "status": Game.STATUS_GOOD,
+                "ipdb_url": "https://www.ipdb.org/machine.cgi?id=4817",
             },
             {
                 "name": "Carom",
@@ -41,6 +42,7 @@ class Command(BaseCommand):
                 "scoring": "totalizer",
                 "flipper_count": "0",
                 "status": Game.STATUS_UNKNOWN,
+                "ipdb_url": "https://www.ipdb.org/machine.cgi?id=458",
             },
             {
                 "name": "Trade Winds",
@@ -50,6 +52,7 @@ class Command(BaseCommand):
                 "type": Game.TYPE_EM,
                 "scoring": "lights",
                 "status": Game.STATUS_FIXING,
+                "ipdb_url": "https://www.ipdb.org/machine.cgi?id=2620",
             },
             {
                 "name": "Baseball",
@@ -60,6 +63,7 @@ class Command(BaseCommand):
                 "scoring": "lights",
                 "flipper_count": "2",
                 "status": Game.STATUS_BROKEN,
+                "ipdb_url": "https://www.ipdb.org/machine.cgi?id=189",
             },
             {
                 "name": "Derby Day",
@@ -70,6 +74,7 @@ class Command(BaseCommand):
                 "scoring": "lights",
                 "flipper_count": "2",
                 "status": Game.STATUS_GOOD,
+                "ipdb_url": "https://www.ipdb.org/machine.cgi?id=664",
             },
             {
                 "name": "Roto Pool",
@@ -80,6 +85,7 @@ class Command(BaseCommand):
                 "scoring": "lights",
                 "flipper_count": "2",
                 "status": Game.STATUS_GOOD,
+                "ipdb_url": "https://www.ipdb.org/machine.cgi?id=2022",
             },
             {
                 "name": "Teacher's Pet",
@@ -91,6 +97,7 @@ class Command(BaseCommand):
                 "flipper_count": "2",
                 "pinside_rating": 8.34,
                 "status": Game.STATUS_GOOD,
+                "ipdb_url": "https://www.ipdb.org/machine.cgi?id=2506",
             },
             {
                 "name": "Hokus Pokus",
@@ -102,6 +109,7 @@ class Command(BaseCommand):
                 "flipper_count": "2",
                 "pinside_rating": 7.94,
                 "status": Game.STATUS_GOOD,
+                "ipdb_url": "https://www.ipdb.org/machine.cgi?id=1206",
             },
             {
                 "name": "Star Trip",
@@ -113,6 +121,7 @@ class Command(BaseCommand):
                 "system": "MPU_1",
                 "flipper_count": "2",
                 "status": Game.STATUS_GOOD,
+                "ipdb_url": "https://www.ipdb.org/machine.cgi?id=3605",
             },
             {
                 "name": "Star Trek",
@@ -125,6 +134,7 @@ class Command(BaseCommand):
                 "flipper_count": "2",
                 "pinside_rating": 6.76,
                 "status": Game.STATUS_FIXING,
+                "ipdb_url": "https://www.ipdb.org/machine.cgi?id=2355",
             },
             {
                 "name": "The Hulk",
@@ -136,6 +146,7 @@ class Command(BaseCommand):
                 "system": "System 1",
                 "flipper_count": "2",
                 "status": Game.STATUS_GOOD,
+                "ipdb_url": "https://www.ipdb.org/machine.cgi?id=1266",
             },
             {
                 "name": "Gorgar",
@@ -148,6 +159,7 @@ class Command(BaseCommand):
                 "flipper_count": "2",
                 "pinside_rating": 7.56,
                 "status": Game.STATUS_FIXING,
+                "ipdb_url": "https://www.ipdb.org/machine.cgi?id=1062",
             },
             {
                 "name": "Blackout",
@@ -160,6 +172,7 @@ class Command(BaseCommand):
                 "flipper_count": "2",
                 "pinside_rating": 7.70,
                 "status": Game.STATUS_FIXING,
+                "ipdb_url": "https://www.ipdb.org/machine.cgi?id=317",
             },
             {
                 "name": "Hyperball",
@@ -171,6 +184,7 @@ class Command(BaseCommand):
                 "system": "System 7",
                 "flipper_count": "0",
                 "status": Game.STATUS_GOOD,
+                "ipdb_url": "https://www.ipdb.org/machine.cgi?id=3169",
             },
             {
                 "name": "Eight Ball Deluxe Limited Edition",
@@ -183,6 +197,7 @@ class Command(BaseCommand):
                 "flipper_count": "3",
                 "pinside_rating": 8.06,
                 "status": Game.STATUS_GOOD,
+                "ipdb_url": "https://www.ipdb.org/machine.cgi?id=763",
             },
             {
                 "name": "The Getaway: High Speed II",
@@ -195,6 +210,7 @@ class Command(BaseCommand):
                 "flipper_count": "3",
                 "pinside_rating": 8.14,
                 "status": Game.STATUS_GOOD,
+                "ipdb_url": "https://www.ipdb.org/machine.cgi?id=1000",
             },
             {
                 "name": "The Addams Family",
@@ -207,6 +223,7 @@ class Command(BaseCommand):
                 "flipper_count": "4",
                 "pinside_rating": 8.56,
                 "status": Game.STATUS_GOOD,
+                "ipdb_url": "https://www.ipdb.org/machine.cgi?id=20",
             },
             {
                 "name": "Godzilla (Premium)",
@@ -219,6 +236,7 @@ class Command(BaseCommand):
                 "flipper_count": "3",
                 "pinside_rating": 9.19,
                 "status": Game.STATUS_GOOD,
+                "ipdb_url": "https://www.ipdb.org/machine.cgi?id=6842",
             },
         ]
 
