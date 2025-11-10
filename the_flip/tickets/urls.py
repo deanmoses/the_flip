@@ -13,9 +13,4 @@ urlpatterns = [
     path('machines/<slug:slug>/qr/', views.machine_qr, name='machine_qr'),
     path('login/', views.CustomLoginView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
-
-    # Backwards compatibility URLs (redirect old game URLs to machine URLs)
-    path('games/', views.game_list, name='game_list'),
-    path('games/<int:pk>/', views.game_detail, name='game_detail'),
-    path('games/<int:pk>/qr/', views.game_qr, name='game_qr'),
 ]

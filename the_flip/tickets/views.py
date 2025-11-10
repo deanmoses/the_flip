@@ -399,9 +399,3 @@ def machine_qr(request, slug):
         'qr_code_data': img_str,
         'qr_url': qr_url,
     })
-
-
-# Backwards compatibility views
-game_list = machine_list
-game_detail = machine_detail
-game_qr = machine_qr
