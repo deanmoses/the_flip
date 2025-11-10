@@ -171,17 +171,8 @@
         <span>QR Code</span>
     </nav>
 
-    <div class="page-header">
-        <h1>{{ game.name }}</h1>
-        {% if game.year or game.manufacturer %}
-            <div class="game-meta">
-                {% if game.year %}{{ game.year }}{% endif %}{% if game.year and game.manufacturer %} • {% endif %}{% if game.manufacturer %}{{ game.manufacturer }}{% endif %}
-            </div>
-        {% endif %}
-    </div>
-
     <div class="print-instructions no-print">
-        <p>This QR code can be attached to the game so visitors can scan and report problems on their phones.</p>
+        <p>Attach this QR code to the game so visitors can scan and report problems on their phones.</p>
     </div>
 
     <div class="qr-code-display">
