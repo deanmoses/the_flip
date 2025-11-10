@@ -51,6 +51,12 @@ class Game(models.Model):
         blank=True,
         help_text="Pinside rating (e.g., 8.34)",
     )
+    ipdb_url = models.URLField(
+        max_length=500,
+        blank=True,
+        verbose_name="IPDB URL",
+        help_text="Internet Pinball Machine Database URL",
+    )
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,

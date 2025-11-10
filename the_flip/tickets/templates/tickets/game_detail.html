@@ -241,6 +241,12 @@
                 <span class="info-value">{{ game.pinside_rating }}</span>
             </div>
             {% endif %}
+            {% if game.ipdb_url %}
+            <div class="info-item">
+                <span class="info-label">IPDB</span>
+                <span class="info-value"><a href="{{ game.ipdb_url }}" target="_blank" rel="noopener noreferrer">View on IPDB</a></span>
+            </div>
+            {% endif %}
             <div class="info-item">
                 <span class="info-label">Status</span>
                 <span class="info-value">

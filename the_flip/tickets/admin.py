@@ -27,13 +27,13 @@ class GameAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at', 'updated_at']
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'manufacturer', 'year', 'month', 'type')
+            'fields': ('name', 'manufacturer', 'month', 'year')
         }),
         ('Technical Details', {
-            'fields': ('system', 'scoring', 'flipper_count')
+            'fields': ('type', 'system', 'scoring', 'flipper_count')
         }),
-        ('Rating', {
-            'fields': ('pinside_rating',)
+        ('Community', {
+            'fields': ('pinside_rating', 'ipdb_url')
         }),
         ('Status', {
             'fields': ('status',)
