@@ -18,6 +18,13 @@ class CustomAdminSite(AdminSite):
             'tickets': 3,
         }
 
+        # Custom ordering for Authentication and Authorization models
+        auth_order = {
+            'Groups': 1,
+            'Users': 2,
+            'Maintainers': 3,
+        }
+
         # Custom ordering for Game Maintenance models
         game_maintenance_order = {
             'Problem Reports': 1,
@@ -25,7 +32,9 @@ class CustomAdminSite(AdminSite):
         }
 
         for app in app_list:
-            if app['app_label'] == 'tickets':
+            if app['app_label'] == 'auth':
+                app['models'].sort(key=lambda x: auth_order.get(x['name'], 999))
+            elif app['app_label'] == 'tickets':
                 app['models'].sort(key=lambda x: game_maintenance_order.get(x['name'], 999))
 
         # Sort apps by custom order
