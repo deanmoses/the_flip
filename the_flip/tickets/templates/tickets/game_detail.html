@@ -94,31 +94,16 @@
 
     .game-info {
         background: #f8f9fa;
-        padding: 20px;
+        padding: 15px 20px;
         border-radius: 8px;
         margin-bottom: 30px;
-    }
-
-    .game-info-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-    }
-
-    .info-item {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .info-label {
-        font-weight: bold;
-        color: #666;
-        font-size: 0.9em;
-        margin-bottom: 5px;
-    }
-
-    .info-value {
         font-size: 1.1em;
+        color: #666;
+    }
+
+    .game-info-separator {
+        margin: 0 8px;
+        color: #999;
     }
 
     .recent-reports h2 {
@@ -171,9 +156,6 @@
             text-align: center;
         }
 
-        .game-info-grid {
-            grid-template-columns: 1fr;
-        }
 
         .report-meta {
             flex-direction: column;
@@ -210,48 +192,7 @@
     </div>
 
     <div class="game-info">
-        <div class="game-info-grid">
-            {% if game.year or game.month %}
-            <div class="info-item">
-                <span class="info-label">Manufactured</span>
-                <span class="info-value">
-                    {% if game.month %}
-                        {{ game.month }}/{{ game.year }}
-                    {% else %}
-                        {{ game.year }}
-                    {% endif %}
-                </span>
-            </div>
-            {% endif %}
-            <div class="info-item">
-                <span class="info-label">Type</span>
-                <span class="info-value">{{ game.get_type_display }}</span>
-            </div>
-            {% if game.system %}
-            <div class="info-item">
-                <span class="info-label">System</span>
-                <span class="info-value">{{ game.system }}</span>
-            </div>
-            {% endif %}
-            {% if game.scoring %}
-            <div class="info-item">
-                <span class="info-label">Scoring</span>
-                <span class="info-value">{{ game.scoring }}</span>
-            </div>
-            {% endif %}
-            {% if game.flipper_count %}
-            <div class="info-item">
-                <span class="info-label">Flipper Count</span>
-                <span class="info-value">{{ game.flipper_count }}</span>
-            </div>
-            {% endif %}
-            {% if game.pinside_rating %}
-            <div class="info-item">
-                <span class="info-label">Pinside Rating</span>
-                <span class="info-value">{{ game.pinside_rating }}</span>
-            </div>
-            {% endif %}
-        </div>
+        {{ game.get_type_display }}{% if game.flipper_count %}<span class="game-info-separator">•</span>{{ game.flipper_count }} Flipper{% if game.flipper_count != 1 %}s{% endif %}{% endif %}{% if game.scoring %}<span class="game-info-separator">•</span>{{ game.scoring }} Scoring{% endif %}
     </div>
 
     <div class="recent-reports">
