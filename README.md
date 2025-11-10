@@ -53,8 +53,8 @@ It's in Django.
 
 7. **Load sample data (optional)**
    ```bash
-   python manage.py populate_sample_games
-   python manage.py populate_sample_problem_reports
+   python manage.py create_default_machines
+   python manage.py create_sample_problem_reports
    ```
 
 8. **Run development server**

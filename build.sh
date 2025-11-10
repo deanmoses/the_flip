@@ -14,11 +14,11 @@ python manage.py migrate
 # Collect static files
 python manage.py collectstatic --no-input
 
-# Create default admin user and maintainer
-python manage.py create_default_admin
+# Create default admin users and maintainers
+python manage.py create_default_admins
 
-# Populate sample games
-python manage.py populate_sample_games
+# Create default pinball machines
+python manage.py create_default_machines
 
-# Populate sample problem reports
-python manage.py populate_sample_problem_reports
+# Create sample problem reports
+python manage.py create_sample_problem_reports

@@ -3,13 +3,13 @@ from tickets.models import MachineModel, MachineInstance
 
 
 class Command(BaseCommand):
-    help = 'Populate database with sample pinball machine data for development'
+    help = 'Populate database with pinball machines that were in the legacy system'
 
     def add_arguments(self, parser):
         parser.add_argument(
             '--clear',
             action='store_true',
-            help='Clear existing data before adding sample data',
+            help='Clear existing data before adding this data',
         )
 
     def handle(self, *args, **options):
@@ -24,9 +24,8 @@ class Command(BaseCommand):
                 )
             )
 
-        # Sample machine models from museum inventory
-        # Data extracted from populate_sample_games.py and legacy CSV
-        sample_models = [
+        # Pinball machine models from museum inventory
+        default_models = [
             {
                 "name": "Ballyhoo",
                 "manufacturer": "Bally",
@@ -227,12 +226,12 @@ class Command(BaseCommand):
             },
         ]
 
-        # Create machine models
+        # Create pinball machine models
         models_created = 0
         models_existing = 0
         model_instances = {}
 
-        for model_data in sample_models:
+        for model_data in default_models:
             model, created = MachineModel.objects.get_or_create(
                 name=model_data["name"],
                 defaults=model_data
@@ -251,8 +250,8 @@ class Command(BaseCommand):
                 models_existing += 1
                 self.stdout.write(f'  Model already exists: {model.name}')
 
-        # Sample machine instances with serial numbers and acquisition notes from legacy CSV
-        sample_instances = [
+        # Default pinball machine instances with serial numbers and acquisition notes
+        default_instances = [
             {
                 "model_name": "Ballyhoo",
                 "serial_number": "",
@@ -385,7 +384,7 @@ class Command(BaseCommand):
         instances_created = 0
         instances_existing = 0
 
-        for instance_data in sample_instances:
+        for instance_data in default_instances:
             model_name = instance_data.pop("model_name")
             model = model_instances.get(model_name)
 
