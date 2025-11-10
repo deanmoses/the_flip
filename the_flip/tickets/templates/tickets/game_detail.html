@@ -125,28 +125,32 @@
         color: #2c3e50;
     }
 
-    .report-item {
+    .reports-table table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+    }
+
+    .reports-table th,
+    .reports-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .reports-table th {
         background: #f8f9fa;
-        padding: 15px;
-        margin-bottom: 10px;
-        border-radius: 4px;
-        border-left: 4px solid #ddd;
+        font-weight: bold;
+        color: #2c3e50;
     }
 
-    .report-item.open {
-        border-left-color: #f44336;
+    .reports-table .clickable-row {
+        cursor: pointer;
+        transition: background 0.2s;
     }
 
-    .report-item.closed {
-        border-left-color: #4CAF50;
-    }
-
-    .report-meta {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 10px;
-        font-size: 0.9em;
-        color: #666;
+    .reports-table .clickable-row:hover {
+        background: #f8f9fa;
     }
 
     @media (max-width: 768px) {
@@ -260,29 +264,40 @@
         <h2>Latest Problem Reports</h2>
 
         {% if recent_reports %}
-            {% for report in recent_reports %}
-                <div class="report-item {{ report.status }}">
-                    <div>
-                        <strong>
-                            {% if report.problem_type == 'other' and report.problem_text %}
-                                {{ report.problem_text|truncatechars:100 }}
-                            {% elif report.problem_text %}
-                                {{ report.get_problem_type_display }} - {{ report.problem_text|truncatechars:100 }}
-                            {% else %}
-                                {{ report.get_problem_type_display }}
-                            {% endif %}
-                        </strong>
-                    </div>
-                    <div class="report-meta">
-                        <span>
-                            <span class="badge badge-{{ report.status }}">{{ report.get_status_display }}</span>
-                        </span>
-                        <span>{{ report.created_at|date:"M d, Y g:i A" }}</span>
-                        <span>By: {{ report.reported_by_name|default:"Anonymous" }}</span>
-                        <a href="{% url 'report_detail' report.pk %}">View Details</a>
-                    </div>
-                </div>
-            {% endfor %}
+            <div class="reports-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Problem</th>
+                            <th>Reporter</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in recent_reports %}
+                        <tr onclick="window.location='{% url 'report_detail' report.pk %}'" class="clickable-row">
+                            <td>
+                                <span class="badge badge-{{ report.status }}">
+                                    {{ report.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ report.created_at|date:"M d, Y g:i A" }}</td>
+                            <td>
+                                {% if report.problem_type == 'other' and report.problem_text %}
+                                    {{ report.problem_text|truncatechars:80 }}
+                                {% elif report.problem_text %}
+                                    {{ report.get_problem_type_display }} - {{ report.problem_text|truncatechars:80 }}
+                                {% else %}
+                                    {{ report.get_problem_type_display }}
+                                {% endif %}
+                            </td>
+                            <td>{{ report.reported_by_name|default:"Anonymous" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         {% else %}
             <p>No problem reports for this game yet.</p>
         {% endif %}
