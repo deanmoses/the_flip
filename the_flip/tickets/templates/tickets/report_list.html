@@ -3,11 +3,63 @@
 {% block title %}Problem Reports - The Flip{% endblock %}
 
 {% block content %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+
+    .page-header-left {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .page-header h1 {
+        margin: 0;
+    }
+
+    .page-header .stats {
+        display: flex;
+        gap: 10px;
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+
+        .page-header-left {
+            display: contents;
+        }
+
+        .page-header-right {
+            order: -1;
+            width: 100%;
+        }
+
+        .page-header-right .btn {
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+
 <div class="page-header">
-    <h1>Problem Reports</h1>
-    <div class="stats">
-        <span class="stat-badge stat-open">{{ stats.open_count }} Open</span>
-        <span class="stat-badge stat-closed">{{ stats.closed_count }} Closed</span>
+    <div class="page-header-left">
+        <h1>Problem Reports</h1>
+        <div class="stats">
+            <span class="stat-badge stat-open">{{ stats.open_count }} Open</span>
+            <span class="stat-badge stat-closed">{{ stats.closed_count }} Closed</span>
+        </div>
+    </div>
+    <div class="page-header-right">
+        <a href="{% url 'report_create' %}" class="btn btn-primary">Report a Problem</a>
     </div>
 </div>
 
@@ -35,7 +87,7 @@
                 {{ form.search }}
             </div>
 
-            <button type="submit" class="btn btn-primary">Apply Filters</button>
+            <button type="submit" class="btn btn-primary">Apply</button>
             <a href="{% url 'report_list' %}" class="btn btn-secondary">Clear</a>
         </form>
     </aside>
