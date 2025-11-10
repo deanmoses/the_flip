@@ -158,6 +158,11 @@ body {
     color: #383d41;
 }
 
+.stat-total {
+    background-color: #cfe2ff;
+    color: #084298;
+}
+
 /* Report List */
 .report-list-container {
     display: grid;
