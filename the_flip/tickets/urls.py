@@ -10,6 +10,7 @@ urlpatterns = [
     path('new_report/<int:game_id>/', views.report_create, name='report_create_qr'),
     path('games/', views.game_list, name='game_list'),
     path('games/<int:pk>/', views.game_detail, name='game_detail'),
+    path('games/<int:pk>/qr/', views.game_qr, name='game_qr'),
     path('login/', views.CustomLoginView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
 ]

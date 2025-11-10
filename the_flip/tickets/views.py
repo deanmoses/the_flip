@@ -295,7 +295,29 @@ def game_list(request):
 @login_required
 def game_detail(request, pk):
     """
-    Display game details with QR code.
+    Display game details with recent reports.
+    Only accessible to authenticated staff and maintainers.
+    """
+    # Check permission (staff users or maintainers)
+    if not (request.user.is_staff or hasattr(request.user, 'maintainer')):
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('report_list')
+
+    game = get_object_or_404(Game, pk=pk)
+
+    # Get recent reports for this game
+    recent_reports = ProblemReport.objects.filter(game=game).order_by('-created_at')[:10]
+
+    return render(request, 'tickets/game_detail.html', {
+        'game': game,
+        'recent_reports': recent_reports,
+    })
+
+
+@login_required
+def game_qr(request, pk):
+    """
+    Display QR code for a game (print-optimized page).
     Only accessible to authenticated staff and maintainers.
     """
     # Check permission (staff users or maintainers)
@@ -365,12 +387,8 @@ def game_detail(request, pk):
     img.save(buffer, format='PNG')
     img_str = base64.b64encode(buffer.getvalue()).decode()
 
-    # Get recent reports for this game
-    recent_reports = ProblemReport.objects.filter(game=game).order_by('-created_at')[:10]
-
-    return render(request, 'tickets/game_detail.html', {
+    return render(request, 'tickets/game_qr.html', {
         'game': game,
         'qr_code_data': img_str,
         'qr_url': qr_url,
-        'recent_reports': recent_reports,
     })

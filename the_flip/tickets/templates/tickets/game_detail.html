@@ -4,50 +4,89 @@
 
 {% block content %}
 <style>
-    @media print {
-        .navbar, .footer, .no-print, .recent-reports {
-            display: none !important;
-        }
-
-        .qr-code-container {
-            text-align: center;
-            page-break-after: avoid;
-        }
-
-        .qr-code-container img {
-            max-width: 400px;
-            width: 100%;
-        }
-
-        .game-info {
-            margin-bottom: 20px;
-        }
-
-        body {
-            background: white;
-        }
-
-        .main-content {
-            padding: 0;
-        }
-
-        .container {
-            max-width: 100%;
-        }
-    }
-
     .game-detail-container {
         max-width: 900px;
         margin: 0 auto;
     }
 
+    .breadcrumb {
+        font-size: 0.9em;
+        color: #666;
+        margin-bottom: 20px;
+    }
+
+    .breadcrumb a {
+        color: #2196F3;
+        text-decoration: none;
+    }
+
+    .breadcrumb a:hover {
+        text-decoration: underline;
+    }
+
+    .breadcrumb-separator {
+        margin: 0 8px;
+        color: #999;
+    }
+
     .game-header {
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #ddd;
+    }
+
+    .header-top {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        margin-bottom: 30px;
-        border-bottom: 2px solid #ddd;
-        padding-bottom: 20px;
+        align-items: flex-start;
+        margin-bottom: 15px;
+    }
+
+    .game-title h1 {
+        margin: 0;
+        font-size: 2em;
+        color: #2c3e50;
+    }
+
+    .game-meta {
+        color: #666;
+        font-size: 1.1em;
+        margin-top: 5px;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        font-size: 0.95em;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: background 0.2s;
+    }
+
+    .btn-primary {
+        background: #2196F3;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #1976D2;
+    }
+
+    .btn-secondary {
+        background: white;
+        color: #2196F3;
+        border: 2px solid #2196F3;
+    }
+
+    .btn-secondary:hover {
+        background: #f0f8ff;
     }
 
     .game-info {
@@ -79,72 +118,11 @@
         font-size: 1.1em;
     }
 
-    .qr-section {
-        background: white;
-        border: 2px solid #ddd;
-        border-radius: 8px;
-        padding: 30px;
-        margin-bottom: 30px;
-    }
-
-    .qr-code-container {
-        text-align: center;
-    }
-
-    .qr-code-container h2 {
-        margin-bottom: 20px;
-        color: #333;
-    }
-
-    .qr-code-container img {
-        max-width: 300px;
-        width: 100%;
-        border: 1px solid #ddd;
-        padding: 10px;
-        background: white;
-    }
-
-    .qr-url {
-        margin-top: 15px;
-        padding: 10px;
-        background: #f8f9fa;
-        border-radius: 4px;
-        word-break: break-all;
-        font-family: monospace;
-        font-size: 0.9em;
-    }
-
-    .print-instructions {
-        margin-top: 20px;
-        padding: 15px;
-        background: #e7f3ff;
-        border-left: 4px solid #2196F3;
-        border-radius: 4px;
-    }
-
-    .btn-print {
-        margin-top: 20px;
-        padding: 12px 30px;
-        font-size: 1.1em;
-        background: #2196F3;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-
-    .btn-print:hover {
-        background: #1976D2;
-    }
-
-    .recent-reports {
-        margin-top: 40px;
-    }
-
     .recent-reports h2 {
         margin-bottom: 20px;
         padding-bottom: 10px;
         border-bottom: 2px solid #ddd;
+        color: #2c3e50;
     }
 
     .report-item {
@@ -170,23 +148,58 @@
         font-size: 0.9em;
         color: #666;
     }
+
+    @media (max-width: 768px) {
+        .header-top {
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .action-buttons {
+            width: 100%;
+        }
+
+        .btn {
+            flex: 1;
+            text-align: center;
+        }
+
+        .game-info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .report-meta {
+            flex-direction: column;
+            gap: 5px;
+        }
+    }
 </style>
 
 <div class="game-detail-container">
-    <div class="game-header no-print">
-        <h1>
-            {{ game.name }}
-            {% if game.year or game.manufacturer %}
-                ({% if game.year %}{{ game.year }}{% endif %}{% if game.year and game.manufacturer %} {% endif %}{% if game.manufacturer %}{{ game.manufacturer }}{% endif %})
-            {% endif %}
-        </h1>
-        <div style="display: flex; gap: 0.5rem;">
-            <a href="{% url 'report_create_qr' game.id %}" class="btn btn-primary">Report a Problem</a>
-            <a href="{% url 'game_list' %}" class="btn btn-secondary">Back to Games</a>
+    <nav class="breadcrumb">
+        <a href="{% url 'game_list' %}">Games</a>
+        <span class="breadcrumb-separator">›</span>
+        <span>{{ game.name }}</span>
+    </nav>
+
+    <div class="game-header">
+        <div class="header-top">
+            <div class="game-title">
+                <h1>{{ game.name }}</h1>
+                {% if game.year or game.manufacturer %}
+                    <div class="game-meta">
+                        {% if game.year %}{{ game.year }}{% endif %}{% if game.year and game.manufacturer %} • {% endif %}{% if game.manufacturer %}{{ game.manufacturer }}{% endif %}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="action-buttons">
+                <a href="{% url 'game_qr' game.pk %}" class="btn btn-secondary">QR Code</a>
+                <a href="{% url 'report_create_qr' game.id %}" class="btn btn-primary">Report a Problem</a>
+            </div>
         </div>
     </div>
 
-    <div class="game-info no-print">
+    <div class="game-info">
         <div class="game-info-grid">
             {% if game.year or game.month %}
             <div class="info-item">
@@ -237,7 +250,7 @@
         </div>
     </div>
 
-    <div class="recent-reports no-print">
+    <div class="recent-reports">
         <h2>Recent Problem Reports</h2>
 
         {% if recent_reports %}
@@ -268,26 +281,5 @@
             <p>No problem reports for this game yet.</p>
         {% endif %}
     </div>
-
-    <h2 class="no-print" style="margin-top: 40px; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #ddd; color: #2c3e50;">QR Code</h2>
-
-    <div class="qr-section">
-        <div class="qr-code-container">
-            <p>Scan this QR code to report a problem with this game</p>
-
-            <img src="data:image/png;base64,{{ qr_code_data }}" alt="QR Code for {{ game.name }}">
-        </div>
-    </div>
-
-    <div class="qr-url">
-        <strong>URL:</strong> {{ qr_url }}
-    </div>
-
-    <div class="print-instructions no-print">
-        <strong>Instructions:</strong> Click the button below to print this QR code.
-        You can then attach it to the game so visitors can easily report problems by scanning with their phones.
-    </div>
-
-    <button onclick="window.print()" class="btn-print no-print">Print QR Code</button>
 </div>
 {% endblock %}
