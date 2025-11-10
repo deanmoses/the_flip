@@ -153,9 +153,14 @@ class ProblemReportCreateForm(forms.ModelForm):
             self.fields['machine'].initial = machine
         else:
             # General scenario: show dropdown
-            self.fields['machine'].queryset = MachineInstance.objects.exclude(
-                operational_status=MachineInstance.OPERATIONAL_STATUS_BROKEN
-            ).select_related('model').order_by('model__name', 'serial_number')
+            if user and user.is_authenticated:
+                # Authenticated users: show all machines regardless of location or status
+                queryset = MachineInstance.objects.all()
+            else:
+                # Unauthenticated users: only show machines on the floor
+                queryset = MachineInstance.objects.filter(location=MachineInstance.LOCATION_FLOOR)
+
+            self.fields['machine'].queryset = queryset.select_related('model').order_by('model__name', 'serial_number')
             # Customize the label to show "Name (Year Manufacturer)"
             self.fields['machine'].label_from_instance = lambda obj: f"{obj.name} ({obj.model.year} {obj.model.manufacturer})"
 
