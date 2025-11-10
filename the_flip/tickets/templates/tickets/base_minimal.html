@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}The Flip - Pinball Problem Reports{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'tickets/css/styles.css' %}">
+</head>
+<body>
+    {% if messages %}
+        <div class="messages-container">
+            {% for message in messages %}
+                <div class="message message-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% block content %}
+    {% endblock %}
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
