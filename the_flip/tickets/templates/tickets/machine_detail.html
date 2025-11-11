@@ -182,8 +182,6 @@
             </h1>
         </div>
         <div class="action-buttons">
-            <a href="{% url 'machine_task_create' machine.slug %}" class="btn btn-primary">Create Task</a>
-            <a href="{% url 'machine_log_create' machine.slug %}" class="btn btn-primary">Log Work</a>
             <a href="{% url 'machine_public' machine.slug %}" class="btn btn-secondary">Public Page</a>
             <a href="{% url 'machine_qr' machine.slug %}" class="btn btn-secondary">QR Code</a>
         </div>
@@ -192,128 +190,61 @@
         </div>
     </div>
 
-    {% if open_problem_reports or closed_problem_reports_count > 0 %}
-    <div class="recent-reports">
-        <h2>Open Problem Reports</h2>
-        {% if open_problem_reports %}
-            <div class="reports-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Description</th>
-                            <th>Reported By</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for report in open_problem_reports %}
-                        <tr onclick="window.location='{% url 'task_detail' report.pk %}'" class="clickable-row">
-                            <td>{{ report.created_at|smart_date }}</td>
-                            <td>
-                                {% if report.problem_type == 'other' and report.problem_text %}
-                                    {{ report.problem_text|truncatechars:60 }}
-                                {% elif report.problem_text %}
-                                    {{ report.get_problem_type_display }} - {{ report.problem_text|truncatechars:60 }}
-                                {% else %}
-                                    {{ report.get_problem_type_display }}
-                                {% endif %}
-                            </td>
-                            <td>{{ report|creator_display }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <p>No open problem reports{% if closed_problem_reports_count > 0 %} ({{ closed_problem_reports_count }} closed){% endif %}</p>
-        {% endif %}
-        <p style="margin-top: 15px;"><a href="{% url 'machine_tasks_list' machine.slug %}?type=problem_report">View all reports →</a></p>
-    </div>
-    {% endif %}
-
-    {% if open_tasks or closed_tasks_count > 0 %}
     <div class="recent-reports">
         <h2>Open Tasks</h2>
-        {% if open_tasks %}
-            <div class="reports-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Description</th>
-                            <th>Created By</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for task in open_tasks %}
-                        <tr onclick="window.location='{% url 'task_detail' task.pk %}'" class="clickable-row">
-                            <td>{{ task.created_at|smart_date }}</td>
-                            <td>{{ task.problem_text|truncatechars:60 }}</td>
-                            <td>{{ task|creator_display }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <p>No open tasks{% if closed_tasks_count > 0 %} ({{ closed_tasks_count }} closed){% endif %}</p>
-        {% endif %}
-        <p style="margin-top: 15px;">
-            <a href="{% url 'machine_tasks_list' machine.slug %}?type=task">View all tasks [option 1] →</a>
-            <span style="margin: 0 10px; color: #999;">|</span>
-            <a href="{% url 'machine_tasks_list_v2' machine.slug %}?type=task">View all tasks [option 2] →</a>
-        </p>
-    </div>
-    {% endif %}
 
-    {% if recent_logs or total_logs_count > 0 %}
-    <div class="recent-reports">
-        <h2>Recent Work</h2>
-        {% if recent_logs %}
-            <div class="reports-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Description</th>
-                            <th>Created By</th>
-                            <th>Status Change</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for log in recent_logs %}
-                        <tr onclick="window.location='{% url 'machine_log_detail' machine.slug log.pk %}'" class="clickable-row">
-                            <td>{{ log.created_at|smart_date }}</td>
-                            <td>{{ log.text|truncatechars:80 }}</td>
-                            <td>
-                                {% if log.maintainers.all %}
-                                    {% for maintainer in log.maintainers.all %}
-                                        {{ maintainer.short_name }}{% if not forloop.last %}, {% endif %}
-                                    {% endfor %}
-                                {% else %}
-                                    System
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if log.machine_status %}
-                                    <span class="badge badge-{{ log.machine_status }} badge-small">
-                                        {{ log.get_machine_status_display }}
+        {% if tasks %}
+            <div class="timeline">
+                {% for task in tasks %}
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="update-text">
+                            <p>
+                                {% if task.type == 'problem_report' %}
+                                    <span class="badge badge-{{ task.type }}">
+                                        {{ task.get_type_display }}
                                     </span>
-                                {% else %}
-                                    —
+                                    {% if task.problem_type != 'other' %}
+                                        <strong>{{ task.get_problem_type_display }}:</strong>
+                                    {% endif %}
                                 {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                <a href="{% url 'task_detail' task.pk %}">{{ task.problem_text }}</a>
+                            </p>
+                        </div>
+                        <div class="update-meta">
+                            <span class="update-author">{{ task|creator_display }}</span>
+                            <span class="update-time">{{ task.created_at|smart_date }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         {% else %}
-            <p>No recent work logs (showing last 30 days)</p>
+            <p class="no-updates">No open tasks or problem reports.</p>
         {% endif %}
-        <p style="margin-top: 15px;"><a href="{% url 'machine_log_list' machine.slug %}">View all work logs →</a></p>
+
+        <div class="maintainer-actions" style="margin-top: 30px;">
+            <h3>Add Task</h3>
+
+            <form method="post" class="update-form">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    {{ quick_form.problem_text }}
+                    {% if quick_form.problem_text.errors %}
+                        <div class="form-errors">{{ quick_form.problem_text.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="action-buttons">
+                    <button type="submit" class="btn btn-primary">
+                        Create Task
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-    {% endif %}
 
     {% if user.is_authenticated and machine.acquisition_notes %}
     <div class="machine-section">

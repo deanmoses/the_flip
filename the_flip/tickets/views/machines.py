@@ -130,50 +130,32 @@ def machine_detail(request, slug):
 
     machine = get_object_or_404(MachineInstance.objects.select_related('model'), slug=slug)
 
-    open_problem_reports = Task.objects.filter(
+    if request.method == 'POST':
+        quick_form = QuickTaskCreateForm(request.POST)
+        if quick_form.is_valid():
+            task = quick_form.save(commit=False)
+            task.machine = machine
+            task.reported_by_user = request.user
+            task.reported_by_name = request.user.get_full_name() or request.user.username
+            task.save()
+            messages.success(request, 'Task created successfully.')
+            return redirect('machine_detail', slug=machine.slug)
+    else:
+        quick_form = QuickTaskCreateForm()
+
+    # Show only open tasks and problem reports, ordered chronologically (oldest first, like messages)
+    tasks = Task.objects.filter(
         machine=machine,
-        type=Task.TYPE_PROBLEM_REPORT,
-        status=Task.STATUS_OPEN,
-    ).order_by('-created_at')[:5]
-
-    closed_problem_reports_count = Task.objects.filter(
-        machine=machine,
-        type=Task.TYPE_PROBLEM_REPORT,
-        status=Task.STATUS_CLOSED,
-    ).count()
-
-    open_tasks = Task.objects.filter(
-        machine=machine,
-        type=Task.TYPE_TASK,
-        status=Task.STATUS_OPEN,
-    ).order_by('-created_at')[:5]
-
-    closed_tasks_count = Task.objects.filter(
-        machine=machine,
-        type=Task.TYPE_TASK,
-        status=Task.STATUS_CLOSED,
-    ).count()
-
-    one_month_ago = timezone.now() - timezone.timedelta(days=30)
-    recent_logs = (
-        LogEntry.objects.filter(machine=machine, created_at__gte=one_month_ago)
-        .prefetch_related('maintainers__user')
-        .order_by('-created_at')[:5]
-    )
-
-    total_logs_count = LogEntry.objects.filter(machine=machine).count()
+        status=Task.STATUS_OPEN
+    ).order_by('created_at')
 
     return render(
         request,
         'tickets/machine_detail.html',
         {
             'machine': machine,
-            'open_problem_reports': open_problem_reports,
-            'closed_problem_reports_count': closed_problem_reports_count,
-            'open_tasks': open_tasks,
-            'closed_tasks_count': closed_tasks_count,
-            'recent_logs': recent_logs,
-            'total_logs_count': total_logs_count,
+            'tasks': tasks,
+            'quick_form': quick_form,
         },
     )
 
