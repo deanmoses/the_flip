@@ -23,10 +23,10 @@
                     <div class="timeline-content">
                         <div class="update-text">
                             <p>
-                                <span class="badge badge-{{ task.type }}">
-                                    {{ task.get_type_display }}
-                                </span>
                                 {% if task.type == 'problem_report' %}
+                                    <span class="badge badge-{{ task.type }}">
+                                        {{ task.get_type_display }}
+                                    </span>
                                     {% if task.problem_type != 'other' %}
                                         <strong>{{ task.get_problem_type_display }}:</strong>
                                     {% endif %}
@@ -48,7 +48,7 @@
     </div>
 
     <div class="maintainer-actions">
-        <h3>Add New Task</h3>
+        <h3>Add Task</h3>
 
         <form method="post" class="update-form">
             {% csrf_token %}
