@@ -1,6 +1,6 @@
 {% extends 'tickets/base.html' %}
 
-{% block title %}Tasks & Reports - {{ machine.name }}{% endblock %}
+{% block title %}Tasks - {{ machine.name }}{% endblock %}
 
 {% block content %}
 <div class="breadcrumb">
@@ -8,7 +8,7 @@
 </div>
 
 <div class="page-header">
-    <h1>Tasks & Reports for {{ machine.name }}</h1>
+    <h1>Tasks for {{ machine.name }}</h1>
     <a href="{% url 'machine_task_create' machine.slug %}" class="btn btn-primary">Create Task</a>
 </div>
 
@@ -96,7 +96,7 @@
     {% endif %}
 {% else %}
     <div class="no-results">
-        <p>No tasks or reports found for this machine.</p>
+        <p>No tasks found for this machine.</p>
     </div>
 {% endif %}
 {% endblock %}
