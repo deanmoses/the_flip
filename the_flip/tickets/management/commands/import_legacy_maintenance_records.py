@@ -8,7 +8,7 @@ from datetime import datetime
 
 
 class Command(BaseCommand):
-    help = 'Import legacy maintenance records from CSV files (replaces create_sample_problem_reports)'
+    help = 'Import legacy maintenance records from CSV data'
 
     def __init__(self):
         super().__init__()
@@ -19,6 +19,17 @@ class Command(BaseCommand):
             'The Getaway: High Speed 2': 'The Getaway: High Speed II',
             'Hulk': 'The Incredible Hulk',
         }
+        # Hardcoded mapping for known maintainer name misspellings
+        self.maintainer_name_mapping = {
+            'Wlliam': 'William',
+        }
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--clear',
+            action='store_true',
+            help='Clear existing data before importing',
+        )
 
     def normalize_name(self, name):
         """Normalize a name by removing capitalization, whitespace, and punctuation"""
@@ -56,6 +67,10 @@ class Command(BaseCommand):
         """Find a maintainer by name using normalized matching"""
         if not maintainer_name:
             return None
+
+        # First check if there's a mapping for this name
+        if maintainer_name in self.maintainer_name_mapping:
+            maintainer_name = self.maintainer_name_mapping[maintainer_name]
 
         normalized_search = self.normalize_name(maintainer_name)
 
@@ -106,6 +121,20 @@ class Command(BaseCommand):
         return timezone.now()
 
     def handle(self, *args, **options):
+        clear = options.get('clear', False)
+
+        if clear:
+            self.stdout.write(self.style.WARNING('\n=== Clearing existing Tasks and LogEntries ==='))
+            task_count = Task.objects.count()
+            log_count = LogEntry.objects.count()
+            Task.objects.all().delete()
+            LogEntry.objects.all().delete()
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f'✓ Deleted {task_count} tasks and {log_count} log entries\n'
+                )
+            )
+
         base_path = os.path.join(
             os.path.dirname(__file__),
             '../../../..',
@@ -131,11 +160,12 @@ class Command(BaseCommand):
             )
 
     def import_problems(self, csv_path):
-        """Import problems from Maintenance - Problems.csv as Tasks"""
-        self.stdout.write(self.style.SUCCESS('\n=== Importing Problems as Tasks ==='))
+        """Import problems from Maintenance - Problems.csv"""
+        self.stdout.write(self.style.SUCCESS('\n=== Importing Problems  ==='))
 
         created_count = 0
         error_count = 0
+        warning_count = 0
 
         with open(csv_path, 'r', encoding='utf-8') as csvfile:
             reader = csv.DictReader(csvfile)
@@ -172,8 +202,9 @@ class Command(BaseCommand):
                     maintainer = self.find_maintainer(maintainer_name)
                     if not maintainer:
                         self.stdout.write(
-                            self.style.WARNING(f'Maintainer not found: "{maintainer_name}", creating task anyway')
+                            self.style.WARNING(f'⚠️  Warning: Maintainer not found: "{maintainer_name}", creating task anyway')
                         )
+                        warning_count += 1
 
                 # Parse date
                 created_at = self.parse_date(timestamp)
@@ -208,16 +239,17 @@ class Command(BaseCommand):
         self.stdout.write('')
         self.stdout.write(
             self.style.SUCCESS(
-                f'Problems import complete: {created_count} created, {error_count} errors'
+                f'Problems import complete: {created_count} created, {error_count} errors, {warning_count} warnings'
             )
         )
 
     def import_log_entries(self, csv_path):
-        """Import log entries from Maintenance - Log entries.csv as standalone LogEntries"""
+        """Import log entries from Maintenance - Log entries.csv"""
         self.stdout.write(self.style.SUCCESS('\n=== Importing Log Entries ==='))
 
         created_count = 0
         error_count = 0
+        warning_count = 0
 
         with open(csv_path, 'r', encoding='utf-8') as csvfile:
             reader = csv.DictReader(csvfile)
@@ -283,9 +315,10 @@ class Command(BaseCommand):
                         else:
                             self.stdout.write(
                                 self.style.WARNING(
-                                    f'Maintainer not found: "{maintainer_name}" for log entry'
+                                    f'⚠️  Warning: Maintainer not found: "{maintainer_name}" for log entry'
                                 )
                             )
+                            warning_count += 1
 
                     if maintainers_found:
                         log_entry.maintainers.set(maintainers_found)
@@ -299,6 +332,6 @@ class Command(BaseCommand):
         self.stdout.write('')
         self.stdout.write(
             self.style.SUCCESS(
-                f'Log entries import complete: {created_count} created, {error_count} errors'
+                f'Log entries import complete: {created_count} created, {error_count} errors, {warning_count} warnings'
             )
         )
