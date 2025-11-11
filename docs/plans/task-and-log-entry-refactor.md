@@ -180,7 +180,20 @@ This replaces `create_sample_problem_reports.py` (but don't delete the old one y
   - [ ] Keep "Problem Report" terminology in public-facing templates
   - [ ] Update variable names (report → task in context)
   - [ ] Update maintainer templates with "Task" and "Log Entry" terminology
-- [ ] Update admin.py if it exists
+- [ ] Update admin.py
+  - [ ] Update imports: `ProblemReport` → `Task`, `ReportUpdate` → `LogEntry`
+  - [ ] Update `ProblemReportAdmin` → `TaskAdmin`
+    - [ ] Update list_display to show `type` field
+    - [ ] Add list_filter for `type` field (problem_report vs task)
+    - [ ] Update Meta verbose_name to "Task" / "Tasks"
+  - [ ] Update `ReportUpdateAdmin` → `LogEntryAdmin`
+    - [ ] Update list_display: `report` → `task`, `maintainer` → show maintainers (m2m)
+    - [ ] Update search_fields: `report__` → `task__`
+    - [ ] Handle many-to-many maintainers display
+    - [ ] Update Meta verbose_name to "Log Entry" / "Log Entries"
+  - [ ] Update custom ordering in `game_maintenance_order` dict:
+    - [ ] 'Problem Reports' → 'Tasks'
+    - [ ] 'Problem Report Updates' → 'Log Entries'
 
 ### Phase 3: New Features
 - [ ] Create "Create Task" view and form
