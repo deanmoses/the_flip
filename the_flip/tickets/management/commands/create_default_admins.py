@@ -14,15 +14,8 @@ class Command(BaseCommand):
         # Default admin users configuration
         default_admins = [
             {
-                "username": "admin",
-                "email": "admin@theflip.com",
-                "first_name": "Admin",
-                "last_name": "User",
-                "password": "test123"
-            },
-            {
                 "username": "moses",
-                "email": "moses@theflip.com",
+                "email": "moses@tacocat.com",
                 "first_name": "Dean",
                 "last_name": "Moses",
                 "password": "test123"
