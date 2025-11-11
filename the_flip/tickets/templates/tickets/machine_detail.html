@@ -95,6 +95,28 @@
         background: #f0f8ff;
     }
 
+    .machine-section {
+        margin-bottom: 30px;
+    }
+
+    .machine-section h2 {
+        margin-bottom: 15px;
+        color: #2c3e50;
+        font-size: 1.4em;
+    }
+
+    .acquisition-notes {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 6px;
+        border-left: 4px solid #2196F3;
+        color: #2c3e50;
+        line-height: 1.6;
+    }
+
+    .recent-reports {
+        margin-bottom: 40px;
+    }
 
     .recent-reports h2 {
         margin-bottom: 20px;
@@ -218,5 +240,14 @@
             <p>No problem reports for this machine yet.</p>
         {% endif %}
     </div>
+
+    {% if user.is_authenticated and machine.acquisition_notes %}
+    <div class="machine-section">
+        <h2>Acquisition Notes</h2>
+        <div class="acquisition-notes">
+            {{ machine.acquisition_notes|linebreaksbr }}
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
