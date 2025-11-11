@@ -7,7 +7,7 @@
     <div class="page-header">
         <h1>
             {% if machine %}
-                Report a Problem With <a href="{% url 'machine_detail' machine.slug %}">{{ machine.name }}</a>
+                Report a Problem With {{ machine.name }}
             {% else %}
                 Report a Problem
             {% endif %}
