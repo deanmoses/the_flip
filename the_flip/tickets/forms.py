@@ -357,7 +357,7 @@ class QuickTaskCreateForm(forms.ModelForm):
         widgets = {
             'problem_text': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Enter task description...',
+                'placeholder': 'New task description...',
                 'style': 'flex: 1;'
             }),
         }
