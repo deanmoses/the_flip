@@ -180,7 +180,7 @@
         <div class="maintainers-list">
             {% for maintainer in log_entry.maintainers.all %}
                 <span class="maintainer-chip">
-                    {{ maintainer.user.get_full_name|default:maintainer.user.username }}
+                    {{ maintainer.short_name }}
                 </span>
             {% endfor %}
         </div>

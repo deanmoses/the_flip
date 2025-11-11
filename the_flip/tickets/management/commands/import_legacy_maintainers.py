@@ -57,6 +57,7 @@ class Command(BaseCommand):
                 first_name = row.get('First Name', '').strip()
                 last_name = row.get('Last Name', '').strip()
                 email = row.get('Email', '').strip()
+                nickname = row.get('Nickname', '').strip()
 
                 # Generate username if not provided (lowercase first name)
                 if username_from_csv:
@@ -105,7 +106,8 @@ class Command(BaseCommand):
                 Maintainer.objects.create(
                     user=user,
                     phone='',
-                    is_active=True
+                    is_active=True,
+                    nickname=nickname
                 )
 
         # Summary

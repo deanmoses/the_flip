@@ -192,7 +192,7 @@ class Command(BaseCommand):
 
                 # Set reporter info if we have a maintainer
                 if maintainer:
-                    task.reported_by_name = maintainer.user.get_full_name() or maintainer.user.username
+                    task.reported_by_user = maintainer.user
 
                 task.save()
 

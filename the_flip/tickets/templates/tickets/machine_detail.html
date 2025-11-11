@@ -1,4 +1,5 @@
 {% extends 'tickets/base.html' %}
+{% load reporter_tags %}
 
 {% block title %}{{ machine.name }} - The Flip{% endblock %}
 
@@ -217,7 +218,7 @@
                                     {{ report.get_problem_type_display }}
                                 {% endif %}
                             </td>
-                            <td>{{ report.reported_by_name|default:"Anonymous" }}</td>
+                            <td>{{ report|creator_display }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -248,7 +249,7 @@
                         <tr onclick="window.location='{% url 'task_detail' task.pk %}'" class="clickable-row">
                             <td>{{ task.created_at|date:"M d, Y g:i A" }}</td>
                             <td>{{ task.problem_text|truncatechars:60 }}</td>
-                            <td>{{ task.reported_by_name|default:"Anonymous" }}</td>
+                            <td>{{ task|creator_display }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -283,7 +284,7 @@
                             <td>
                                 {% if log.maintainers.all %}
                                     {% for maintainer in log.maintainers.all %}
-                                        {{ maintainer.user.get_full_name|default:maintainer.user.username }}{% if not forloop.last %}, {% endif %}
+                                        {{ maintainer.short_name }}{% if not forloop.last %}, {% endif %}
                                     {% endfor %}
                                 {% else %}
                                     System

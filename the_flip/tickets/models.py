@@ -308,9 +308,24 @@ class Maintainer(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     phone = models.CharField(max_length=50, blank=True)
     is_active = models.BooleanField(default=True)
+    nickname = models.CharField(max_length=50, blank=True)
 
     def __str__(self):
         return self.user.get_full_name() or self.user.get_username()
+
+    @property
+    def short_name(self):
+        """Return the shortest appropriate name for display in lists and comments.
+        Precedence: nickname -> first_name -> last_name -> email -> username"""
+        if self.nickname:
+            return self.nickname
+        if self.user.first_name:
+            return self.user.first_name
+        if self.user.last_name:
+            return self.user.last_name
+        if self.user.email:
+            return self.user.email
+        return self.user.username
 
 
 class TaskQuerySet(models.QuerySet):

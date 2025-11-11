@@ -1,4 +1,5 @@
 {% extends 'tickets/base.html' %}
+{% load reporter_tags %}
 
 {% block title %}Tasks - {{ machine.name }}{% endblock %}
 
@@ -71,7 +72,7 @@
                                     {{ task.problem_text|truncatechars:80 }}
                                 {% endif %}
                             </td>
-                            <td>{{ task.reported_by_name|default:"Anonymous" }}</td>
+                            <td>{{ task|creator_display }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>

@@ -60,7 +60,7 @@
                             <strong>
                                 {% if log_entry.maintainers.all %}
                                     {% for maintainer in log_entry.maintainers.all %}
-                                        {{ maintainer.user.get_full_name|default:maintainer.user.username }}{% if not forloop.last %}, {% endif %}
+                                        {{ maintainer.short_name }}{% if not forloop.last %}, {% endif %}
                                     {% endfor %}
                                 {% else %}
                                     System
