@@ -8,7 +8,7 @@ User = get_user_model()
 
 
 class Command(BaseCommand):
-    help = 'Import maintainers from legacy CSV data (replaces create_default_admins and create_default_maintainers)'
+    help = 'Import maintainers from legacy CSV data'
 
     def add_arguments(self, parser):
         parser.add_argument(
