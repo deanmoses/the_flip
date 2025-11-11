@@ -7,6 +7,7 @@ import qrcode
 import qrcode.image.svg
 from PIL import Image
 
+from django import forms
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -198,21 +199,17 @@ def report_detail(request, pk):
     })
 
 
-def report_create(request, machine_slug=None):
+def problem_report_create(request, slug):
     """
-    Create a new problem report.
+    Visitor-facing problem report form (public access).
 
-    If machine_slug is provided (QR code scenario), the machine is pre-selected.
-    Otherwise, user selects from dropdown.
-
-    Accessible to everyone (public + maintainers).
+    Machine is pre-selected from the URL slug.
+    This is the simplified interface accessed via QR codes at /p/<slug>/.
     """
-    machine = None
-    if machine_slug:
-        machine = get_object_or_404(
-            MachineInstance.objects.exclude(operational_status=MachineInstance.OPERATIONAL_STATUS_BROKEN),
-            slug=machine_slug
-        )
+    machine = get_object_or_404(
+        MachineInstance.objects.exclude(operational_status=MachineInstance.OPERATIONAL_STATUS_BROKEN),
+        slug=slug
+    )
 
     if request.method == 'POST':
         form = ProblemReportCreateForm(request.POST, machine=machine, user=request.user)
@@ -278,7 +275,7 @@ def task_create_todo(request):
 
 
 @login_required
-def log_work(request, slug):
+def machine_log_create(request, slug):
     """
     Create a standalone work log entry for a machine (maintainers only).
     This is for recording work done that's not tied to a specific task/problem report.
@@ -294,8 +291,9 @@ def log_work(request, slug):
         form = LogWorkForm(request.POST, machine=machine)
         if form.is_valid():
             log_entry = form.save(commit=False)
-            # Standalone work logs have no associated task
+            # Standalone work logs have no associated task but must have machine
             log_entry.task = None
+            log_entry.machine = machine
             log_entry.save()
 
             # Get maintainer object (None for staff users without maintainer record)
@@ -379,7 +377,7 @@ def machine_list(request):
 @login_required
 def machine_detail(request, slug):
     """
-    Display machine details with recent reports.
+    Display machine details with problem reports, tasks, and work logs.
     Only accessible to authenticated staff and maintainers.
     """
     # Check permission (staff users or maintainers)
@@ -389,12 +387,130 @@ def machine_detail(request, slug):
 
     machine = get_object_or_404(MachineInstance.objects.select_related('model'), slug=slug)
 
-    # Get recent reports for this machine
-    recent_reports = Task.objects.filter(machine=machine).order_by('-created_at')[:10]
+    # Get recent tasks and problem reports (merged)
+    recent_tasks = Task.objects.filter(
+        machine=machine
+    ).order_by('-created_at')[:5]
+
+    # Get recent work logs for this machine
+    recent_logs = LogEntry.objects.filter(
+        machine=machine
+    ).prefetch_related('maintainers__user').order_by('-created_at')[:5]
 
     return render(request, 'tickets/machine_detail.html', {
         'machine': machine,
-        'recent_reports': recent_reports,
+        'recent_tasks': recent_tasks,
+        'recent_logs': recent_logs,
+    })
+
+
+@login_required
+def machine_tasks_list(request, slug):
+    """
+    List all tasks and problem reports for a specific machine (maintainers only).
+    Supports filtering by type (all/problem reports/tasks) and status (all/open/closed).
+    """
+    # Check permission (staff users or maintainers)
+    if not (request.user.is_staff or hasattr(request.user, 'maintainer')):
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('task_list')
+
+    machine = get_object_or_404(MachineInstance.objects.select_related('model'), slug=slug)
+
+    # Start with all tasks for this machine
+    tasks = Task.objects.filter(machine=machine).order_by('-created_at')
+
+    # Get filter parameters
+    filter_type = request.GET.get('type', 'all')
+    filter_status = request.GET.get('status', 'all')
+
+    # Apply type filter
+    if filter_type == 'problem_reports':
+        tasks = tasks.filter(type=Task.TYPE_PROBLEM_REPORT)
+    elif filter_type == 'tasks':
+        tasks = tasks.filter(type=Task.TYPE_TASK)
+
+    # Apply status filter
+    if filter_status == 'open':
+        tasks = tasks.filter(status=Task.STATUS_OPEN)
+    elif filter_status == 'closed':
+        tasks = tasks.filter(status=Task.STATUS_CLOSED)
+
+    # Pagination
+    paginator = Paginator(tasks, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'tickets/machine_tasks_list.html', {
+        'machine': machine,
+        'page_obj': page_obj,
+        'filter_type': filter_type,
+        'filter_status': filter_status,
+    })
+
+
+@login_required
+def machine_task_create(request, slug):
+    """
+    Create a new task or problem report for a specific machine (maintainers only).
+    Machine is pre-selected from URL. Defaults to task type.
+    """
+    # Check permission (staff users or maintainers)
+    if not (request.user.is_staff or hasattr(request.user, 'maintainer')):
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('task_list')
+
+    machine = get_object_or_404(MachineInstance, slug=slug)
+
+    if request.method == 'POST':
+        form = TaskCreateForm(request.POST)
+        if form.is_valid():
+            task = form.save(commit=False)
+            task.machine = machine
+            task.reported_by_user = request.user
+            task.reported_by_name = request.user.get_full_name() or request.user.username
+            task.save()
+
+            messages.success(request, 'Task created successfully.')
+            return redirect('task_detail', pk=task.pk)
+    else:
+        form = TaskCreateForm(initial={'machine': machine})
+
+    # Hide the machine field since it's determined by the URL
+    form.fields['machine'].widget = forms.HiddenInput()
+
+    return render(request, 'tickets/machine_task_create.html', {
+        'form': form,
+        'machine': machine,
+    })
+
+
+@login_required
+def machine_log_list(request, slug):
+    """
+    List all work log entries for a specific machine (maintainers only).
+    Shows standalone logs and task-related logs.
+    """
+    # Check permission (staff users or maintainers)
+    if not (request.user.is_staff or hasattr(request.user, 'maintainer')):
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('task_list')
+
+    machine = get_object_or_404(MachineInstance.objects.select_related('model'), slug=slug)
+
+    # Get all logs for this machine (both standalone and task-related)
+    logs = LogEntry.objects.filter(
+        machine=machine
+    ).prefetch_related('maintainers__user', 'task').order_by('-created_at')
+
+    # Pagination
+    paginator = Paginator(logs, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'tickets/machine_log_list.html', {
+        'machine': machine,
+        'page_obj': page_obj,
     })
 
 

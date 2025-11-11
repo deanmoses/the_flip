@@ -163,7 +163,7 @@ class TaskCreateForm(forms.ModelForm):
             'problem_text': forms.Textarea(attrs={
                 'rows': 5,
                 'class': 'form-control',
-                'placeholder': 'Describe the task or work to be done...'
+                'placeholder': 'Describe the work to be done...'
             }),
         }
         labels = {

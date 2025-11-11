@@ -451,6 +451,7 @@ class Task(models.Model):
         """
         log_entry = LogEntry.objects.create(
             task=self,
+            machine=self.machine,
             text=text,
         )
         if maintainers:
@@ -475,6 +476,7 @@ class Task(models.Model):
 
         log_entry = LogEntry.objects.create(
             task=self,
+            machine=self.machine,
             status=status,
             text=text,
         )
@@ -514,6 +516,7 @@ class Task(models.Model):
 
         log_entry = LogEntry.objects.create(
             task=self,
+            machine=self.machine,
             machine_status=machine_status,
             status=new_task_status if new_task_status else None,
             text=text,
@@ -530,6 +533,15 @@ class LogEntry(models.Model):
         related_name="log_entries",
         null=True,
         blank=True,
+    )
+    machine = models.ForeignKey(
+        MachineInstance,
+        on_delete=models.CASCADE,
+        related_name="log_entries",
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Machine this log entry is associated with (required for standalone logs)",
     )
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     maintainers = models.ManyToManyField(
