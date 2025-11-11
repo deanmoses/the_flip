@@ -555,7 +555,7 @@ textarea.form-control {
 
 .timeline-item {
     position: relative;
-    padding-bottom: 2rem;
+    padding-bottom: 1rem;
 }
 
 .timeline-item:last-child {
@@ -565,19 +565,19 @@ textarea.form-control {
 .timeline-marker {
     position: absolute;
     left: -2rem;
-    width: 12px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
     background-color: #3498db;
     border-radius: 50%;
-    top: 0.5rem;
+    top: 0.25rem;
 }
 
 .timeline-item::before {
     content: '';
     position: absolute;
-    left: -1.45rem;
-    top: 1.2rem;
-    bottom: -1rem;
+    left: -1.5rem;
+    top: 0.75rem;
+    bottom: -0.5rem;
     width: 2px;
     background-color: #ecf0f1;
 }
@@ -588,26 +588,37 @@ textarea.form-control {
 
 .timeline-content {
     background-color: #f8f9fa;
-    padding: 1rem;
+    padding: 0.75rem 1rem;
     border-radius: 4px;
-}
-
-.update-header {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    margin-bottom: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.update-time {
-    color: #7f8c8d;
-    font-size: 0.9rem;
 }
 
 .update-text {
     color: #2c3e50;
     line-height: 1.6;
+    margin-bottom: 0.5rem;
+}
+
+.update-text p {
+    margin: 0;
+}
+
+.update-meta {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    color: #7f8c8d;
+}
+
+.update-author {
+    color: #555;
+    font-weight: normal;
+}
+
+.update-time {
+    color: #999;
+    font-size: 0.8rem;
 }
 
 .no-updates {

@@ -30,8 +30,11 @@
                 <div class="timeline-item">
                     <div class="timeline-marker"></div>
                     <div class="timeline-content">
-                        <div class="update-header">
-                            <strong>
+                        <div class="update-text">
+                            {{ log_entry.text|linebreaks }}
+                        </div>
+                        <div class="update-meta">
+                            <span class="update-author">
                                 {% if log_entry.maintainers.all %}
                                     {% for maintainer in log_entry.maintainers.all %}
                                         {{ maintainer.short_name }}{% if not forloop.last %}, {% endif %}
@@ -39,24 +42,18 @@
                                 {% else %}
                                     System
                                 {% endif %}
-                            </strong>
+                            </span>
                             <span class="update-time">{{ log_entry.created_at|smart_date }}</span>
                             {% if log_entry.machine_status %}
                                 <span class="badge badge-{{ log_entry.machine_status }} badge-small">
                                     Machine: {{ log_entry.get_machine_status_display }}
                                 </span>
                             {% endif %}
-                            {% if log_entry.machine_status and log_entry.status %}
-                                <span style="margin: 0 8px; color: #999;">→</span>
-                            {% endif %}
                             {% if log_entry.status %}
                                 <span class="badge badge-{{ log_entry.status }} badge-small">
                                     Report: {{ log_entry.get_status_display }}
                                 </span>
                             {% endif %}
-                        </div>
-                        <div class="update-text">
-                            {{ log_entry.text|linebreaks }}
                         </div>
                     </div>
                 </div>
