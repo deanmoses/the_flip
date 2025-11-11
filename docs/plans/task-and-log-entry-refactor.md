@@ -206,8 +206,25 @@ This replaces `create_sample_problem_reports.py` (but don't delete the old one y
 - [ ] Add "Recent Work Log" section to Machine Detail
 - [ ] Update report/task list page to show Tasks
 
-### Phase 4: Legacy Data Import
+### Phase 4a: Maintainer Import
+- [ ] Create management command `import_legacy_maintainers.py`
+  - [ ] This will replace `create_default_admins.py` and `create_default_maintainers.py`, but don't delete them yet
+  - [ ] Read from `docs/legacy_data/Maintainers.csv`
+  - [ ] Handle both admins and regular maintainers based on "Is Admin" column
+  - [ ] Username generation:
+    - [ ] Use Username column if provided
+    - [ ] For blank usernames: generate by lower-casing First Name
+  - [ ] Set all passwords to `test123`
+  - [ ] Leave emails blank where not provided in CSV
+  - [ ] Support `--clear` flag to delete existing non-superuser users and maintainers
+  - [ ] Idempotent behavior: skip existing users, don't update them
+  - [ ] Create User accounts (superuser for admins, regular user for maintainers)
+  - [ ] Create Maintainer profiles for all users
+- [ ] Update `build.sh` to replace calls to `create_default_admins` and `create_default_maintainers` with `import_legacy_maintainers`
+
+### Phase 4b: Maintenance Records Import
 - [ ] Create management command `import_legacy_maintenance_records.py`
+  - [ ] This will replace `create_sample_problem_reports.py`, but don't delete it yet
   - [ ] Clean up CSVs automatically on first read
     - [ ] Use Python's csv module with proper quoting to handle multi-line fields
     - [ ] No need to rewrite files - just parse correctly in memory
@@ -220,6 +237,7 @@ This replaces `create_sample_problem_reports.py` (but don't delete the old one y
   - [ ] Match maintainers by name (normalize same way as machines)
   - [ ] Create LogEntries with correct dates (override created_at)
   - [ ] Associate multiple maintainers with each LogEntry
+- [ ] Update `build.sh` to replace call to `create_sample_problem_reports` with `import_legacy_maintenance_records`
 
 ### Phase 5: Testing & Verification
 - [ ] Test Task creation (public and maintainer)
