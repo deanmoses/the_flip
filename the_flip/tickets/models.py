@@ -332,6 +332,44 @@ class ProblemReport(models.Model):
     def __str__(self):
         return f"{self.machine.name} – {self.get_problem_type_display()}"
 
+    def get_reporter_display(self, show_for_authenticated=False):
+        """
+        Get reporter information for display.
+
+        For public (unauthenticated) view:
+            - Shows reporter name if provided
+            - Otherwise returns empty string
+
+        For authenticated view: returns first available from priority list:
+            1. Reporter user's full name or username (if reported by authenticated user)
+            2. Reporter name (from anonymous submission)
+            3. Reporter email
+            4. Reporter phone
+            5. User agent
+            6. Empty string
+        """
+        # For authenticated users, show reporter info with full priority fallback
+        if show_for_authenticated:
+            if self.reported_by_user:
+                # If reported by a logged-in user, show their name
+                return self.reported_by_user.get_full_name() or self.reported_by_user.username
+
+            # For anonymous reports, use priority fallback
+            if self.reported_by_name:
+                return self.reported_by_name
+            if self.reported_by_contact:
+                return self.reported_by_contact
+            if self.device_info:
+                return self.device_info
+
+            return ""
+
+        # For unauthenticated users, only show name if provided
+        if self.reported_by_name:
+            return self.reported_by_name
+
+        return ""
+
     def add_note(self, maintainer: "Maintainer | None", text: str):
         """
         Convenience method to append a note to this report.

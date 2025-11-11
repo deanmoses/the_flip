@@ -1,4 +1,5 @@
 {% extends 'tickets/base.html' %}
+{% load reporter_tags %}
 
 {% block title %}Problem Reports - The Flip{% endblock %}
 
@@ -102,7 +103,9 @@
                             <th>Problem</th>
                             <th>Status</th>
                             <th>Reported</th>
+                            {% if user.is_authenticated %}
                             <th>Reporter</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -124,7 +127,9 @@
                                 </span>
                             </td>
                             <td>{{ report.created_at|date:"M d, Y g:i A" }}</td>
-                            <td>{{ report.reported_by_name|default:"Anonymous" }}</td>
+                            {% if user.is_authenticated %}
+                            <td>{% reporter_display report %}</td>
+                            {% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>

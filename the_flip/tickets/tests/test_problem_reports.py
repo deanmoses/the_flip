@@ -200,3 +200,103 @@ class ProblemReportFormMachineFilteringTests(TestCase):
 
         # Machine should be pre-selected
         self.assertEqual(form.fields['machine'].initial, self.workshop_good)
+
+
+@override_settings(
+    STORAGES={
+        'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+    }
+)
+class ReportListPrivacyTests(TestCase):
+    """Tests to ensure public view doesn't expose personal data."""
+
+    def setUp(self):
+        cache.clear()
+        # Create a machine model and instance
+        self.model = MachineModel.objects.create(
+            name='Test Game',
+            manufacturer='Bally',
+            year=1995,
+            era=MachineModel.ERA_SS,
+        )
+        self.machine = MachineInstance.objects.create(
+            model=self.model,
+            location=MachineInstance.LOCATION_FLOOR,
+            operational_status=MachineInstance.OPERATIONAL_STATUS_GOOD,
+        )
+
+        # Create a problem report with personal data
+        self.report = ProblemReport.objects.create(
+            machine=self.machine,
+            problem_type=ProblemReport.PROBLEM_STUCK_BALL,
+            problem_text='Ball stuck in left ramp.',
+            reported_by_name='John Doe',
+            reported_by_contact='john.doe@email.com',
+            device_info='iPhone 13',
+            ip_address='192.168.1.100',
+        )
+
+        self.url = reverse('report_list')
+
+    def test_public_view_does_not_show_reporter_column(self):
+        """Public (unauthenticated) view should not show Reporter column at all."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+
+        # Should not contain the Reporter column header
+        # Note: We use a regex-like check - if "Reporter" appears as a header, it would be in <th>
+        content = response.content.decode('utf-8')
+        # Check that we don't have a Reporter header in the table
+        self.assertNotIn('<th>Reporter</th>', content)
+
+    def test_public_view_does_not_show_reporter_email(self):
+        """Public view should not display reporter email."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+
+        # Should not contain the reporter's email
+        self.assertNotContains(response, 'john.doe@email.com')
+
+    def test_public_view_does_not_show_reporter_phone(self):
+        """Public view should not display reporter phone."""
+        # Create a report with phone number
+        report_with_phone = ProblemReport.objects.create(
+            machine=self.machine,
+            problem_type=ProblemReport.PROBLEM_NO_CREDITS,
+            problem_text='No credits showing.',
+            reported_by_name='Jane Smith',
+            reported_by_contact='415-555-1234',
+        )
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+
+        # Should not contain the reporter's phone or name (entire Reporter column is hidden)
+        self.assertNotContains(response, '415-555-1234')
+        self.assertNotContains(response, 'Jane Smith')
+
+    def test_public_view_does_not_show_device_info(self):
+        """Public view should not display device/user agent info."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+
+        # Should not contain device info
+        self.assertNotContains(response, 'iPhone 13')
+
+    def test_public_view_does_not_show_ip_address(self):
+        """Public view should not display IP address."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+
+        # Should not contain IP address
+        self.assertNotContains(response, '192.168.1.100')
+
+    def test_public_view_shows_machine_and_problem_info(self):
+        """Public view should still show non-personal information."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+
+        # Should contain machine name and problem text (non-personal data)
+        self.assertContains(response, 'Test Game')
+        self.assertContains(response, 'Ball stuck in left ramp')

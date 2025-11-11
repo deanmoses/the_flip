@@ -1,4 +1,5 @@
 {% extends 'tickets/base.html' %}
+{% load reporter_tags %}
 
 {% block title %}{{ report.machine.name }} - Problem Report{% endblock %}
 
@@ -28,20 +29,16 @@
             </p>
         </div>
 
+        {% if user.is_authenticated %}
         <div class="info-card">
             <h3>Reported By</h3>
-            <p>{{ report.reported_by_name|default:"Anonymous" }}</p>
-            {% if report.reported_by_contact %}
-                <p class="contact-info">{{ report.reported_by_contact }}</p>
-            {% endif %}
+            <p>{% reporter_display report %}</p>
         </div>
+        {% endif %}
 
         <div class="info-card">
             <h3>Reported</h3>
             <p>{{ report.created_at|date:"M d, Y g:i A" }}</p>
-            {% if report.device_info %}
-                <p class="device-info">{{ report.device_info }}</p>
-            {% endif %}
         </div>
     </div>
 
