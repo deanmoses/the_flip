@@ -72,6 +72,54 @@ class MachineModel(models.Model):
         verbose_name="IPDB ID",
         help_text="Internet Pinball Machine Database ID number"
     )
+    production_quantity = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Number of units produced (e.g., '~50,000' or '1,600')"
+    )
+    factory_address = models.CharField(
+        max_length=300,
+        blank=True,
+        help_text="Factory address where machine was manufactured"
+    )
+
+    # Credits
+    design_credit = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Designer name (for 'Design by' credit)"
+    )
+    concept_and_design_credit = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Designer name (for 'Concept and design by' credit)"
+    )
+    art_credit = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Artist name (for 'Art by' credit)"
+    )
+    sound_credit = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Sound designer name (for 'Sound by' credit)"
+    )
+
+    # Educational content
+    educational_text = models.TextField(
+        blank=True,
+        help_text="Main educational/historical narrative for public display"
+    )
+    illustration_filename = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Filename for illustration (e.g., 'gobble_hole.svg')"
+    )
+    sources_notes = models.TextField(
+        blank=True,
+        help_text="Citations, references, and source materials"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
@@ -118,7 +166,7 @@ def generate_unique_slug(instance):
     """
     Generate a unique slug for use in URLs for a MachineInstance.
     """
-    base_name = instance.name  # Uses @property
+    base_name = instance.name
     slug = slugify(base_name)
 
     unique_slug = slug
@@ -158,7 +206,6 @@ class MachineInstance(models.Model):
         (LOCATION_WORKSHOP, "Workshop"),
     ]
 
-    # Relationship
     model = models.ForeignKey(
         MachineModel,
         on_delete=models.PROTECT,
@@ -166,7 +213,6 @@ class MachineInstance(models.Model):
         verbose_name="Machine model"
     )
 
-    # Identity
     slug = models.SlugField(
         unique=True,
         max_length=200,
@@ -179,20 +225,22 @@ class MachineInstance(models.Model):
         help_text="Optional custom name. Leave blank to use the machine model's name."
     )
 
-    # Physical identification
     serial_number = models.CharField(
         max_length=100,
         blank=True,
         help_text="Serial number from manufacturer"
     )
 
-    # Acquisition tracking
     acquisition_notes = models.TextField(
         blank=True,
         help_text="Story of the acquisition, date acquired, source, price, initial condition etc"
     )
+    ownership_credit = models.CharField(
+        max_length=300,
+        blank=True,
+        help_text="Credit line for ownership (e.g., 'The Flip Collection', 'On loan from William Pietri', 'From the collection of Sam Harvey')"
+    )
 
-    # Location & status
     location = models.CharField(
         max_length=20,
         choices=LOCATION_CHOICES,
@@ -208,7 +256,6 @@ class MachineInstance(models.Model):
         help_text="Current operational condition"
     )
 
-    # Audit
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
