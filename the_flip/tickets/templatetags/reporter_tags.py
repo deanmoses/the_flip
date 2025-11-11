@@ -71,7 +71,8 @@ def creator_display(task):
 @register.filter
 def smart_date(value):
     """
-    Format datetime for better scanning:
+    Output datetime in a <time> element with ISO format for JavaScript formatting.
+    JavaScript will convert to user's browser timezone and format as:
     - Today: "Today 9:10pm"
     - Yesterday: "Yesterday 8:35am"
     - Older: "Oct 11, 2025 3:23pm"
@@ -83,20 +84,15 @@ def smart_date(value):
     if timezone.is_naive(value):
         value = timezone.make_aware(value)
 
-    now = timezone.now()
+    from django.utils.html import format_html
 
-    # Get the date portion (midnight) of both datetimes for comparison
-    value_date = value.date()
-    today_date = now.date()
-    yesterday_date = today_date - timedelta(days=1)
+    # Output ISO format for JavaScript to parse
+    iso_format = value.isoformat()
 
-    # Format the time portion (e.g., "9:10pm")
-    time_str = value.strftime("%-I:%M%p").lower()
-
-    if value_date == today_date:
-        return f"Today {time_str}"
-    elif value_date == yesterday_date:
-        return f"Yesterday {time_str}"
-    else:
-        # Use the original format for older dates
-        return value.strftime("%b %-d, %Y ") + time_str
+    # Return semantic <time> element with datetime attribute
+    # JavaScript will update the text content to formatted local time
+    return format_html(
+        '<time datetime="{}" class="smart-date">{}</time>',
+        iso_format,
+        iso_format  # Fallback text before JS runs
+    )

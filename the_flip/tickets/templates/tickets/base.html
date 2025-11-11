@@ -63,6 +63,39 @@
         </div>
     </footer>
 
+    <script>
+        // Format all timestamps to user's local timezone
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.smart-date').forEach(function(el) {
+                const date = new Date(el.getAttribute('datetime'));
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+                const timeStr = date.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                }).toLowerCase();
+
+                if (dateOnly.getTime() === today.getTime()) {
+                    el.textContent = 'Today ' + timeStr;
+                } else if (dateOnly.getTime() === yesterday.getTime()) {
+                    el.textContent = 'Yesterday ' + timeStr;
+                } else {
+                    const dateStr = date.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                    });
+                    el.textContent = dateStr + ' ' + timeStr;
+                }
+            });
+        });
+    </script>
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>
