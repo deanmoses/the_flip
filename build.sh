@@ -16,11 +16,8 @@ python manage.py migrate
 # Collect static files
 python manage.py collectstatic --no-input
 
-# Create default admin users
-python manage.py create_default_admins
-
-# Create default maintainers
-python manage.py create_default_maintainers
+# Import legacy maintainers and make some of them admins
+python manage.py import_legacy_maintainers
 
 # Create default pinball machines
 python manage.py create_default_machines
