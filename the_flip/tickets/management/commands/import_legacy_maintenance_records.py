@@ -262,12 +262,21 @@ class Command(BaseCommand):
                 log_entry.created_at = created_at
                 log_entry.save(update_fields=['created_at'])
 
-                # Parse and associate maintainers (comma-separated)
+                # Parse and associate maintainers (comma-separated or "and"-separated)
                 if maintainers_str:
-                    maintainer_names = [name.strip() for name in maintainers_str.split(',')]
+                    # First split by commas, then by " and " for each part
+                    parts = maintainers_str.split(',')
+                    maintainer_names = []
+                    for part in parts:
+                        # Split by " and " (with spaces) to handle "Ken and William"
+                        and_parts = part.split(' and ')
+                        maintainer_names.extend([name.strip() for name in and_parts])
+
                     maintainers_found = []
 
                     for maintainer_name in maintainer_names:
+                        if not maintainer_name:  # Skip empty strings
+                            continue
                         maintainer = self.find_maintainer(maintainer_name)
                         if maintainer:
                             maintainers_found.append(maintainer)
