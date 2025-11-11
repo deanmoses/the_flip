@@ -22,17 +22,17 @@ Support three types of workflows:
 
 ### Model Renames
 
-**`Task`** (renamed from `ProblemReport`)
-- Represents both Problem Reports (visitor-created) *and* TODOs (maintainer-created)
+**`Task`** (renamed from `ProblemReport`): represents both Problem Reports *and* Tasks
 - Fields:
-  - All existing ProblemReport fields
-  - `created_by_maintainer` (boolean) - distinguish TODO from Problem Report
+  - All existing `ProblemReport` fields
+  - `type` (CharField with choices, default='problem_report')
+    - `'problem_report'` = Problem Report (usually visitor-reported but can also be reported by a maintainer, urgent, created via the existing public form accesible via QR code)
+    - `'task'` = Task (maintainer-created TODO, usually less urgent than a problem report)
   - `status` - keep existing open/closed (no new statuses)
 
-**`LogEntry`** (renamed from `ReportUpdate`)
-- Represents Problem Report Updates, TODO updates, *and* standalone work logs
+**`LogEntry`** (renamed from `ReportUpdate`): represents Problem Report Updates, TODO updates, *and* standalone work logs
 - Fields:
-  - `task` - ForeignKey to Task (null=True, blank=True)
+  - `task` - ForeignKey to `Task` (null=True, blank=True)
     - When `task` is None, it's a standalone log entry
     - When `task` is set, it's an update to that task
   - `maintainer` - **REMOVED** (replaced by many-to-many relationship)
@@ -52,12 +52,14 @@ Support three types of workflows:
 ### Migration Strategy
 
 1. Rename `ProblemReport` → `Task`
-2. Rename `ReportUpdate` → `LogEntry`
-3. Make `task` (formerly `report`) nullable
-4. Change `maintainer` from ForeignKey to ManyToManyField `maintainers`
+2. Add `type` field (CharField with choices, default='problem_report')
+   - All existing ProblemReports become Tasks with `type='problem_report'`
+3. Rename `ReportUpdate` → `LogEntry`
+4. Make `task` (formerly `report`) nullable
+5. Change `maintainer` from ForeignKey to ManyToManyField `maintainers`
    - For existing LogEntries, migrate single maintainer to many-to-many
    - Handle null maintainer case (some updates may not have a maintainer)
-5. Update all foreign key relationships and related_names
+6. Update all foreign key relationships and related_names
 
 
 ## UI Changes
@@ -72,7 +74,9 @@ Replace current "Report a Problem" button with two new buttons:
 
 Form should support:
 - All existing problem report fields
+- Created Tasks will have `type='task'` (marking them as maintainer TODOs)
 - Same permissions: anyone can create (public or maintainer)
+- Note: Public visitors creating via QR code will continue to create Tasks with `type='problem_report'`
 
 ### Log Work Flow
 
@@ -87,10 +91,22 @@ Form should have:
 
 ### Display Changes
 
-- Machine Detail: Show both Tasks and LogEntries
-- Rename "Latest Problem Reports" → "Latest Tasks"
-- Add new section: "Recent Work Log" showing standalone LogEntries
-- Keep existing status badges and UI patterns
+Machine Detail page should show three sections in this order:
+
+1. **"Problem Reports"** - Tasks where `type='problem_report'` (visitor-reported, urgent)
+   - Show status, date, problem type/text, reporter
+   - Sorted by date (newest first)
+
+2. **"Tasks"** - Tasks where `type='task'` (maintainer-created TODOs)
+   - Show status, date, description, creator
+   - Sorted by date (newest first)
+
+3. **"Work Log"** - ALL LogEntries for this machine
+   - Show date, maintainers, work description, associated task (if any)
+   - Includes both standalone entries AND entries associated with Tasks
+   - Sorted by date (newest first)
+
+Keep existing status badges and UI patterns
 
 
 ## Legacy Data Import
@@ -120,12 +136,14 @@ This replaces `create_sample_problem_reports.py` (but don't delete the old one y
 
 ### Phase 1: Data Model
 - [ ] Create migration to rename ProblemReport → Task
+- [ ] Add `type` CharField field with choices (default='problem_report' for existing records)
 - [ ] Create migration to rename ReportUpdate → LogEntry
 - [ ] Make LogEntry.task nullable
 - [ ] Change LogEntry.maintainer from ForeignKey to ManyToManyField maintainers
 - [ ] Migrate existing single maintainer data to many-to-many relationship
 - [ ] Update all model methods and properties
 - [ ] Update related_name attributes
+- [ ] Add queryset methods: Task.objects.problem_reports() and Task.objects.tasks()
 
 ### Phase 2: Update Code References
 - [ ] Update models.py - rename classes, update relationships
