@@ -284,34 +284,18 @@ def machine_tasks_list_v2(request, slug):
     else:
         quick_form = QuickTaskCreateForm()
 
-    form = MachineTaskFilterForm(request.GET or None)
-    tasks = Task.objects.filter(machine=machine).order_by('-created_at')
-
-    if form.is_valid():
-        filter_type = form.cleaned_data.get('type', 'all')
-        filter_status = form.cleaned_data.get('status', 'all')
-
-        if filter_type == 'problem_report':
-            tasks = tasks.filter(type=Task.TYPE_PROBLEM_REPORT)
-        elif filter_type == 'task':
-            tasks = tasks.filter(type=Task.TYPE_TASK)
-
-        if filter_status == 'open':
-            tasks = tasks.filter(status=Task.STATUS_OPEN)
-        elif filter_status == 'closed':
-            tasks = tasks.filter(status=Task.STATUS_CLOSED)
-
-    paginator = Paginator(tasks, 25)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    # Show only open tasks and problem reports, ordered chronologically (oldest first, like messages)
+    tasks = Task.objects.filter(
+        machine=machine,
+        status=Task.STATUS_OPEN
+    ).order_by('created_at')
 
     return render(
         request,
         'tickets/machine_tasks_list_v2.html',
         {
             'machine': machine,
-            'page_obj': page_obj,
-            'form': form,
+            'tasks': tasks,
             'quick_form': quick_form,
         },
     )
