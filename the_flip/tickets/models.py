@@ -343,10 +343,8 @@ class ProblemReport(models.Model):
         For authenticated view: returns first available from priority list:
             1. Reporter user's full name or username (if reported by authenticated user)
             2. Reporter name (from anonymous submission)
-            3. Reporter email
-            4. Reporter phone
-            5. User agent
-            6. Empty string
+            3. Reporter email or phone
+            4. Empty string
         """
         # For authenticated users, show reporter info with full priority fallback
         if show_for_authenticated:
@@ -359,8 +357,6 @@ class ProblemReport(models.Model):
                 return self.reported_by_name
             if self.reported_by_contact:
                 return self.reported_by_contact
-            if self.device_info:
-                return self.device_info
 
             return ""
 

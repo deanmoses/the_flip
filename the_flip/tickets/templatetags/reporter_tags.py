@@ -15,10 +15,8 @@ def reporter_display(context, report):
     For authenticated view: returns first available from priority list:
         1. Reporter user's full name or username (if reported by authenticated user)
         2. Reporter name (from anonymous submission)
-        3. Reporter email
-        4. Reporter phone
-        5. User agent
-        6. Empty string
+        3. Reporter email or phone
+        4. Empty string
     """
     request = context.get('request')
     user = context.get('user')
@@ -34,8 +32,6 @@ def reporter_display(context, report):
             return report.reported_by_name
         if report.reported_by_contact:
             return report.reported_by_contact
-        if report.device_info:
-            return report.device_info
 
         return ""
 

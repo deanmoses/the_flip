@@ -222,17 +222,17 @@ def report_create(request, machine_slug=None):
             else:
                 report = form.save(commit=False)
 
-                # Capture device info
-                user_agent = request.META.get('HTTP_USER_AGENT', '')
-                report.device_info = f"{user_agent[:200]}"  # Limit to 200 chars
-                report.ip_address = ip_address
-
                 # Associate authenticated user if logged in
                 if request.user.is_authenticated:
                     report.reported_by_user = request.user
                     report.reported_by_name = request.user.get_full_name() or request.user.username
                     if hasattr(request.user, 'maintainer'):
                         report.reported_by_contact = request.user.email
+                else:
+                    # Only capture device info for unauthenticated users
+                    user_agent = request.META.get('HTTP_USER_AGENT', '')
+                    report.device_info = f"{user_agent[:200]}"  # Limit to 200 chars
+                    report.ip_address = ip_address
 
                 report.save()
 

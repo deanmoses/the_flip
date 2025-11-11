@@ -69,6 +69,7 @@ class ReportCreateViewTests(TestCase):
         response = self.client.post(
             self.url,
             self._submission_payload(problem_text='Coil burnt out.'),
+            HTTP_USER_AGENT='Mozilla/5.0 (Test Browser)',
             REMOTE_ADDR='198.51.100.42',
         )
         self.assertEqual(response.status_code, 302)
@@ -76,7 +77,9 @@ class ReportCreateViewTests(TestCase):
         self.assertEqual(report.reported_by_user, user)
         self.assertEqual(report.reported_by_name, 'Tech One')
         self.assertEqual(report.reported_by_contact, 'tech@example.com')
-        self.assertEqual(report.ip_address, '198.51.100.42')
+        # Authenticated users should NOT have IP or device info captured
+        self.assertIsNone(report.ip_address)
+        self.assertEqual(report.device_info, '')
 
     @override_settings(REPORT_SUBMISSION_RATE_LIMIT_MAX=2, REPORT_SUBMISSION_RATE_LIMIT_WINDOW_SECONDS=3600)
     def test_rate_limit_blocks_submissions_from_same_ip(self):

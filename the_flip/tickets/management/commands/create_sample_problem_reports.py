@@ -77,8 +77,10 @@ class Command(BaseCommand):
                 'machine_name': 'Star Trip',
                 'type': ProblemReport.PROBLEM_OTHER,
                 'text': 'Left flipper completely dead. No response when button pressed.',
-                'reporter_name': 'Tom Wilson',  
+                'reporter_name': 'Tom Wilson',
                 'reporter_contact': 'tom.w@email.com',
+                'ip_address': '198.51.100.42',
+                'device_info': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
                 'updates': [
                     {'text': 'Opened up the cabinet. Left flipper coil is melted!', 'machine_status': MachineInstance.OPERATIONAL_STATUS_BROKEN},
                     'Investigating why coil melted - checking for electrical issues.',
@@ -105,6 +107,8 @@ class Command(BaseCommand):
                 'text': 'MPU board not booting. No display activity.',
                 'reporter_name': '',
                 'reporter_contact': '555-1234',
+                'ip_address': '203.0.113.78',
+                'device_info': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'updates': [
                     'Found corroded battery on MPU board. Battery had leaked.',
                     'Cleaning battery acid damage from traces.',
@@ -115,7 +119,9 @@ class Command(BaseCommand):
                 'machine_name': 'Blackout',
                 'type': ProblemReport.PROBLEM_OTHER,
                 'text': 'Coin door lock is broken. Need to replace before putting on floor.',
-                'reporter_name': '',  
+                'reporter_name': '',
+                'ip_address': '198.51.100.123',
+                'device_info': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15',
                 'updates': [
                     {'text': 'Lock ordered. Should arrive in 3-5 days.', 'machine_status': MachineInstance.OPERATIONAL_STATUS_FIXING},
                     {'text': 'Lock installed. Works perfectly.', 'machine_status': MachineInstance.OPERATIONAL_STATUS_GOOD},
@@ -125,7 +131,9 @@ class Command(BaseCommand):
                 'machine_name': 'Blackout',
                 'type': ProblemReport.PROBLEM_OTHER,
                 'text': 'Initial machine check before putting on floor.',
-                'reporter_name': '',  
+                'reporter_name': '',
+                'ip_address': '192.0.2.55',
+                'device_info': 'Mozilla/5.0 (Linux; Android 13; SM-S918U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
                 'updates': [
                     {'text': 'Running through all switches and lights.', 'machine_status': MachineInstance.OPERATIONAL_STATUS_FIXING},
                     'Found one burnt out GI bulb. Replaced.',
@@ -151,7 +159,9 @@ class Command(BaseCommand):
                 'machine_name': 'The Addams Family',
                 'type': ProblemReport.PROBLEM_STUCK_BALL,
                 'text': 'Ball got stuck in the bookcase. Had to open playfield.',
-                'reporter_name': '',  
+                'reporter_name': '',
+                'ip_address': '198.51.100.67',
+                'device_info': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
                 'updates': [
                     {'text': 'Retrieved ball from bookcase VUK area.', 'machine_status': MachineInstance.OPERATIONAL_STATUS_FIXING},
                     'VUK kicker seems a bit weak. Adjusting.',
@@ -180,6 +190,8 @@ class Command(BaseCommand):
                 'text': 'Card reader not accepting any cards. Display shows "Card Error".',
                 'reporter_name': 'Rachel Green',
                 'reporter_contact': 'rachel.g@email.com',
+                'ip_address': '203.0.113.142',
+                'device_info': 'Mozilla/5.0 (iPad; CPU OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
                 'updates': [
                     {'text': 'Card reader head was dirty from heavy use.', 'machine_status': MachineInstance.OPERATIONAL_STATUS_FIXING},
                     'Cleaned with alcohol swabs per manual.',
@@ -202,6 +214,8 @@ class Command(BaseCommand):
                 'type': ProblemReport.PROBLEM_OTHER,
                 'text': 'Score reels not advancing correctly on player 2.',
                 'reporter_name': '',
+                'ip_address': '203.0.113.56',
+                'device_info': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6 Mobile/15E148 Safari/604.1',
                 'updates': [
                     {'text': 'Player 2 score reel is sticking. Cleaning mechanism.', 'machine_status': MachineInstance.OPERATIONAL_STATUS_FIXING},
                     'Found bent wiper on the tens reel. Straightening it out.',
@@ -214,6 +228,8 @@ class Command(BaseCommand):
                 'text': 'Chime unit not firing when scoring. Silent during gameplay.',
                 'reporter_name': 'Daniel Martinez',
                 'reporter_contact': '415-555-2468',
+                'ip_address': '198.51.100.88',
+                'device_info': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'updates': [
                     {'text': 'Chime plungers are sticky and not striking.', 'machine_status': MachineInstance.OPERATIONAL_STATUS_FIXING},
                     'Cleaned and adjusted all three chime units.',
@@ -225,6 +241,8 @@ class Command(BaseCommand):
                 'type': ProblemReport.PROBLEM_OTHER,
                 'text': 'Display shows random characters. Not readable.',
                 'reporter_name': '',
+                'ip_address': '192.0.2.188',
+                'device_info': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
                 'updates': [
                     {'text': 'Reseated display ribbon cable.', 'machine_status': MachineInstance.OPERATIONAL_STATUS_FIXING},
                     {'text': 'Display clear and working now.', 'machine_status': MachineInstance.OPERATIONAL_STATUS_GOOD},
@@ -247,6 +265,8 @@ class Command(BaseCommand):
                 'text': 'Supercharger gear making grinding noise.',
                 'reporter_name': 'Steve Chen',
                 'reporter_contact': 'steve.chen@email.com',
+                'ip_address': '192.0.2.171',
+                'device_info': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
                 'updates': [
                     {'text': 'Supercharger gear teeth showing wear.', 'machine_status': MachineInstance.OPERATIONAL_STATUS_FIXING},
                     'Ordered replacement supercharger assembly.',
@@ -259,6 +279,8 @@ class Command(BaseCommand):
                 'type': ProblemReport.PROBLEM_OTHER,
                 'text': 'Ball launcher feels weak. Barely making it to playfield.',
                 'reporter_name': '',
+                'ip_address': '198.51.100.145',
+                'device_info': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0',
                 'updates': [
                     {'text': 'Launcher spring tension is low. Adjusting.', 'machine_status': MachineInstance.OPERATIONAL_STATUS_FIXING},
                     {'text': 'Spring replaced and adjusted. Launching perfectly now.', 'machine_status': MachineInstance.OPERATIONAL_STATUS_GOOD},
@@ -281,6 +303,8 @@ class Command(BaseCommand):
                 'text': 'Rotating pool table mechanism is stuck. Won\'t rotate.',
                 'reporter_name': 'Chris Johnson',
                 'reporter_contact': '415-555-7890',
+                'ip_address': '203.0.113.201',
+                'device_info': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120.0.6099.119 Mobile/15E148 Safari/604.1',
                 'updates': [
                     {'text': 'Motor for rotating playfield seized up from old grease.', 'machine_status': MachineInstance.OPERATIONAL_STATUS_FIXING},
                     'Disassembling mechanism for thorough cleaning.',
@@ -294,6 +318,8 @@ class Command(BaseCommand):
                 'text': 'Several pins on playfield are loose.',
                 'reporter_name': '',
                 'reporter_contact': '',
+                'ip_address': '203.0.113.87',
+                'device_info': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121.0',
                 'updates': [
                     {'text': 'Tightening all loose pins. Some need replacement.', 'machine_status': MachineInstance.OPERATIONAL_STATUS_FIXING},
                     {'text': 'All pins secure. Playfield in excellent condition for 1932!', 'machine_status': MachineInstance.OPERATIONAL_STATUS_GOOD},
@@ -305,6 +331,8 @@ class Command(BaseCommand):
                 'text': 'Need full diagnostic. Machine status unknown.',
                 'reporter_name': '',
                 'reporter_contact': '',
+                'ip_address': '198.51.100.77',
+                'device_info': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Safari/605.1.15',
                 'updates': [
                     {'text': 'Starting full inspection of 1937 machine.', 'machine_status': MachineInstance.OPERATIONAL_STATUS_FIXING},
                     'Totalizer scoring mechanism appears intact.',
@@ -319,6 +347,8 @@ class Command(BaseCommand):
                 'text': 'Right flipper feels weak compared to left.',
                 'reporter_name': 'Alex Turner',
                 'reporter_contact': 'alex.turner@email.com',
+                'ip_address': '198.51.100.234',
+                'device_info': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'updates': [
                     {'text': 'Measured coil voltage - within spec.', 'machine_status': MachineInstance.OPERATIONAL_STATUS_FIXING},
                     'Flipper rubber on right side is worn. Replacing.',
@@ -331,6 +361,8 @@ class Command(BaseCommand):
                 'text': 'Bill acceptor not giving credits. Ate my $5!',
                 'reporter_name': 'Samantha Wright',
                 'reporter_contact': '415-555-9876',
+                'ip_address': '192.0.2.99',
+                'device_info': 'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
                 'updates': [
                     {'text': 'Bill stacker was full.', 'machine_status': MachineInstance.OPERATIONAL_STATUS_FIXING},
                     {'text': 'Emptied bill stacker. Refunded $5. Working now.', 'machine_status': MachineInstance.OPERATIONAL_STATUS_GOOD},
@@ -342,6 +374,8 @@ class Command(BaseCommand):
                 'text': 'Shaker motor runs constantly, even in attract mode.',
                 'reporter_name': '',
                 'reporter_contact': '',
+                'ip_address': '192.0.2.211',
+                'device_info': 'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
                 'updates': [
                     {'text': 'Shaker relay stuck in closed position.', 'machine_status': MachineInstance.OPERATIONAL_STATUS_FIXING},
                     'Replaced relay.',
@@ -353,6 +387,8 @@ class Command(BaseCommand):
                 'type': ProblemReport.PROBLEM_STUCK_BALL,
                 'text': 'Multiball lock not holding balls. Balls roll right back out.',
                 'reporter_name': '',
+                'ip_address': '203.0.113.129',
+                'device_info': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'updates': [
                     {'text': 'Lock mechanism kicker coil weak.', 'machine_status': MachineInstance.OPERATIONAL_STATUS_FIXING},
                     'Cleaning coil sleeve and plunger.',
@@ -395,20 +431,13 @@ class Command(BaseCommand):
                     continue
 
                 # Create the problem report submitted by maintainer
+                # Don't capture IP or device info for authenticated users
                 report, created = ProblemReport.objects.get_or_create(
                     machine=machine,
                     problem_type=scenario['type'],
                     problem_text=scenario['text'],
                     defaults={
                         'reported_by_user': reporter_maintainer.user,
-                        'device_info': random.choice([
-                            'iPhone 13',
-                            'Samsung Galaxy S21',
-                            'iPad',
-                            'Desktop Browser',
-                            '',
-                        ]),
-                        'ip_address': f'192.168.1.{random.randint(10, 250)}',
                     }
                 )
             else:
@@ -420,14 +449,8 @@ class Command(BaseCommand):
                     defaults={
                         'reported_by_name': scenario.get('reporter_name', ''),
                         'reported_by_contact': scenario.get('reporter_contact', ''),
-                        'device_info': random.choice([
-                            'iPhone 13',
-                            'Samsung Galaxy S21',
-                            'iPad',
-                            'Desktop Browser',
-                            '',
-                        ]),
-                        'ip_address': f'192.168.1.{random.randint(10, 250)}',
+                        'device_info': scenario.get('device_info', ''),
+                        'ip_address': scenario.get('ip_address'),
                     }
                 )
 
