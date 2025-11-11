@@ -49,18 +49,6 @@ Support three types of workflows:
 - The public can create a Problem Report from the page accessible via QR code (existing behavior).  Keep the same visual display and labels; don't rename this form to Task.
 - Authentication required to create Tasks or LogEntries from maintainer UI (existing behavior)
 
-### Migration Strategy
-
-1. Rename `ProblemReport` → `Task`
-2. Add `type` field (CharField with choices, default='problem_report')
-   - All existing ProblemReports become Tasks with `type='problem_report'`
-3. Rename `ReportUpdate` → `LogEntry`
-4. Make `task` (formerly `report`) nullable
-5. Change `maintainer` from ForeignKey to ManyToManyField `maintainers`
-   - For existing LogEntries, migrate single maintainer to many-to-many
-   - Handle null maintainer case (some updates may not have a maintainer)
-6. Update all foreign key relationships and related_names
-
 
 ## UI Changes
 
@@ -206,7 +194,7 @@ This replaces `create_sample_problem_reports.py` (but don't delete the old one y
 - [ ] Add "Recent Work Log" section to Machine Detail
 - [ ] Update report/task list page to show Tasks
 
-### Phase 4a: Maintainer Import
+### Phase 4: Maintainer Import
 - [ ] Create management command `import_legacy_maintainers.py`
   - [ ] This will replace `create_default_admins.py` and `create_default_maintainers.py`, but don't delete them yet
   - [ ] Read from `docs/legacy_data/Maintainers.csv`
@@ -222,7 +210,7 @@ This replaces `create_sample_problem_reports.py` (but don't delete the old one y
   - [ ] Create Maintainer profiles for all users
 - [ ] Update `build.sh` to replace calls to `create_default_admins` and `create_default_maintainers` with `import_legacy_maintainers`
 
-### Phase 4b: Maintenance Records Import
+### Phase 5: Maintenance Records Import
 - [ ] Create management command `import_legacy_maintenance_records.py`
   - [ ] This will replace `create_sample_problem_reports.py`, but don't delete it yet
   - [ ] Clean up CSVs automatically on first read
@@ -239,7 +227,25 @@ This replaces `create_sample_problem_reports.py` (but don't delete the old one y
   - [ ] Associate multiple maintainers with each LogEntry
 - [ ] Update `build.sh` to replace call to `create_sample_problem_reports` with `import_legacy_maintenance_records`
 
-### Phase 5: Manual Testing & Verification
+### Phase 6: Migration Cleanup
+
+Clean up migrations before deployment to production. Since this is a pre-launch project with no production data, we can collapse all migrations into a single clean `0001_initial.py`.
+
+- [ ] Delete all existing migration files (0001-0009) in `the_flip/tickets/migrations/`
+  - [ ] Keep `__init__.py`
+- [ ] Delete database file (`db.sqlite3` or equivalent)
+- [ ] Generate fresh migration: `python manage.py makemigrations`
+  - [ ] This creates a single clean `0001_initial.py` with all models in final state
+- [ ] Create database: `python manage.py migrate`
+- [ ] Repopulate database:
+  - [ ] Run `python manage.py import_legacy_maintainers`
+  - [ ] Run `python manage.py create_default_machines`
+  - [ ] Run `python manage.py import_legacy_maintenance_records`
+- [ ] Verify data loaded correctly
+
+**Note:** This phase should be completed before deploying to production. After this, the migration history will be clean with just one initial migration containing Task, LogEntry, and all other models in their final state.
+
+### Phase 7: Manual Testing & Verification
 
 #### Data Import Testing
 - [ ] Test `import_legacy_maintainers` with `--clear` flag
@@ -299,7 +305,7 @@ This replaces `create_sample_problem_reports.py` (but don't delete the old one y
 - [ ] Test non-maintainer access to maintainer-only pages
 - [ ] Test empty states (machine with no tasks, no logs)
 
-### Phase 6: Automated Testing
+### Phase 8: Automated Testing
 
 Write Django test cases to ensure code reliability and catch regressions.
 
@@ -412,5 +418,5 @@ Write Django test cases to ensure code reliability and catch regressions.
 - Keep existing QR code workflow intact (visitors can still report problems)
 - "Problem Report" terminology stays in user-facing text for public visitors
 - "Task" terminology for maintainers
-- Maintain backward compatibility during transition
 - Keep existing rate limiting on task creation
+- Migrations will be collapsed to a single 0001_initial.py in Phase 6 (no backward compatibility needed since pre-launch)
