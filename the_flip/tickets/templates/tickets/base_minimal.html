@@ -8,6 +8,12 @@
     <link rel="stylesheet" href="{% static 'tickets/css/styles.css' %}">
 </head>
 <body>
+    <header class="minimal-header">
+        <div class="container">
+            <span class="minimal-brand">The Flip</span>
+        </div>
+    </header>
+
     {% if messages %}
         <div class="messages-container">
             {% for message in messages %}
@@ -20,6 +26,12 @@
 
     {% block content %}
     {% endblock %}
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; The Flip</p>
+        </div>
+    </footer>
 
     {% block extra_js %}{% endblock %}
 </body>

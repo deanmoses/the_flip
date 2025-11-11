@@ -321,6 +321,19 @@ def machine_detail(request, slug):
     })
 
 
+def machine_public_view(request, slug):
+    """
+    Public-facing educational page for a machine.
+    Displays educational content with option to report problems.
+    No authentication required - accessible via QR codes.
+    """
+    instance = get_object_or_404(MachineInstance, slug=slug)
+
+    return render(request, 'tickets/machine_public.html', {
+        'instance': instance,
+    })
+
+
 @login_required
 def machine_qr(request, slug):
     """
@@ -335,9 +348,9 @@ def machine_qr(request, slug):
     machine = get_object_or_404(MachineInstance, slug=slug)
 
     # Generate QR code
-    # The QR code will link to the report creation page for this machine
+    # The QR code will link to the public educational page for this machine
     qr_url = request.build_absolute_uri(
-        reverse('report_create_qr', args=[machine.slug])
+        reverse('machine_public', args=[machine.slug])
     )
 
     # Create QR code with high error correction to allow logo embedding

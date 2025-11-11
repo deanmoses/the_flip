@@ -290,8 +290,7 @@ class MachineInstance(models.Model):
     @property
     def ownership_display(self):
         """
-        Display ownership credit with default fallback.
-        Returns ownership_credit if set, otherwise defaults to "The Flip Collection".
+        Ownership_credit.  Defaults to The Flip
         """
         return self.ownership_credit or "The Flip Collection"
 
