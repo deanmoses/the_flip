@@ -40,7 +40,7 @@
                     </td>
                     <td>
                         {% if log.task %}
-                            <a href="{% url 'task_detail' log.task.pk %}" onclick="event.stopPropagation()">Task #{{ log.task.pk }}</a>
+                            <a href="{% url 'task_detail' log.task.pk %}" onclick="event.stopPropagation()">{{ log.task.problem_text|truncatechars:30 }}</a>
                         {% endif %}
                     </td>
                     <td>
