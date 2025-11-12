@@ -29,19 +29,28 @@ class GameFilterForm(forms.Form):
     era = forms.ChoiceField(
         choices=ERA_CHOICES,
         required=False,
-        widget=forms.Select(attrs={'class': 'form-select'})
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+            'onchange': 'this.form.submit()'
+        })
     )
 
     location = forms.ChoiceField(
         choices=LOCATION_CHOICES,
         required=False,
-        widget=forms.Select(attrs={'class': 'form-select'})
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+            'onchange': 'this.form.submit()'
+        })
     )
 
     operational_status = forms.ChoiceField(
         choices=OPERATIONAL_STATUS_CHOICES,
         required=False,
-        widget=forms.Select(attrs={'class': 'form-select'}),
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+            'onchange': 'this.form.submit()'
+        }),
         label='Status'
     )
 
