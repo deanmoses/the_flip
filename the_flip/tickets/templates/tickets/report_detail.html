@@ -25,36 +25,33 @@
         <h3>Updates</h3>
 
         {% if report.log_entries.all %}
-            <div class="timeline">
+            <div class="log-entries">
                 {% for log_entry in report.log_entries.all %}
-                <div class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-content">
-                        <div class="update-text">
-                            {{ log_entry.text|linebreaks }}
-                        </div>
-                        <div class="update-meta">
-                            <span class="update-author">
-                                {% if log_entry.maintainers.all %}
-                                    {% for maintainer in log_entry.maintainers.all %}
-                                        {{ maintainer.short_name }}{% if not forloop.last %}, {% endif %}
-                                    {% endfor %}
-                                {% else %}
-                                    System
-                                {% endif %}
+                <div class="log-entry-card">
+                    <div class="log-entry-text">
+                        {{ log_entry.text|linebreaks }}
+                    </div>
+                    <div class="log-entry-meta">
+                        <span class="log-entry-author">
+                            {% if log_entry.maintainers.all %}
+                                {% for maintainer in log_entry.maintainers.all %}
+                                    {{ maintainer.short_name }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                System
+                            {% endif %}
+                        </span>
+                        <span class="log-entry-time">{{ log_entry.created_at|smart_date }}</span>
+                        {% if log_entry.machine_status %}
+                            <span class="badge badge-{{ log_entry.machine_status }} badge-small">
+                                Machine: {{ log_entry.get_machine_status_display }}
                             </span>
-                            <span class="update-time">{{ log_entry.created_at|smart_date }}</span>
-                            {% if log_entry.machine_status %}
-                                <span class="badge badge-{{ log_entry.machine_status }} badge-small">
-                                    Machine: {{ log_entry.get_machine_status_display }}
-                                </span>
-                            {% endif %}
-                            {% if log_entry.status %}
-                                <span class="badge badge-{{ log_entry.status }} badge-small">
-                                    Report: {{ log_entry.get_status_display }}
-                                </span>
-                            {% endif %}
-                        </div>
+                        {% endif %}
+                        {% if log_entry.status %}
+                            <span class="badge badge-{{ log_entry.status }} badge-small">
+                                Report: {{ log_entry.get_status_display }}
+                            </span>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}

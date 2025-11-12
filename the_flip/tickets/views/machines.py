@@ -255,43 +255,6 @@ def machine_task_create(request, slug):
 
 @login_required
 @maintainer_required
-def machine_tasks_list_v2(request, slug):
-    """Experimental task/problem report list for a machine (v2 UI)."""
-
-    machine = get_object_or_404(MachineInstance.objects.select_related('model'), slug=slug)
-
-    if request.method == 'POST':
-        quick_form = QuickTaskCreateForm(request.POST)
-        if quick_form.is_valid():
-            task = quick_form.save(commit=False)
-            task.machine = machine
-            task.reported_by_user = request.user
-            task.reported_by_name = request.user.get_full_name() or request.user.username
-            task.save()
-            messages.success(request, 'Task created successfully.')
-            return redirect('machine_tasks_list_v2', slug=machine.slug)
-    else:
-        quick_form = QuickTaskCreateForm()
-
-    # Show only open tasks and problem reports, ordered chronologically (oldest first, like messages)
-    tasks = Task.objects.filter(
-        machine=machine,
-        status=Task.STATUS_OPEN
-    ).order_by('created_at')
-
-    return render(
-        request,
-        'tickets/machine_tasks_list_v2.html',
-        {
-            'machine': machine,
-            'tasks': tasks,
-            'quick_form': quick_form,
-        },
-    )
-
-
-@login_required
-@maintainer_required
 def machine_log_list(request, slug):
     """List work log entries for a machine."""
 

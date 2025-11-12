@@ -21,7 +21,6 @@ urlpatterns = [
     path('machines/', machine_views.machine_list, name='machine_list'),
     path('machines/<slug:slug>/', machine_views.machine_detail, name='machine_detail'),
     path('machines/<slug:slug>/tasks/', machine_views.machine_tasks_list, name='machine_tasks_list'),
-    path('machines/<slug:slug>/tasks2/', machine_views.machine_tasks_list_v2, name='machine_tasks_list_v2'),
     path('machines/<slug:slug>/tasks/new/', machine_views.machine_task_create, name='machine_task_create'),
     path('machines/<slug:slug>/log/', machine_views.machine_log_list, name='machine_log_list'),
     path('machines/<slug:slug>/log/<int:pk>/', machine_views.machine_log_detail, name='machine_log_detail'),

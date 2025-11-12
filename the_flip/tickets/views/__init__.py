@@ -12,7 +12,6 @@ from .machines import (
     machine_qr,
     machine_task_create,
     machine_tasks_list,
-    machine_tasks_list_v2,
 )
 from .reports import (
     problem_report_create,
@@ -36,7 +35,6 @@ __all__ = [
     'machine_qr',
     'machine_task_create',
     'machine_tasks_list',
-    'machine_tasks_list_v2',
     'problem_report_create',
     'report_detail',
     'report_list',
