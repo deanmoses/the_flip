@@ -81,7 +81,7 @@ class ReportFilterForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Search machine name, problem text, or reporter name...',
+            'placeholder': 'Machine names, problem text...',
             'enterkeyhint': 'search'
         })
     )
