@@ -282,14 +282,20 @@ class MachineTaskFilterForm(forms.Form):
         choices=STATUS_CHOICES,
         required=False,
         initial='all',
-        widget=forms.Select(attrs={'class': 'form-select'})
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+            'onchange': 'this.form.submit()'
+        })
     )
 
     type = forms.ChoiceField(
         choices=TYPE_CHOICES,
         required=False,
         initial='all',
-        widget=forms.Select(attrs={'class': 'form-select'}),
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+            'onchange': 'this.form.submit()'
+        }),
         label='Task Type'
     )
 
