@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from ..decorators import maintainer_required
 from ..forms import (
@@ -191,10 +192,21 @@ def task_create_todo(request):
             task = form.save(commit=False)
             task.reported_by_user = request.user
             task.reported_by_name = request.user.get_full_name() or request.user.username
+
+            # Handle create_closed checkbox
+            create_closed = form.cleaned_data.get('create_closed')
+            if create_closed:
+                task.status = Task.STATUS_CLOSED
+
             task.save()
 
             messages.success(request, 'Task created successfully.')
-            return redirect('task_detail', pk=task.pk)
+
+            # Redirect based on whether task was created closed
+            if create_closed:
+                return redirect('machine_tasks_list', slug=task.machine.slug)
+            else:
+                return redirect('task_detail', pk=task.pk)
     else:
         form = TaskCreateForm()
 

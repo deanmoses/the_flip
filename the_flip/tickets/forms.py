@@ -169,6 +169,13 @@ class LogEntryForm(forms.ModelForm):
 class TaskCreateForm(forms.ModelForm):
     """Form for creating maintainer TODO tasks (maintainers only)."""
 
+    create_closed = forms.BooleanField(
+        required=False,
+        initial=False,
+        label='Create closed',
+        widget=forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+    )
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Show all machines for maintainers

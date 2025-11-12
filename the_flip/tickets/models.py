@@ -546,8 +546,8 @@ class LogEntry(models.Model):
         Task,
         on_delete=models.CASCADE,
         related_name="log_entries",
-        null=True,
-        blank=True,
+        null=False,
+        blank=False,
     )
     machine = models.ForeignKey(
         MachineInstance,
@@ -556,7 +556,6 @@ class LogEntry(models.Model):
         null=True,
         blank=True,
         db_index=True,
-        help_text="Machine this log entry is associated with (required for standalone logs)",
     )
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     maintainers = models.ManyToManyField(

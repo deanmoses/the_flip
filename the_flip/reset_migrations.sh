@@ -8,6 +8,16 @@ set -e  # Exit on error
 echo "=== Resetting migrations ==="
 echo ""
 
+# Delete the database FIRST (before deleting migrations)
+echo "Deleting database..."
+if [ -f db.sqlite3 ]; then
+    rm db.sqlite3
+    echo "✓ Database deleted"
+else
+    echo "✓ No database file found (already clean)"
+fi
+echo ""
+
 # Delete existing migration files
 echo "Deleting existing migration files..."
 rm -f tickets/migrations/0*.py
@@ -19,16 +29,6 @@ echo ""
 echo "Creating new initial migrations..."
 python manage.py makemigrations
 echo "✓ New initial migrations created"
-echo ""
-
-# Delete the database
-echo "Deleting database..."
-if [ -f db.sqlite3 ]; then
-    rm db.sqlite3
-    echo "✓ Database deleted"
-else
-    echo "✓ No database file found (already clean)"
-fi
 echo ""
 
 # Run migrations fresh

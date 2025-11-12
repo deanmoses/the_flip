@@ -4,7 +4,8 @@ from tickets.models import Task, LogEntry, MachineInstance, Maintainer
 import csv
 import os
 import re
-from datetime import datetime
+import random
+from datetime import datetime, timedelta
 
 
 class Command(BaseCommand):
@@ -119,6 +120,11 @@ class Command(BaseCommand):
             self.style.WARNING(f'Could not parse date "{date_str}", using current time')
         )
         return timezone.now()
+
+    def random_task_creation_offset(self):
+        """Generate random offset for when task was created before work was logged"""
+        minutes = random.randint(5, 60)
+        return timedelta(minutes=minutes)
 
     def handle(self, *args, **options):
         clear = options.get('clear', False)
@@ -244,8 +250,8 @@ class Command(BaseCommand):
         )
 
     def import_log_entries(self, csv_path):
-        """Import log entries from Maintenance - Log entries.csv"""
-        self.stdout.write(self.style.SUCCESS('\n=== Importing Log Entries ==='))
+        """Import log entries from Maintenance - Log entries.csv as closed Tasks"""
+        self.stdout.write(self.style.SUCCESS('\n=== Importing Log Entries as Tasks ==='))
 
         created_count = 0
         error_count = 0
@@ -280,21 +286,10 @@ class Command(BaseCommand):
                     continue
 
                 # Parse date
-                created_at = self.parse_date(date_str)
+                parsed_date = self.parse_date(date_str)
 
-                # Create standalone LogEntry (no task association)
-                log_entry = LogEntry(
-                    task=None,  # Standalone log entry
-                    machine=machine,
-                    text=notes,
-                )
-                log_entry.save()
-
-                # Override created_at (set after initial save)
-                log_entry.created_at = created_at
-                log_entry.save(update_fields=['created_at'])
-
-                # Parse and associate maintainers (comma-separated or "and"-separated)
+                # Parse and find maintainers (comma-separated or "and"-separated)
+                maintainers_found = []
                 if maintainers_str:
                     # First split by commas, then by " and " for each part
                     parts = maintainers_str.split(',')
@@ -303,8 +298,6 @@ class Command(BaseCommand):
                         # Split by " and " (with spaces) to handle "Ken and William"
                         and_parts = part.split(' and ')
                         maintainer_names.extend([name.strip() for name in and_parts])
-
-                    maintainers_found = []
 
                     for maintainer_name in maintainer_names:
                         if not maintainer_name:  # Skip empty strings
@@ -315,23 +308,68 @@ class Command(BaseCommand):
                         else:
                             self.stdout.write(
                                 self.style.WARNING(
-                                    f'⚠️  Warning: Maintainer not found: "{maintainer_name}" for log entry'
+                                    f'⚠️  Warning: Maintainer not found: "{maintainer_name}"'
                                 )
                             )
                             warning_count += 1
 
-                    if maintainers_found:
-                        log_entry.maintainers.set(maintainers_found)
+                # Determine if single or multiple maintainers
+                if len(maintainers_found) <= 1:
+                    # Single maintainer: create closed task without log entry
+                    task = Task(
+                        machine=machine,
+                        type='todo',
+                        problem_text=notes,
+                        status='closed',
+                        reported_by_user=maintainers_found[0].user if maintainers_found else None,
+                    )
+                    task.save()
+
+                    # Override created_at timestamp
+                    task.created_at = parsed_date
+                    task.save(update_fields=['created_at'])
+
+                    maintainer_display = maintainers_found[0].user.username if maintainers_found else 'None'
+                    self.stdout.write(
+                        f'✓ Created closed task for {machine.name} by {maintainer_display}: {notes[:50]}...'
+                    )
+
+                else:
+                    # Multiple maintainers: create open task, then close it with log entry
+                    task = Task(
+                        machine=machine,
+                        type='todo',
+                        problem_text=notes,
+                        status='open',
+                        reported_by_user=maintainers_found[0].user,
+                    )
+                    task.save()
+
+                    # Override created_at to be earlier (random offset)
+                    task.created_at = parsed_date - self.random_task_creation_offset()
+                    task.save(update_fields=['created_at'])
+
+                    # Close the task via set_status (creates log entry)
+                    log_entry = task.set_status(
+                        Task.STATUS_CLOSED,
+                        maintainers=maintainers_found,
+                        text=""
+                    )
+
+                    # Override log entry timestamp to match CSV date
+                    log_entry.created_at = parsed_date
+                    log_entry.save(update_fields=['created_at'])
+
+                    maintainer_display = ', '.join([m.user.username for m in maintainers_found])
+                    self.stdout.write(
+                        f'✓ Created task and closing log for {machine.name} by {maintainer_display}: {notes[:50]}...'
+                    )
 
                 created_count += 1
-                maintainer_display = ', '.join([m.user.username for m in maintainers_found]) if maintainers_found else 'None'
-                self.stdout.write(
-                    f'✓ Created log entry for {machine.name} by {maintainer_display}: {notes[:50]}...'
-                )
 
         self.stdout.write('')
         self.stdout.write(
             self.style.SUCCESS(
-                f'Log entries import complete: {created_count} created, {error_count} errors, {warning_count} warnings'
+                f'Log entries import complete: {created_count} tasks created, {error_count} errors, {warning_count} warnings'
             )
         )
