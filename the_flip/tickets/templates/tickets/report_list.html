@@ -29,6 +29,55 @@
         gap: 10px;
     }
 
+    .task-messages {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .task-message {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 16px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .task-message:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .task-message-content {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .task-machine {
+        font-size: 14px;
+        color: #374151;
+    }
+
+    .task-description {
+        font-size: 15px;
+        color: #111827;
+        line-height: 1.5;
+    }
+
+    .task-meta {
+        font-size: 13px;
+        color: #6b7280;
+        display: flex;
+        gap: 8px;
+    }
+
+    .task-meta .task-author {
+        font-weight: 500;
+    }
+
     @media (max-width: 768px) {
         .page-header {
             display: grid;
@@ -86,45 +135,37 @@
 
     <div class="reports-main">
         {% if page_obj %}
-            <div class="reports-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Machine</th>
-                            <th>Problem</th>
-                            <th>Status</th>
-                            <th>Reported</th>
-                            {% if user.is_authenticated %}
-                            <th>Reporter</th>
-                            {% endif %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for report in page_obj %}
-                        <tr onclick="window.location='{% url 'task_detail' report.pk %}'" class="clickable-row">
-                            <td><strong>{{ report.machine.name }}</strong> ({{ report.machine.model.year }} {{ report.machine.model.manufacturer }})</td>
-                            <td>
-                                {% if report.problem_type == 'other' and report.problem_text %}
-                                    {{ report.problem_text|truncatechars:80 }}
-                                {% elif report.problem_text %}
-                                    {{ report.get_problem_type_display }} - {{ report.problem_text|truncatechars:80 }}
-                                {% else %}
-                                    {{ report.get_problem_type_display }}
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="badge badge-{{ report.status }}">
-                                    {{ report.get_status_display }}
+            <div class="task-messages">
+                {% for report in page_obj %}
+                <div class="task-message" onclick="window.location='{% url 'task_detail' report.pk %}'">
+                    <div class="task-message-content">
+                        <div class="task-machine">
+                            <strong>{{ report.machine.name }}</strong>
+                        </div>
+                        <div class="task-description">
+                            {% if report.type == 'problem_report' %}
+                                <span class="badge badge-{{ report.type }}">
+                                    {{ report.get_type_display }}
                                 </span>
-                            </td>
-                            <td>{{ report.created_at|smart_date }}</td>
-                            {% if user.is_authenticated %}
-                            <td>{% reporter_display report %}</td>
                             {% endif %}
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                            {% if report.problem_type == 'other' and report.problem_text %}
+                                {{ report.problem_text }}
+                            {% elif report.problem_text %}
+                                {% if report.problem_type != 'other' %}
+                                    <strong>{{ report.get_problem_type_display }}:</strong>
+                                {% endif %}
+                                {{ report.problem_text }}
+                            {% else %}
+                                {{ report.get_problem_type_display }}
+                            {% endif %}
+                        </div>
+                        <div class="task-meta">
+                            <span class="task-author">{{ report|creator_display }}</span>
+                            <span class="task-time">{{ report.created_at|smart_date }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
 
             {% if page_obj.has_other_pages %}
