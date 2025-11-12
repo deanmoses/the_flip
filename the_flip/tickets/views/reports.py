@@ -25,27 +25,15 @@ from ..services.report_submission import (
 def report_list(request):
     """Display problem reports/tasks with filtering for everyone."""
 
-    reports = Task.objects.all().select_related('machine__model').order_by('-created_at')
+    # Show only open tasks by default
+    reports = Task.objects.filter(status=Task.STATUS_OPEN).select_related('machine__model').order_by('-created_at')
 
-    query_params = request.GET.copy()
-    if not query_params.get('status'):
-        query_params = query_params.copy()
-        query_params['status'] = Task.STATUS_OPEN
-
-    form = ReportFilterForm(query_params or None)
+    form = ReportFilterForm(request.GET or None)
 
     if form.is_valid():
-        status = form.cleaned_data.get('status')
-        if status and status != 'all':
-            reports = reports.filter(status=status)
-
         type_filter = form.cleaned_data.get('type')
         if type_filter and type_filter != 'all':
             reports = reports.filter(type=type_filter)
-
-        problem_type = form.cleaned_data.get('problem_type')
-        if problem_type and problem_type != 'all':
-            reports = reports.filter(problem_type=problem_type)
 
         machine = form.cleaned_data.get('machine')
         if machine:

@@ -53,10 +53,9 @@
 
 <div class="page-header">
     <div class="page-header-left">
-        <h1>Tasks</h1>
+        <h1>Open Tasks</h1>
         <div class="stats">
             <span class="stat-badge stat-open">{{ stats.open_count }} Open</span>
-            <span class="stat-badge stat-closed">{{ stats.closed_count }} Closed</span>
         </div>
     </div>
     <div class="page-header-right">
@@ -69,27 +68,14 @@
         <h3>Filters</h3>
         <form method="get" class="filter-form">
             <div class="form-group">
-                <label>{{ form.status.label }}</label>
-                {{ form.status }}
-            </div>
-
-            <div class="form-group">
-                <label>{{ form.type.label }}</label>
                 {{ form.type }}
             </div>
 
             <div class="form-group">
-                <label>{{ form.machine.label }}</label>
                 {{ form.machine }}
             </div>
 
             <div class="form-group">
-                <label>{{ form.problem_type.label }}</label>
-                {{ form.problem_type }}
-            </div>
-
-            <div class="form-group">
-                <label>{{ form.search.label }}</label>
                 {{ form.search }}
             </div>
 
