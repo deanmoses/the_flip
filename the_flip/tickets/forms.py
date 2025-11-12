@@ -59,7 +59,10 @@ class ReportFilterForm(forms.Form):
         choices=TYPE_CHOICES,
         required=False,
         initial='all',
-        widget=forms.Select(attrs={'class': 'form-select'}),
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+            'onchange': 'this.form.submit()'
+        }),
         label='Task Type'
     )
 
@@ -67,7 +70,10 @@ class ReportFilterForm(forms.Form):
         queryset=MachineInstance.objects.none(),
         required=False,
         empty_label='All Machines',
-        widget=forms.Select(attrs={'class': 'form-select'})
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+            'onchange': 'this.form.submit()'
+        })
     )
 
     search = forms.CharField(
@@ -75,7 +81,8 @@ class ReportFilterForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Search machine name, problem text, or reporter name...'
+            'placeholder': 'Search machine name, problem text, or reporter name...',
+            'enterkeyhint': 'search'
         })
     )
 
