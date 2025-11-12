@@ -20,6 +20,7 @@ class Command(BaseCommand):
             ('import_legacy_maintainers', 'Importing legacy maintainers', True),
             ('create_default_machines', 'Creating default machines', True),
             ('import_legacy_maintenance_records', 'Importing legacy maintenance records', True),
+            ('create_sample_maintenance_data', 'Creating sample maintenance data', True),
         ]
 
         self.stdout.write(self.style.SUCCESS('\n=== Starting Legacy Data Import ===\n'))
