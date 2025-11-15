@@ -7,6 +7,9 @@ It allows museum visitors to report problems with pinball machines (via QR codes
 ## Live System
 Check out the prototype live at https://the-flip.onrender.com
 
+## AI Assistant Instructions
+Claude, Codex and any other AI helper must read and follow the persistent guidelines in `.claude/project_instructions.md`. That file spells out how AI assistants are to work with HTML, CSS, Django/Python, the project structure, data model.
+
 ## Local Development Setup
 It's in Django.
 
