@@ -23,6 +23,8 @@ the_flip/
     └── static/
 ```
 
+Refer to the repository-level [`README.md`](../README.md) for onboarding and environment setup.
+
 ### App responsibilities
 - **accounts**: wraps Django’s `AUTH_USER_MODEL` with the Maintainer profile. Handles admin customization (list filters, field ordering) and any future features like maintainer onboarding or role management.
 - **catalog**: owns Machine Models and Machine Instances, including public-facing metadata (educational content, credits, operational status). This app publishes read APIs/pages that the museum floor uses.
@@ -32,7 +34,7 @@ the_flip/
 ### General conventions
 - Keep each app’s `models.py`, `admin.py`, `forms.py`, and `tests/` focused on that domain. For larger modules, split into packages (e.g., `catalog/models/machine.py`).
 - Prefer `apps.<domain>.urls` for any public routes rather than cramming everything into the project `urls.py`.
-- Place development documentation in `docs/dev_guide/` so architectural references live together.
+- Place development documentation in [`docs/dev_guide/`](README.md) so architectural references live together.
 - Use `settings/base.py` for shared defaults and layer `dev.py` (local development), `test.py` (CI/automated tests), and `prod.py` (production). Point the `DJANGO_SETTINGS_MODULE` environment variable at the appropriate module per environment.
 
 This structure makes it clear where new code belongs and eliminates the need for proxy-admin hacks: register each model in its native app, then customize admin ordering via `CustomAdminSite.get_app_list`. When we refactor toward this layout, update `INSTALLED_APPS` and migrate files gradually (accounts → catalog → maintenance) to keep diffs manageable.
