@@ -1,4 +1,4 @@
-# Test Strategy
+# Automated Testing Strategy
 
 This is a guide for developers and AI assistants around running and creating automated tests. 
 

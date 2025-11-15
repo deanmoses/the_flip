@@ -1,4 +1,4 @@
-# HTML & CSS Generation Guide
+# HTML & CSS Development Guide
 
 This is a guide for developers and AI assistants creating HTML and CSS. 
 

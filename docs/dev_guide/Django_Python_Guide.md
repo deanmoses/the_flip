@@ -1,6 +1,6 @@
-# Django & Python Generation Guide
+# Django & Python Development Guide
 
-This is a guide for developers and AI assistants generating the project’s Django and Python. 
+This is a guide for developers and AI assistants creating the project’s Django and Python. 
 
 It distills standard, boring-best-practice Django and Python habits so the output stays clear, maintainable, and pleasant for both humans and future AI iterations.
 
@@ -30,7 +30,8 @@ The baseline project layout, settings modules, and deployment hooks live in [`sc
 
 ## 5. Models & Data Access
 
-- Use descriptive fields with validators and `help_text`. Prefer numeric fields (`PositiveSmallIntegerField`) over string+regex combos when the data is numeric.
+- Use descriptive fields with validators and `help_text`. 
+- Prefer numeric fields (`PositiveSmallIntegerField`) over string+regex combos when the data is numeric.
 - Keep domain behavior close to the data. Custom `QuerySet`/manager methods encapsulate repeated filters (e.g., `TaskQuerySet.problem_reports()`, `MachineInstanceQuerySet.on_floor()`).
 - Wrap multi-model updates in domain methods that enforce invariants (`Task.set_machine_status` updates both the task and the machine, creates a `LogEntry`, and runs inside `transaction.atomic()`).
 - Leverage Django features before writing custom code: constraints (`UniqueConstraint`, `CheckConstraint`), database indexes, choices enums, `AutoSlugField` packages if helpful.
@@ -66,10 +67,8 @@ The baseline project layout, settings modules, and deployment hooks live in [`sc
 
 ## 10. Testing & Quality
 
-- Every model method, form, and view path gets test coverage. Prefer Django’s `TestCase` (database isolation) and `pytest` if the project adopts it.
-- Write tests in the same app as the code they cover, using factories or helper functions for readability. Keep assertions focused on behavior (status codes, database changes, privacy rules).
-- Run tests with the intended settings module (`DJANGO_SETTINGS_MODULE=the_flip.settings.test`). Keep CI scripts simple: `python -m compileall`, `python manage.py check`, `python manage.py test`.
-- Use linting/formatting tools (`ruff`, `black`, `isort`) to enforce a consistent style that AI can mimic.
+- See [`Testing_Guide.md`](Testing_Guide.md) for the full testing strategy, coverage expectations, and runner instructions. Follow that doc whenever creating or updating tests.
+- This section simply reiterates the core expectation: every feature must be backed by automated tests (unit, form, view, or integration) before merging to `main`.
 
 ## 11. Documentation & Communication
 
