@@ -5,9 +5,8 @@ This document captures the target layout for a rebuilt version of The Flip so ne
 ```
 the_flip/
 ├── manage.py
-├── requirements.txt
 ├── README.md
-├── build.sh / render.yaml / runtime.txt
+├── build.sh / render.yaml / runtime.txt / requirements.txt 
 ├── docs/
 │   └── dev_guide/           # development guides
 └── the_flip/                 # Django project package
