@@ -1,4 +1,4 @@
-# CSS Generation Guide
+# HTML & CSS Generation Guide
 
 This document contains instructions for AI assistants generating the project’s HTML/CSS. 
 
