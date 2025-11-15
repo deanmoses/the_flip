@@ -13,3 +13,5 @@ AI assistants must confirm relevant sections from these documents before generat
 ## When rebuilding from scratch
 
 - [`scaffolding/HTML_CSS_Scaffold.md`](scaffolding/HTML_CSS_Scaffold.md) – tokens, layout baselines, and component defaults for regenerating the core stylesheet. Update this file first if the museum’s visual system changes.
+- [`scaffolding/Django_Python_Scaffold.md`](scaffolding/Django_Python_Scaffold.md) – project layout, settings modules, data-seeding commands, and Render deployment hooks.
+- [`scaffolding/Testing_Scaffold.md`](scaffolding/Testing_Scaffold.md) – baseline test directory structure, settings, and CI expectations.
