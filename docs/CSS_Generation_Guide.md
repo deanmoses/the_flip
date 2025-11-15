@@ -2,7 +2,7 @@
 
 This document contains instructions for AI assistants generating the project’s HTML/CSS. 
 
-Focus on clean, modern, lightweight pages that rely only on system fonts and a single cached stylesheet.
+Focus on clean, modern, lightweight mobile-first pages that rely only on system fonts and a single cached stylesheet.
 
 ## 1. Visual System
 
@@ -19,13 +19,14 @@ Focus on clean, modern, lightweight pages that rely only on system fonts and a s
 
 ## 2. Layout Rules
 
+- **Mobile First:** Author CSS with small screens as the default; layer on enhancements at larger breakpoints.
 - **Container:** Max width 1200px, horizontal padding `space-4`. Body background `#f5f7fb`.
 - **Header/Nav/Footer:** Persistent nav with sticky behavior on desktop (`position: sticky; top: 0;`). Footer simple text centered.
 - **Responsive Breakpoints:**  
   - `@media (max-width: 1024px)` collapse sidebar into horizontal tabs.  
   - `@media (max-width: 768px)` stack header elements vertical, convert grids to one column.  
   - `@media (max-width: 480px)` full-width buttons, increase body padding.
-- **Tables:** On <=768px, convert to card layout with CSS (`display: block`, pseudo labels) rather than forcing horizontal scrolling when possible.
+- **Data Display:** Prefer flexible card/list layouts instead of `<table>` for primary screens. Use stacked metadata rows with labels so content reads well on phones. Only use tables for strongly tabular admin views, and provide a card fallback when screen width < 768px.
 - **Spacing:** Maintain `space-4` (16px) between stacked sections, `space-2` (8px) between tightly related elements.
 
 ## 3. Component Expectations
@@ -35,7 +36,7 @@ Focus on clean, modern, lightweight pages that rely only on system fonts and a s
 - **Cards/Blocks:** `.card` for reusable white surfaces with padding `space-5`, `box-shadow` token.
 - **Forms:** `.form-field` wrapper holding `<label>` and control. Inputs get `border: 1px solid var(--border-color)`, `border-radius: 6px`, focus ring `box-shadow: 0 0 0 3px rgba(31, 122, 234, 0.25)` while retaining visible outline.
 - **Messages & Alerts:** `.alert`, `.alert--success`, `.alert--danger`, etc., leveraging palette tokens.
-- **Lists (tasks/logs):** Flex layout with `gap` for metadata. Provide `.clickable-card` helper with `cursor: pointer` and subtle background change on hover.
+- **List Cards:** Use flex layouts with `gap` for metadata rows. Provide `.clickable-card` helper with `cursor: pointer` and subtle background change on hover. Include a `.list-card__meta` element for secondary text so AI-generated HTML mirrors existing card layouts that show author/time/status details.
 - **Utilities:** Provide light utilities for spacing (`.mt-4`), layout (`.flex`, `.grid-two`), and text alignment to avoid inline style usage.
 
 ## 4. Accessibility & Interaction
@@ -48,10 +49,10 @@ Focus on clean, modern, lightweight pages that rely only on system fonts and a s
 
 ## 5. Organizational Rules
 
-- **File Structure:** Create `tickets/static/tickets/css/` with `base.css` (reset + tokens), `layout.css`, `components.css`, and page modules (`machine.css`, `reports.css`). The final bundle imported in `base.html` can be concatenated/minified but author content lives in logical files.
-- **No Inline Styles:** Templates should only use class names. Add page-specific CSS via additional `<link>` or block overrides instead of `style=` attributes.
+- **File Structure:** Place CSS sources under the project’s `static/css/` directory (or equivalent) with files such as `base.css` (reset + tokens), `layout.css`, `components.css`, and page-specific modules (`dashboard.css`, `reports.css`, etc.). Concatenate/minify them into a single bundle that the main layout template includes.
+- **No Inline Styles:** Templates should only use class names. Add page-specific CSS via additional `<link>` tags or template blocks instead of `style=` attributes.
 - **Naming Methodologies:**  
-  1. **BEM:** `block__element--modifier` (e.g., `task-card__meta--muted`). Clear intent, low collision risk.  
+  1. **BEM:** `block__element--modifier` (e.g., `record-card__meta--muted`). Clear intent, low collision risk.  
   2. **Namespaced Modules:** Prefix class names per page/component (e.g., `.machine-detail-header`, `.machine-detail-meta`). Works well when pages are isolated.  
   3. **Utility-First Hybrid:** Small reusable classes (`.text-muted`, `.gap-4`, `.flex-between`) combined with semantic wrappers. Enables rapid layout changes with fewer bespoke selectors. Pick one primary strategy and document modifiers/helpers.
 
