@@ -35,7 +35,7 @@ It distills standard, boring-best-practice Django and Python habits so the outpu
 ## Forms & Validation
 
 - Use `ModelForm`s for CRUD flows; add `clean_*` methods for business rules and keep view logic simple.
-- Build reusable widget mixins (e.g., `FormStyleMixin` that applies the classes defined in `docs/dev_guide/HTML_CSS_Generation_Guide.md`) instead of copy/pasting `attrs={'class': 'form-control'}`.
+- Build reusable widget mixins (e.g., `FormStyleMixin` that applies the classes defined in `docs/dev_guide/HTML_CSS_Guide.md`) instead of copy/pasting `attrs={'class': 'form-control'}`.
 - Keep `__init__` overrides minimal. If a form depends on request context (current user, machine slug), accept those as keyword arguments, pop them, and document assumptions in docstrings.
 - Always validate that the generated queryset matches current permissions (public visitors see only floor machines, maintainers see all). Tests should cover these cases.
 
@@ -50,7 +50,7 @@ It distills standard, boring-best-practice Django and Python habits so the outpu
 ## Templates & Static Assets
 
 - Organize templates under `templates/<app>/`. Use app-specific base templates that extend a project-wide `base.html`.
-- Keep HTML semantic, push repeated UI chunks into `include`s or template tags, and minimize inline CSS/JS. Reference shared CSS guidance in `docs/dev_guide/HTML_CSS_Generation_Guide.md`.
+- Keep HTML semantic, push repeated UI chunks into `include`s or template tags, and minimize inline CSS/JS. Reference shared CSS guidance in `docs/dev_guide/HTML_CSS_Guide.md`.
 - Never expose private data (reporter contact info, IPs) in public templates. Add template tags to encapsulate privacy rules, and test them.
 - Use the `{% static %}` and `{% url %}` tags everywhere; never hardcode paths.
 
