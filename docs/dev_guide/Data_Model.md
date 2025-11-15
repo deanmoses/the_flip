@@ -149,7 +149,7 @@ This document describes the system's data model.
       - Validation: must be a valid IP.
       - Help: Collected IP for rate limiting, abuse prevention, or follow-up.
 - **Log Entry**: work logged by a maintainer
-  - CRUD: maintainers create entries, public can read entries attached to public artifacts
+  - CRUD: maintainers create entries, public can read entries
   - Default Sort Order: newest first (descending `created_at`).
   - Fields
     - **Created At (`created_at`)** — datetime, auto-generated on insert (required)
@@ -165,3 +165,28 @@ This document describes the system's data model.
       - Validation: Required when no  Maintainer records are selected.
     - **Description (`text`)** — long-form text describing the work done (required)
       - Help: description of work performed or observations noted.
+- **Log Entry Media**: file attachments tied to a log entry to document the work
+  - CRUD: maintainers manage media alongside the parent log entry; the public can view media for entries
+  - Default Sort Order: by display order, then created date.
+  - Notes
+    - Each log entry can have zero or more media records; ordering is controlled via `display_order`.
+    - Media assets are stored using Django’s file storage backend (local in development, S3/GCS/etc. in production). The application only stores metadata and signed URLs provided by the backend.
+    - Photos render as `<img>` tags; videos render via `<video controls>` or an embedded player referencing the stored file/URL.
+    - Inline formsets in the maintainer UI allow uploading multiple files, adding captions, and reordering attachments.
+  - Fields
+    - **Created At (`created_at`)** — datetime, auto-generated on insert (required)
+      - Help: timestamp for when the media record was first attached.
+    - **Updated At (`updated_at`)** — datetime, auto-updated on change (required)
+      - Help: timestamp for the last metadata change.
+    - **Log Entry (`log_entry`)** — foreign key to Log Entry (required)
+      - Help: identifies which log entry this photo or video supports.
+    - **Media Type (`media_type`)** — enum (required)
+      - Values: Photo, Video
+      - Help: drives rendering decisions and validation rules (e.g., ImageField for photos).
+    - **File (`file`)** — file upload (required)
+      - Help: the stored asset; Django handles streaming the binary via the configured storage backend. Supports large video files so long as storage allows.
+      - Validation: max size configurable via settings (e.g., 200 MB ceiling), limited to approved MIME types.
+    - **Thumbnail File (`thumbnail_file`)** — file upload (optional)
+      - Help: pre-generated preview image for faster display (auto-created for photos, optional for videos using a Celery/ffmpeg job).
+    - **Display Order (`display_order`)** — positive integer (optional)
+      - Help: determines the relative ordering of attachments within a log entry.
