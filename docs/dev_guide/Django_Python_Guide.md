@@ -1,6 +1,6 @@
 # Django & Python Generation Guide
 
-This document contains instructions for AI assistants generating the project’s Django and Python. 
+This is a guide for developers and AI assistants generating the project’s Django and Python. 
 
 It distills standard, boring-best-practice Django and Python habits so the output stays clear, maintainable, and pleasant for both humans and future AI iterations.
 

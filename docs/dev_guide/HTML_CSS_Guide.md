@@ -1,6 +1,6 @@
 # HTML & CSS Generation Guide
 
-This document contains instructions for AI assistants generating the project’s HTML/CSS. 
+This is a guide for developers and AI assistants creating HTML and CSS. 
 
 Focus on clean, modern, lightweight mobile-first pages that rely only on system fonts and a single cached stylesheet.
 

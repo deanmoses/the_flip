@@ -1,6 +1,6 @@
 # Test Strategy
 
-This document explains how to approach automated testing for this project. It standardizes the framework, directory layout, and expectations so contributors (humans or AI) can quickly add or run tests with confidence.
+This is a guide for developers and AI assistants around running and creating automated tests. 
 
 ## Framework & Tooling
 - **Test runner:** Use Django's built-in runner (`python manage.py test`). It is the most widely supported path for Django projects.
