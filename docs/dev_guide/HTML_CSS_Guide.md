@@ -4,30 +4,19 @@ This is a guide for developers and AI assistants creating HTML and CSS.
 
 Focus on clean, modern, lightweight mobile-first pages that rely only on system fonts and a single cached stylesheet.
 
-## 1. Visual System
+## 1. Design System Reference
 
-- **Typography:** Use the system stack `"Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif` but do not load remote fonts; if a name is missing locally the stack simply falls back.
-- **Color Palette:**  
-  - Primary: `#1f7aea` (links, primary buttons).  
-  - Secondary: `#1b3a57` (headers, nav background).  
-  - Accent: `#10b981` (success highlights).  
-  - Warning: `#f59e0b`, Danger: `#ef4444`.  
-  - Surface light: `#ffffff`, Surface muted: `#f5f7fb`, Border: `#e3e8ef`, Text base: `#1f2933`, Text muted: `#52606d`.
-- **Spacing Scale:** 4 px base unit with tokens `space-1 = 4px`, `space-2 = 8px`, … up to `space-6 = 24px`. Keep vertical rhythm multiples of 4.
-- **Radii & Shadows:** Base radius `4px`, cards `8px`. Single soft shadow `0 8px 20px rgba(15, 23, 42, 0.08)`.
-- **Tokens:** Define CSS custom properties inside `:root` (`--color-primary`, `--space-3`, etc.) so components share consistent values.
+When generating the initial stylesheets, use the color tokens, spacing scales, baseline layout rules, and other scaffold details from [`scaffolding/HTML_CSS_Scaffold.md`](scaffolding/HTML_CSS_Scaffold.md). Review that file when regenerating the base stylesheet or updating global design tokens. 
 
-## 2. Layout Rules
+The rest of this guide focuses on day-to-day markup and component expectations.
 
-- **Mobile First:** Author CSS with small screens as the default; layer on enhancements at larger breakpoints.
-- **Container:** Max width 1200px, horizontal padding `space-4`. Body background `#f5f7fb`.
-- **Header/Nav/Footer:** Persistent nav with sticky behavior on desktop (`position: sticky; top: 0;`). Footer simple text centered.
-- **Responsive Breakpoints:**  
-  - `@media (max-width: 1024px)` collapse sidebar into horizontal tabs.  
-  - `@media (max-width: 768px)` stack header elements vertical, convert grids to one column.  
-  - `@media (max-width: 480px)` full-width buttons, increase body padding.
-- **Data Display:** Prefer flexible card/list layouts instead of `<table>` for primary screens. Use stacked metadata rows with labels so content reads well on phones. Only use tables for strongly tabular admin views, and provide a card fallback when screen width < 768px.
-- **Spacing:** Maintain `space-4` (16px) between stacked sections, `space-2` (8px) between tightly related elements.
+## 2. Things to Avoid
+
+- **Do not introduce new font stacks** or load remote fonts. Rely on the font stack defined in the base stylesheet.
+- **Do not hardcode colors, spacing, or shadows.** Reference the CSS variables and tokens established in the base stylesheet.
+- **Do not use inline styles (`style=`)** — rely on reusable classes or scoped CSS files instead.
+- **Do not drop new component patterns** without documenting them; align with the component expectations below.
+- **Do not remove focus outlines** without providing explicit `:focus-visible` styles with equal or better visibility.
 
 ## 3. Component Expectations
 
@@ -36,7 +25,7 @@ Focus on clean, modern, lightweight mobile-first pages that rely only on system 
 - **Cards/Blocks:** `.card` for reusable white surfaces with padding `space-5`, `box-shadow` token.
 - **Forms:** `.form-field` wrapper holding `<label>` and control. Inputs get `border: 1px solid var(--border-color)`, `border-radius: 6px`, focus ring `box-shadow: 0 0 0 3px rgba(31, 122, 234, 0.25)` while retaining visible outline.
 - **Messages & Alerts:** `.alert`, `.alert--success`, `.alert--danger`, etc., leveraging palette tokens.
-- **List Cards:** Use flex layouts with `gap` for metadata rows. Provide `.clickable-card` helper with `cursor: pointer` and subtle background change on hover. Include a `.list-card__meta` element for secondary text so AI-generated HTML mirrors existing card layouts that show author/time/status details.
+- **List Cards:** Use flex layouts with `gap` for metadata rows. Provide `.clickable-card` helper with `cursor: pointer` and subtle background change on hover. Include a `.list-card__meta` element for secondary text so output matches layouts that show author/time/status details.
 - **Utilities:** Provide light utilities for spacing (`.mt-4`), layout (`.flex`, `.grid-two`), and text alignment to avoid inline style usage.
 
 ## 4. Accessibility & Interaction
@@ -65,7 +54,7 @@ Focus on clean, modern, lightweight mobile-first pages that rely only on system 
 
 ## 7. Deliverables Checklist
 
-1. Define tokens in `:root`.  
+1. Reference the tokens defined in the scaffold doc.  
 2. Write base reset + typography rules.  
 3. Implement components with agreed naming method.  
 4. Provide responsive behavior for header, main grids, tables, and cards at the specified breakpoints.  

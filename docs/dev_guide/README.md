@@ -9,3 +9,7 @@ AI assistants must follow these guides before responding:
 5. [`Data_Model.md`](Data_Model.md) – respect the domain objects, fields, privacy constraints, etc.
 
 AI assistants must confirm relevant sections from these documents before generating code or explanations.  Cite which guide sections informed the answer whenever practical.
+
+## When rebuilding from scratch
+
+- [`scaffolding/HTML_CSS_Scaffold.md`](scaffolding/HTML_CSS_Scaffold.md) – tokens, layout baselines, and component defaults for regenerating the core stylesheet. Update this file first if the museum’s visual system changes.
