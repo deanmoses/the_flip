@@ -1,0 +1,55 @@
+# Test Strategy
+
+This document explains how to approach automated testing for this project. 
+
+It standardizes the framework, directory layout, and expectations so contributors (humans or AI) can quickly add or run tests with confidence.
+
+## Framework & Tooling
+- **Test runner:** Use Django's built-in runner (`python manage.py test`). It is the most widely supported path for Django projects.
+- **Base classes:** Prefer `django.test.TestCase`, `TransactionTestCase`, and Django's `Client` for integration-style checks. These give you database isolation and fixtures without extra dependencies.
+- **No Selenium / browser automation:** Keep the suite lightweight and fast. Feature coverage that would require browser automation should be expressed as form/view tests using the Django test client.
+
+## Current Suite Layout
+All automated tests live under `the_flip/tickets/tests/` and follow Django's discovery rules (`test_*.py`, `Test*` classes). Existing coverage includes:
+- `test_machine_instances.py` – model behaviors such as slug generation, custom managers, and name resolution.
+- `test_problem_reports.py` – form filtering rules, public privacy safeguards, and submission flows.
+- `test_integrations.py` – integration tests for how machine status updates drive `ProblemReport` state.
+
+There is also a legacy manual script at `the_flip/test_report_status.py`. It exercises the same logic as the integration tests but is not part of the automated suite; treat it as a diagnostic script only.
+
+When adding new tests:
+1. Place them in the app-specific `tests/` package next to the feature being exercised.
+2. Name files and classes with clear intent (`test_views_dashboard.py`, `MachineAssignmentTests`, etc.).
+3. Keep each test independent by creating its own data in `setUp()` or factory helpers.
+
+## Running Tests Locally
+From the repo root:
+
+```bash
+source venv/bin/activate        # if not already active
+cd the_flip
+python manage.py test           # runs the entire suite
+```
+
+Tips:
+- To scope to a single module: `python manage.py test tickets.tests.test_problem_reports`.
+- Tests rely on the default SQLite database that Django creates in memory; no extra services or env vars are required.
+- If you add dependencies for tests, ensure they land in `requirements.txt`.
+
+## When to Run Tests
+- **Before every push to `main`:** `main` deploys directly to the Render-hosted UAT site, so always run `python manage.py test` locally first.
+- **Before opening or updating a PR:** keeps reviews fast and reduces deploy blockers.
+
+## Coverage Expectations
+This is still a prototype headed toward v1, so prioritize the highest-value flows:
+1. **Domain models & business rules:** Machine and problem report behaviors, status transitions, and queryset helpers should always have regression coverage.
+2. **Forms & public views:** Anything that processes user input (especially rate-limiting or privacy-sensitive code) needs tests similar to `ReportCreateViewTests` and `ReportListPrivacyTests`.
+3. **Authenticated workflows:** Maintainer-only dashboards, status updates, and permissions should have tests using authenticated users.
+4. **APIs or integrations:** When new endpoints are added, cover success and failure cases; use Django's test client or `APIClient` if DRF enters the stack.
+
+End-to-end browser coverage is intentionally out of scope right now to keep the suite fast. If we later need smoke tests, consider lightweight HTTP checks or component-level tests before introducing heavier tooling.
+
+## Future Enhancements
+- Add code coverage reporting (`coverage.py`) once the suite grows, but keep it optional until we stabilize v1.
+- If/when CI is added, reuse the `python manage.py test` command so local and remote runs stay identical.
+- Migrate the manual script logic (`test_report_status.py`) into managed tests if it diverges from the automated coverage.
