@@ -9,7 +9,7 @@ the_flip/
 ├── README.md
 ├── build.sh / render.yaml / runtime.txt
 ├── docs/
-│   └── dev_guide/           # shared development guides (this folder)
+│   └── dev_guide/           # development guides
 └── the_flip/                 # Django project package
     ├── __init__.py
     ├── settings/             # split settings module (base/dev/test/prod)
