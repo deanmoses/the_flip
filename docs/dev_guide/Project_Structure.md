@@ -9,6 +9,7 @@ the_flip/
 ├── README.md
 ├── build.sh / render.yaml / runtime.txt
 ├── docs/
+│   └── dev_guide/           # shared development guides (this folder)
 └── the_flip/                 # Django project package
     ├── __init__.py
     ├── settings/             # split settings module (base/dev/test/prod)
@@ -32,7 +33,7 @@ the_flip/
 ### General conventions
 - Keep each app’s `models.py`, `admin.py`, `forms.py`, and `tests/` focused on that domain. For larger modules, split into packages (e.g., `catalog/models/machine.py`).
 - Prefer `apps.<domain>.urls` for any public routes rather than cramming everything into the project `urls.py`.
-- Place documentation in `docs/` alongside Data_Model.md so architectural references live together.
+- Place development documentation in `docs/dev_guide/` so architectural references live together.
 - Use `settings/base.py` for shared defaults and layer `dev.py` (local development), `test.py` (CI/automated tests), and `prod.py` (production). Point the `DJANGO_SETTINGS_MODULE` environment variable at the appropriate module per environment.
 
 This structure makes it clear where new code belongs and eliminates the need for proxy-admin hacks: register each model in its native app, then customize admin ordering via `CustomAdminSite.get_app_list`. When we refactor toward this layout, update `INSTALLED_APPS` and migrate files gradually (accounts → catalog → maintenance) to keep diffs manageable.
