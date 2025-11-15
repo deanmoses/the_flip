@@ -119,7 +119,7 @@ This document describes the system's data model.
   - Default Sort Order: newest first (descending `created_at`).
   - Indexed Fields
     - `created_at`: supports newest-first list pages and efficient archival queries.
-    - `type`: retained during the transition to “Problem Reports only” to distinguish legacy maintainer tasks from visitor reports for migrations.
+    - `status`: supports filtering by open problem reports
   - Fields
     - **Created At (`created_at`)** — datetime, auto-generated on insert (required)
       - Created_at may be set manually during data imports to preserve existing timestamps.
@@ -157,7 +157,11 @@ This document describes the system's data model.
     - **Machine (`machine`)** — foreign key to Machine Instance (required)
       - Help: Machine that received the work or inspection.
     - **Maintainers (`maintainers`)** — many-to-many relationship to Maintainer (optional)
-      - Multiple maintainers can be credited for a single log entry.
+      - Multiple maintainers can be credited for a single log entry via a combo-box style picker.
+      - Validation: At least one maintainer must be selected unless ad-hoc names are provided (see below).
       - Help: Credits the maintainers involved in the work.
-    - **Description (`text`)** — long-form text describing the work done (optional but typically populated)
-      - Help: Narrative description of the maintenance performed or observations noted.
+    - **Ad-hoc Maintainer Names (`maintainer_names`)** — string, max 120 chars (optional)
+      - Help: Free-form list of up to roughly three names typed in who are not recorded Maintainers (comma separated).
+      - Validation: Required when no  Maintainer records are selected.
+    - **Description (`text`)** — long-form text describing the work done (required)
+      - Help: description of work performed or observations noted.
