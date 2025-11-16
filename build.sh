@@ -7,9 +7,6 @@ set -o errexit
 # Install dependencies
 pip install -r requirements.txt
 
-# Change to the Django project directory
-cd the_flip
-
 # Run migrations
 python manage.py migrate
 
@@ -24,3 +21,4 @@ python manage.py create_default_machines
 
 # Import legacy maintenance records
 python manage.py import_legacy_maintenance_records
+

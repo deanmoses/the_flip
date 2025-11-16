@@ -1,0 +1,22 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}The Flip{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'core/styles.css' %}">
+  </head>
+  <body>
+    <header>
+      <h1><a href="{% url 'home' %}">The Flip Maintenance</a></h1>
+      <nav>
+        <a href="{% url 'catalog:machine-list' %}">Machines</a>
+        <a href="{% url 'maintenance:maintenance-index' %}">Maintenance</a>
+      </nav>
+    </header>
+    <main>
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>

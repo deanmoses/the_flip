@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ object.display_name }} · {{ block.super }}{% endblock %}
+{% block content %}
+  <h2>{{ object.display_name }}</h2>
+  <p>{{ object.model.manufacturer }} · {{ object.model.year }}</p>
+  <p>Status: {{ object.get_operational_status_display }}</p>
+  <p>Location: {{ object.get_location_display }}</p>
+
+  <section>
+    <h3>About the Model</h3>
+    <p>{{ object.model.educational_text|default:"No description yet." }}</p>
+  </section>
+
+  <p><a href="{% url 'maintenance:problem-report-create' object.slug %}">Submit a problem report</a></p>
+
+  <section>
+    <h3>Problem Reports</h3>
+    {% if problem_reports %}
+      <ul>
+        {% for report in problem_reports %}
+          <li>
+            {{ report.created_at|date:"M j, Y" }} — {{ report.description|default:"No description" }}
+            ({{ report.get_status_display }})
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No reports yet.</p>
+    {% endif %}
+  </section>
+
+  <section>
+    <h3>Maintenance Log</h3>
+    {% if log_entries %}
+      <ul>
+        {% for entry in log_entries %}
+          <li>
+            <strong>{{ entry.created_at|date:"M j, Y" }}</strong> — {{ entry.text|linebreaks }}
+            <div>
+              {% if entry.maintainers.all %}
+                {{ entry.maintainers.all|join:", " }}
+              {% elif entry.maintainer_names %}
+                {{ entry.maintainer_names }}
+              {% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No log entries yet.</p>
+    {% endif %}
+  </section>
+{% endblock %}

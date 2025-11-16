@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Report a Problem · {{ block.super }}{% endblock %}
+{% block content %}
+  <h2>Report a Problem on {{ machine.display_name }}</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <div>
+        {{ field.label_tag }}
+        {{ field }}
+        {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+        {% for error in field.errors %}<div class="error">{{ error }}</div>{% endfor %}
+      </div>
+    {% endfor %}
+    <button type="submit">Submit Report</button>
+  </form>
+{% endblock %}
