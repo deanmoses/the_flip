@@ -1,13 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Machines · {{ block.super }}{% endblock %}
 {% block content %}
-  <h2>Machine Catalog</h2>
+  <h2>Machines</h2>
   {% for machine in machines %}
     <article>
       <h3><a href="{{ machine.get_absolute_url }}">{{ machine.display_name }}</a></h3>
       <p>{{ machine.model.year }} · {{ machine.model.manufacturer }}</p>
       <p>Status: {{ machine.get_operational_status_display }}</p>
-      <p><a href="{% url 'maintenance:problem-report-create' machine.slug %}">Report a problem</a></p>
     </article>
   {% empty %}
     <p>No machines yet.</p>
