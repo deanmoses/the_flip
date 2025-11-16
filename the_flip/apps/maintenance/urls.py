@@ -18,6 +18,11 @@ urlpatterns = [
         name="machine-log",
     ),
     path(
+        "<slug:slug>/log/entries/",
+        views.MachineLogPartialView.as_view(),
+        name="machine-log-entries",
+    ),
+    path(
         "<slug:slug>/log/new/",
         views.MachineLogCreateView.as_view(),
         name="machine-log-create",

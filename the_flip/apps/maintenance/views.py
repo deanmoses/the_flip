@@ -3,8 +3,10 @@ from __future__ import annotations
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import Paginator
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
-from django.views.generic import ListView, TemplateView, FormView
+from django.template.loader import render_to_string
+from django.views.generic import ListView, TemplateView, FormView, View
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import MachineInstance
@@ -137,3 +139,32 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if normalized in {username, full_name}:
                 return maintainer
         return None
+
+
+class MachineLogPartialView(LoginRequiredMixin, UserPassesTestMixin, View):
+    template_name = "maintenance/partials/log_entry.html"
+
+    def test_func(self):
+        return self.request.user.is_staff
+
+    def get(self, request, *args, **kwargs):
+        machine = get_object_or_404(MachineInstance, slug=kwargs["slug"])
+        logs = (
+            LogEntry.objects.filter(machine=machine)
+            .select_related("machine")
+            .prefetch_related("maintainers", "media")
+            .order_by("-created_at")
+        )
+        paginator = Paginator(logs, 10)
+        page_obj = paginator.get_page(request.GET.get("page"))
+        items_html = "".join(
+            render_to_string(self.template_name, {"entry": entry, "machine": machine})
+            for entry in page_obj.object_list
+        )
+        return JsonResponse(
+            {
+                "items": items_html,
+                "has_next": page_obj.has_next(),
+                "next_page": page_obj.next_page_number() if page_obj.has_next() else None,
+            }
+        )
