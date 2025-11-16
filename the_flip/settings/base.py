@@ -77,8 +77,8 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
-STATIC_ROOT = REPO_ROOT / "staticfiles"
-STATICFILES_DIRS = [REPO_ROOT / "static"]
+STATIC_ROOT = REPO_ROOT / "static_collected"
+STATICFILES_DIRS = [REPO_ROOT / "the_flip/static"]
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MEDIA_URL = "/media/"
