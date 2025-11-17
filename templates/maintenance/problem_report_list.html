@@ -10,20 +10,19 @@
           <div class="machine-card__header">
             <div class="machine-card__title">
               <span class="machine-card__name">{{ report.machine.display_name }}</span>
-              <span class="machine-card__meta">・{{ report.machine.model.year }} {{ report.machine.model.manufacturer }}</span>
             </div>
-            <span class="badge badge-status badge-status--{{ report.status }}">
-              {{ report.get_status_display }}
-            </span>
+            <div class="machine-card__meta-group">
+              <span class="machine-card__timestamp">{{ report.created_at|smart_date }}</span>
+              <span class="badge badge-status badge-status--{{ report.status }}">
+                {{ report.get_status_display }}
+              </span>
+            </div>
           </div>
           <div class="machine-card__problem">
             {% if report.problem_type != report.PROBLEM_OTHER %}
               <span class="machine-card__problem-label">{{ report.get_problem_type_display }}:</span>
             {% endif %}
             {{ report.description|default:"No description provided." }}
-          </div>
-          <div class="machine-card__timestamp">
-            {{ report.created_at|smart_date }}
           </div>
         </li>
       {% endfor %}

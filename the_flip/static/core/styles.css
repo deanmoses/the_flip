@@ -243,6 +243,14 @@ select:focus {
   text-align: right;
 }
 
+.machine-card__meta-group {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: right;
+}
+
 .machine-card__problem {
   font-size: 0.95rem;
   color: var(--color-text);
@@ -261,6 +269,10 @@ select:focus {
 .badge-status {
   margin-left: auto;
   white-space: nowrap;
+}
+
+.machine-card__meta-group .badge-status {
+  margin-left: 0;
 }
 
 .badge-status--good {
