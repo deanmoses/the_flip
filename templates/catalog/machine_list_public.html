@@ -4,7 +4,7 @@
   <h2>Machines</h2>
   {% for machine in machines %}
     <article>
-      <h3><a href="{% url 'maintainer-machine-detail' machine.slug %}">{{ machine.display_name }}</a></h3>
+      <h3><a href="{% url 'public-machine-detail' machine.slug %}">{{ machine.display_name }}</a></h3>
       <p>{{ machine.model.year }} · {{ machine.model.manufacturer }}</p>
       <p>Status: {{ machine.get_operational_status_display }}</p>
     </article>

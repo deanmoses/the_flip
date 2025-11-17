@@ -18,7 +18,12 @@ from django.contrib import admin
 from django.urls import path
 from django.views.generic import RedirectView
 
-from the_flip.apps.catalog.views import MachineDetailView, MachineListView
+from the_flip.apps.catalog.views import (
+    MachineDetailView,
+    MachineListView,
+    PublicMachineDetailView,
+    PublicMachineListView,
+)
 from the_flip.apps.maintenance import views as maintenance_views
 from django.contrib.auth import views as auth_views
 
@@ -29,8 +34,8 @@ path("", RedirectView.as_view(pattern_name="problem-report-list", permanent=Fals
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
 
     # Public machine pages
-    path("m/", MachineListView.as_view(), name="public-machine-list"),
-    path("m/<slug:slug>/", MachineDetailView.as_view(), name="public-machine-detail"),
+    path("m/", PublicMachineListView.as_view(), name="public-machine-list"),
+    path("m/<slug:slug>/", PublicMachineDetailView.as_view(), name="public-machine-detail"),
 
     # Problem report submission
     # path("p/", maintenance_views.ProblemReportCreateView.as_view(), name="problem-report-create-select-machine"),

@@ -5,13 +5,17 @@ from the_flip.apps.maintenance.forms import ProblemReportForm
 from the_flip.apps.maintenance.models import LogEntry, ProblemReport
 
 
-class MachineListView(ListView):
-    template_name = "catalog/machine_list.html"
+class PublicMachineListView(ListView):
+    template_name = "catalog/machine_list_public.html"
     context_object_name = "machines"
     queryset = MachineInstance.objects.visible().order_by("model__year")
 
 
-class MachineDetailView(DetailView):
+class MachineListView(PublicMachineListView):
+    template_name = "catalog/machine_list.html"
+
+
+class PublicMachineDetailView(DetailView):
     template_name = "catalog/machine_detail.html"
     queryset = MachineInstance.objects.visible()
     slug_field = "slug"
@@ -28,3 +32,9 @@ class MachineDetailView(DetailView):
         )
         context["problem_report_form"] = ProblemReportForm()
         return context
+
+
+class MachineDetailView(PublicMachineDetailView):
+    """Maintainer-facing detail page; customize as needed."""
+
+    template_name = "catalog/maintainer_machine_detail.html"

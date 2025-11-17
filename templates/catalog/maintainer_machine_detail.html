@@ -1,16 +1,14 @@
 {% extends "base.html" %}
-{% load core_extras %}
 {% block title %}{{ object.display_name }} · {{ block.super }}{% endblock %}
 {% block content %}
-  <h2>{{ object.display_name }}</h2>
+  <div class="log-header">
+    <h2>{{ object.display_name }}</h2>
+    <div class="header-actions">
+      <a class="btn btn-primary" href="{% url 'log-machine' object.slug %}">View Logs</a>
+      <a class="btn btn-primary" href="{% url 'problem-report-create' object.slug %}">Submit Problem Report</a>
+    </div>
+  </div>
   <p>{{ object.model.manufacturer }} · {{ object.model.year }}</p>
   <p>Status: {{ object.get_operational_status_display }}</p>
   <p>Location: {{ object.get_location_display }}</p>
-
-  <section>
-    <h3>About the Model</h3>
-    <p>{{ object.model.educational_text|default:"No description yet." }}</p>
-  </section>
-
-  <p><a href="{% url 'problem-report-create' object.slug %}">Submit a problem report</a></p>
 {% endblock %}
