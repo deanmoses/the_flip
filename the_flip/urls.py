@@ -52,9 +52,9 @@ path("", RedirectView.as_view(pattern_name="problem-report-list", permanent=Fals
 
     # Log views
     path("logs/", maintenance_views.MachineLogView.as_view(), name="log-list"),
-    path("logs/<slug:slug>/", maintenance_views.MachineLogView.as_view(), name="log-machine"),
-    # path("logs/<int:pk>/", maintenance_views.LogEntryDetailView.as_view(), name="log-detail"),
-    # path("logs/new/", maintenance_views.LogEntryCreateView.as_view(), name="log-create"),
+    path("logs/<int:pk>/", maintenance_views.LogEntryDetailView.as_view(), name="log-detail"),
     path("logs/new/<slug:slug>/", maintenance_views.MachineLogCreateView.as_view(), name="log-create-machine"),
     path("logs/<slug:slug>/entries/", maintenance_views.MachineLogPartialView.as_view(), name="log-entries"),
+    path("logs/<slug:slug>/", maintenance_views.MachineLogView.as_view(), name="log-machine"),
+    # path("logs/new/", maintenance_views.LogEntryCreateView.as_view(), name="log-create"),
 ]

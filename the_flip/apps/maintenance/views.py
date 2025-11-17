@@ -6,11 +6,11 @@ from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
-from django.views.generic import ListView, TemplateView, FormView, View
+from django.views.generic import ListView, TemplateView, FormView, View, DetailView, UpdateView
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import MachineInstance
-from the_flip.apps.maintenance.forms import LogEntryQuickForm, ProblemReportForm
+from the_flip.apps.maintenance.forms import LogEntryQuickForm, ProblemReportForm, LogEntryForm
 from the_flip.apps.maintenance.models import LogEntry, LogEntryMedia, ProblemReport
 
 
@@ -168,3 +168,51 @@ class MachineLogPartialView(LoginRequiredMixin, UserPassesTestMixin, View):
                 "next_page": page_obj.next_page_number() if page_obj.has_next() else None,
             }
         )
+
+
+class LogEntryDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    model = LogEntry
+    template_name = "maintenance/log_entry_detail.html"
+    context_object_name = "entry"
+
+    def test_func(self):
+        return self.request.user.is_staff
+
+    def get_queryset(self):
+        return LogEntry.objects.select_related("machine").prefetch_related("maintainers", "media")
+
+    def post(self, request, *args, **kwargs):
+        """Handle AJAX updates to the log entry."""
+        self.object = self.get_object()
+        action = request.POST.get("action")
+
+        if action == "update_text":
+            self.object.text = request.POST.get("text", "")
+            self.object.save(update_fields=["text", "updated_at"])
+            return JsonResponse({"success": True})
+
+        elif action == "upload_media":
+            if "file" in request.FILES:
+                media = LogEntryMedia.objects.create(
+                    log_entry=self.object,
+                    media_type=LogEntryMedia.TYPE_PHOTO,
+                    file=request.FILES["file"],
+                )
+                return JsonResponse({
+                    "success": True,
+                    "media_id": media.id,
+                    "media_url": media.file.url,
+                })
+            return JsonResponse({"success": False, "error": "No file provided"}, status=400)
+
+        elif action == "delete_media":
+            media_id = request.POST.get("media_id")
+            try:
+                media = LogEntryMedia.objects.get(id=media_id, log_entry=self.object)
+                media.file.delete()
+                media.delete()
+                return JsonResponse({"success": True})
+            except LogEntryMedia.DoesNotExist:
+                return JsonResponse({"success": False, "error": "Media not found"}, status=404)
+
+        return JsonResponse({"success": False, "error": "Invalid action"}, status=400)

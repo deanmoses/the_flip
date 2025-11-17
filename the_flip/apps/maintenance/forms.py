@@ -23,7 +23,7 @@ class LogEntryForm(forms.ModelForm):
 
     class Meta:
         model = LogEntry
-        fields = ["text", "maintainers", "maintainer_names", "machine_status", "problem_report_status", "problem_report"]
+        fields = ["text", "maintainers", "maintainer_names"]
         widgets = {
             "text": forms.Textarea(attrs={"rows": 4}),
         }

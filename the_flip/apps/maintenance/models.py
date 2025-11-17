@@ -97,13 +97,6 @@ class LogEntry(TimeStampedModel):
         on_delete=models.CASCADE,
         related_name="log_entries",
     )
-    problem_report = models.ForeignKey(
-        ProblemReport,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="log_entries",
-    )
     maintainers = models.ManyToManyField(Maintainer, blank=True, related_name="log_entries")
     maintainer_names = models.CharField(
         max_length=120,
@@ -111,18 +104,6 @@ class LogEntry(TimeStampedModel):
         help_text="Comma-separated names when maintainers are not in the system.",
     )
     text = models.TextField()
-    machine_status = models.CharField(
-        max_length=20,
-        choices=MachineInstance.STATUS_CHOICES,
-        null=True,
-        blank=True,
-    )
-    problem_report_status = models.CharField(
-        max_length=20,
-        choices=ProblemReport.STATUS_CHOICES,
-        null=True,
-        blank=True,
-    )
 
     class Meta:
         ordering = ["-created_at"]

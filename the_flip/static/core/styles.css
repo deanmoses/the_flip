@@ -322,6 +322,18 @@ select:focus {
   gap: var(--space-2);
 }
 
+.log-entry-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.log-entry-link:hover {
+  opacity: 0.8;
+  text-decoration: none;
+}
+
 .log-entry-meta {
   font-size: 0.9rem;
   color: var(--color-text-muted);
@@ -330,6 +342,7 @@ select:focus {
 .log-entry-text {
   margin-top: var(--space-2);
   font-size: 1rem;
+  white-space: pre-wrap;
 }
 
 .error {
