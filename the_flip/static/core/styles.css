@@ -243,6 +243,21 @@ select:focus {
   text-align: right;
 }
 
+.machine-card__problem {
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+
+.machine-card__problem-label {
+  font-weight: 600;
+  margin-right: var(--space-1);
+}
+
+.machine-card__timestamp {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
 .badge-status {
   margin-left: auto;
   white-space: nowrap;
@@ -265,6 +280,16 @@ select:focus {
 
 .badge-status--broken {
   background: var(--color-danger);
+  color: #fff;
+}
+
+.badge-status--open {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.badge-status--closed {
+  background: var(--color-accent);
   color: #fff;
 }
 
