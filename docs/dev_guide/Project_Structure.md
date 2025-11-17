@@ -6,9 +6,10 @@ This document captures the target layout for a rebuilt version of The Flip so ne
 the_flip/
 ├── manage.py
 ├── README.md
-├── build.sh / render.yaml / runtime.txt / requirements.txt 
+├── build.sh / render.yaml / runtime.txt / requirements.txt
 ├── docs/
 │   └── dev_guide/           # development guides
+├── templates/                # Django templates organized by app
 └── the_flip/                 # Django project package
     ├── __init__.py
     ├── settings/             # split settings module (base/dev/test/prod)
@@ -19,8 +20,7 @@ the_flip/
     │   ├── catalog/          # MachineModel + MachineInstance catalog
     │   ├── maintenance/      # Problem reports, log entries, workflows
     │   └── core/             # Shared utilities & decorators
-    ├── templates/
-    └── static/
+    └── static/               # Project-level static files
 ```
 
 Refer to the repository-level [`README.md`](../README.md) for onboarding and environment setup.

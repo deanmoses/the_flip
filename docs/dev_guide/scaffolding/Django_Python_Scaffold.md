@@ -23,10 +23,9 @@ Day-to-day feature work should reference [`../Django_Python_Guide.md`](../Django
 ## Default Data & Management Commands
 
 - Maintain dedicated commands for seeding demo data:
-  - `python manage.py import_legacy_maintainers`
-  - `python manage.py create_default_machines`
-  - `python manage.py import_legacy_maintenance_records`
-  - `python manage.py create_sample_maintenance_data`
+  - `python manage.py import_legacy_maintainers` (implemented in `accounts/management/commands/import_maintainers.py`)
+  - `python manage.py import_machines` (implemented in `catalog/management/commands/import_machines.py`)
+  - `python manage.py import_legacy_maintenance_records` (implemented in `maintenance/management/commands/import_maintenance_records.py`)
 - These commands run via `build.sh` so every deploy to Render recreates the demo environment. When rebuilding locally, run the same sequence after `migrate`.
 
 ## Deployment Hooks

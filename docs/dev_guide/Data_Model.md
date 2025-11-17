@@ -26,8 +26,8 @@ This document describes the system's data model.
       - Help: System-managed timestamp when this machine model record is created.
     - **Updated At (`updated_at`)** — datetime, auto-updated on each change (required)
       - Help: System-managed timestamp of the most recent change to the machine model record.
-    - **Name (`name`)** — string, max 200 chars (required)
-      - Help: Official machine model name (e.g., “Godzilla”).
+    - **Name (`name`)** — string, max 200 chars, unique (required)
+      - Help: Official machine model name (e.g., "Godzilla"). Must be unique across all machine models.
     - **Manufacturer (`manufacturer`)** — string, max 200 chars (optional)
       - Help: Manufacturer or publisher responsible for the machine.
     - **Year Manufactured (`year`)** — positive integer (optional)
@@ -78,7 +78,7 @@ This document describes the system's data model.
     - Create: System Administrators only, via Django Admin
     - Update: System Administrators only, via Django Admin
     - Delete: System Administrators only, via Django Admin
-  - Default Sort Order: by display name (Name Override if set, otherwise the Machine Model name).
+  - Default Sort Order: by Machine Model name, then by serial number (ascending).
   - Fields
     - **Created At (`created_at`)** — datetime, auto-generated on insert (required)
       - Help: System-managed timestamp when this machine instance record is created.
@@ -154,6 +154,8 @@ This document describes the system's data model.
   - Fields
     - **Created At (`created_at`)** — datetime, auto-generated on insert (required)
       - Help: Timestamp when the log entry was recorded.
+    - **Updated At (`updated_at`)** — datetime, auto-updated on each change (required)
+      - Help: System-managed timestamp reflecting the most recent modification to the log entry.
     - **Machine (`machine`)** — foreign key to Machine Instance (required)
       - Help: Machine that received the work or inspection.
     - **Maintainers (`maintainers`)** — many-to-many relationship to Maintainer (optional)

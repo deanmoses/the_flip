@@ -7,7 +7,7 @@ Use this document when regenerating the base UI from scratch. It captures the de
 - **Typography:** Use the system stack `"Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif` but do not load remote fonts; the stack simply falls back if fonts are missing.
 - **Color Palette:**
   - Primary: `#1f7aea` – links, primary buttons
-  - Secondary: `#1b3a57` – headers, navigation backgrounds
+  - Secondary: `#0f1f34` – headers, navigation backgrounds
   - Accent: `#10b981` – success highlights
   - Warning: `#f59e0b`, Danger: `#ef4444`
   - Surface light: `#ffffff`, Surface muted: `#f5f7fb`, Border: `#e3e8ef`
