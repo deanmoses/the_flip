@@ -10,7 +10,7 @@ from django.views.generic import ListView, TemplateView, FormView, View, DetailV
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import MachineInstance
-from the_flip.apps.maintenance.forms import LogEntryQuickForm, ProblemReportForm, LogEntryForm
+from the_flip.apps.maintenance.forms import LogEntryQuickForm, ProblemReportForm
 from the_flip.apps.maintenance.models import LogEntry, LogEntryMedia, ProblemReport
 
 
