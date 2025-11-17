@@ -18,6 +18,7 @@
     <main>
       {% block content %}{% endblock %}
     </main>
+    <script src="{% static 'core/clickable_cards.js' %}" defer></script>
     <script src="{% static 'core/timezone.js' %}" defer></script>
     {% block extra_scripts %}{% endblock %}
   </body>

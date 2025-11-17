@@ -182,6 +182,91 @@ select:focus {
   margin-bottom: var(--space-4);
 }
 
+.machine-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.machine-list > li {
+  margin: 0;
+}
+
+.machine-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.machine-card:hover,
+.machine-card:focus-visible {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.machine-card:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.machine-card__header {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.machine-card__title {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  font-size: 1rem;
+  line-height: 1.4;
+  color: var(--color-text);
+}
+
+.machine-card__name {
+  font-weight: 600;
+}
+
+.machine-card__meta {
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.machine-card__location {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+.badge-status {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.badge-status--good {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.badge-status--unknown {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.badge-status--fixing {
+  background: var(--color-warning);
+  color: #1f1f1f;
+}
+
+.badge-status--broken {
+  background: var(--color-danger);
+  color: #fff;
+}
+
 .log-header {
   display: flex;
   justify-content: space-between;
