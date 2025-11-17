@@ -115,7 +115,6 @@ class MachineInstance(TimeStampedModel):
         choices=STATUS_CHOICES,
         default=STATUS_UNKNOWN,
     )
-    ownership_credit = models.CharField(max_length=300, blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
