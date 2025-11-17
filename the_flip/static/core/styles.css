@@ -254,6 +254,10 @@ select:focus {
 .machine-card__problem {
   font-size: 0.95rem;
   color: var(--color-text);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  -webkit-line-clamp: 1;
 }
 
 .machine-card__problem-label {
@@ -428,6 +432,18 @@ select:focus {
   }
 }
 
+
+@media (min-width: 769px) {
+  .machine-card__problem {
+    -webkit-line-clamp: 2;
+  }
+}
+
+@media (min-width: 960px) {
+  .machine-card__problem {
+    -webkit-line-clamp: 3;
+  }
+}
 
 @media (max-width: 768px) {
   header {

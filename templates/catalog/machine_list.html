@@ -28,7 +28,7 @@
                   {% if machine.latest_open_report %}
                     <span class="machine-card__problem">
                       <span class="machine-card__problem-label">❗Problem report:</span>
-                      {{ machine.latest_open_report.0.description|truncatechars:30 }}
+                      {{ machine.latest_open_report.0.description }}
                     </span>
                   {% endif %}
                 </div>
