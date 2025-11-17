@@ -167,8 +167,6 @@
     // Delete media
     function attachDeleteHandler(button) {
       button.addEventListener('click', async () => {
-        if (!confirm('Delete this photo?')) return;
-
         const mediaId = button.dataset.mediaId;
         const formData = new FormData();
         formData.append('action', 'delete_media');
