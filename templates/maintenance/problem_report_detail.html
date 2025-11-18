@@ -2,15 +2,18 @@
 {% load core_extras %}
 {% block title %}Problem Report #{{ report.pk }} · {{ block.super }}{% endblock %}
 {% block content %}
-  <nav class="breadcrumb">
-    <a href="{% url 'maintainer-machine-detail' machine.slug %}">{{ machine.display_name }}</a>
-    <span>›</span>
-    <a href="{% url 'machine-problem-reports' machine.slug %}">Problem Reports</a>
-  </nav>
+  <nav class="breadcrumb breadcrumb--with-actions">
+    <div class="breadcrumb__trail">
+      <a href="{% url 'maintainer-machine-list' %}">Machines</a>
+      <span>›</span>
+      <a href="{% url 'maintainer-machine-detail' machine.slug %}">{{ machine.display_name }}</a>
+      <span>›</span>
+      <a href="{% url 'machine-problem-reports' machine.slug %}">Problem Reports</a>
+      <span>›</span>
+      <strong>{{ report.created_at|smart_date }} ({{ report.get_status_display }})</strong>
+    </div>
 
-  <div class="log-header">
-    <h2>{{ report.get_status_display }} Problem - Reported At {{ report.created_at|smart_date }}</h2>
-    <div class="header-actions">
+    <div class="breadcrumb__actions">
       {% if report.status == report.STATUS_OPEN %}
         <form method="post" style="display: inline;">
           {% csrf_token %}
@@ -23,7 +26,7 @@
         </form>
       {% endif %}
     </div>
-  </div>
+  </nav>
 
   <section class="card">
     {% if report.problem_type != report.PROBLEM_OTHER %}
