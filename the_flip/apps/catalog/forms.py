@@ -6,10 +6,13 @@ from the_flip.apps.catalog.models import MachineInstance, MachineModel
 
 class MachineInstanceForm(forms.ModelForm):
     """Form for editing machine instance details.
-
-    Excludes the model field (cannot change a machine's model) and
-    auto-generated fields (slug, audit fields).
     """
+
+    fieldsets = [
+        ("Current State", ["operational_status", "location"]),
+        ("Identification", ["name_override", "serial_number"]),
+        ("Provenance", ["ownership_credit", "acquisition_notes"]),
+    ]
 
     class Meta:
         model = MachineInstance
