@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import base64
 from io import BytesIO
+from pathlib import Path
 
 import qrcode
+from PIL import Image
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import Paginator
@@ -317,22 +319,44 @@ class MachineQRView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             reverse("public-machine-detail", args=[machine.slug])
         )
 
-        # Generate QR code
+        # Generate QR code with high error correction for logo embedding
         qr = qrcode.QRCode(
             version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            error_correction=qrcode.constants.ERROR_CORRECT_H,  # High error correction (30%)
             box_size=10,
             border=4,
         )
         qr.add_data(public_url)
         qr.make(fit=True)
 
-        # Create image
-        img = qr.make_image(fill_color="black", back_color="white")
+        # Create QR code image and convert to RGB for logo overlay
+        qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+
+        # Add logo to center of QR code
+        logo_path = Path(__file__).resolve().parent.parent.parent / "static/core/images/the_flip_logo.png"
+        if logo_path.exists():
+            logo = Image.open(logo_path)
+
+            # Calculate logo size (20% of QR code size for safe scanning)
+            qr_width, qr_height = qr_img.size
+            logo_size = int(qr_width * 0.20)
+
+            # Resize logo maintaining aspect ratio
+            logo.thumbnail((logo_size, logo_size), Image.LANCZOS)
+
+            # Add white background/padding to logo for better contrast
+            padding = 10
+            logo_with_bg = Image.new("RGB", (logo.size[0] + padding * 2, logo.size[1] + padding * 2), "white")
+            logo_pos = (padding, padding)
+            logo_with_bg.paste(logo, logo_pos, logo if logo.mode == "RGBA" else None)
+
+            # Calculate center position and paste logo
+            logo_position = ((qr_width - logo_with_bg.size[0]) // 2, (qr_height - logo_with_bg.size[1]) // 2)
+            qr_img.paste(logo_with_bg, logo_position)
 
         # Convert to base64 for inline display
         buffer = BytesIO()
-        img.save(buffer, format="PNG")
+        qr_img.save(buffer, format="PNG")
         qr_code_data = base64.b64encode(buffer.getvalue()).decode()
 
         context["qr_code_data"] = qr_code_data
