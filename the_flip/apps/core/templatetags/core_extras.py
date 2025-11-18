@@ -17,3 +17,9 @@ def smart_date(value):
         iso_format,
         iso_format,
     )
+
+
+@register.filter
+def getfield(form, field_name):
+    """Get a field from a form by name."""
+    return form[field_name]

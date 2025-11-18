@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load core_extras %}
 {% block title %}Edit Model: {{ object.name }} · {{ block.super }}{% endblock %}
 {% block content %}
   <nav class="breadcrumb">
@@ -19,69 +20,23 @@
     {% csrf_token %}
     {{ form.non_field_errors }}
 
-    <fieldset class="form-section">
-      <legend>Basic Information</legend>
-      {% for field in form %}
-        {% if field.name == "name" or field.name == "manufacturer" or field.name == "month" or field.name == "year" or field.name == "era" %}
-          <div class="form-field">
-            {{ field.label_tag }}
-            {{ field }}
-            {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
-            {% for error in field.errors %}
-              <div class="field-error">{{ error }}</div>
-            {% endfor %}
-          </div>
-        {% endif %}
-      {% endfor %}
-    </fieldset>
-
-    <fieldset class="form-section">
-      <legend>Technical Specifications</legend>
-      {% for field in form %}
-        {% if field.name == "system" or field.name == "scoring" or field.name == "flipper_count" or field.name == "production_quantity" or field.name == "factory_address" %}
-          <div class="form-field">
-            {{ field.label_tag }}
-            {{ field }}
-            {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
-            {% for error in field.errors %}
-              <div class="field-error">{{ error }}</div>
-            {% endfor %}
-          </div>
-        {% endif %}
-      {% endfor %}
-    </fieldset>
-
-    <fieldset class="form-section">
-      <legend>Credits & Attribution</legend>
-      {% for field in form %}
-        {% if field.name == "design_credit" or field.name == "concept_and_design_credit" or field.name == "art_credit" or field.name == "sound_credit" %}
-          <div class="form-field">
-            {{ field.label_tag }}
-            {{ field }}
-            {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
-            {% for error in field.errors %}
-              <div class="field-error">{{ error }}</div>
-            {% endfor %}
-          </div>
-        {% endif %}
-      {% endfor %}
-    </fieldset>
-
-    <fieldset class="form-section">
-      <legend>Metadata & Documentation</legend>
-      {% for field in form %}
-        {% if field.name == "pinside_rating" or field.name == "ipdb_id" or field.name == "illustration_filename" or field.name == "educational_text" or field.name == "sources_notes" %}
-          <div class="form-field">
-            {{ field.label_tag }}
-            {{ field }}
-            {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
-            {% for error in field.errors %}
-              <div class="field-error">{{ error }}</div>
-            {% endfor %}
-          </div>
-        {% endif %}
-      {% endfor %}
-    </fieldset>
+    {% for fieldset_title, field_names in form.fieldsets %}
+      <fieldset class="form-section">
+        <legend>{{ fieldset_title }}</legend>
+        {% for field_name in field_names %}
+          {% with field=form|getfield:field_name %}
+            <div class="form-field">
+              {{ field.label_tag }}
+              {{ field }}
+              {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
+              {% for error in field.errors %}
+                <div class="field-error">{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endwith %}
+        {% endfor %}
+      </fieldset>
+    {% endfor %}
 
     <div class="form-actions">
       <a class="btn btn-secondary" href="{% url 'maintainer-machine-list' %}">Cancel</a>

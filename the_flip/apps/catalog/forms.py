@@ -39,11 +39,16 @@ class MachineInstanceForm(forms.ModelForm):
 
 
 class MachineModelForm(forms.ModelForm):
-    """Form for editing machine model details.
-
-    Excludes auto-generated fields (slug, audit fields).
-    Changes affect all instances of this model.
+    """Form for editing a pinball machine model details.
     """
+
+    fieldsets = [
+        ("Basic Information", ["name", "manufacturer", "month", "year", "production_quantity", "factory_address"]),
+        ("Technical Specifications", ["era", "system", "scoring", "flipper_count"]),
+        ("Credits", ["design_credit", "concept_and_design_credit", "art_credit", "sound_credit"]),
+        ("Community", ["pinside_rating", "ipdb_id", ]),
+        ("Website", ["illustration_filename", "educational_text", "sources_notes"]),
+    ]
 
     class Meta:
         model = MachineModel
