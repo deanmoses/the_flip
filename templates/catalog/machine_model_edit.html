@@ -1,11 +1,18 @@
 {% extends "base.html" %}
 {% block title %}Edit Model: {{ object.name }} · {{ block.super }}{% endblock %}
 {% block content %}
+  <nav class="breadcrumb">
+    <a href="{% url 'maintainer-machine-list' %}">Machines</a>
+    <span>›</span>
+    {% if machine_instance %}
+      <a href="{% url 'maintainer-machine-detail' machine_instance.slug %}">{{ machine_instance.display_name }}</a>
+      <span>›</span>
+    {% endif %}
+    <strong>Model</strong>
+  </nav>
+
   <div class="log-header">
     <h2>Edit Model: {{ object.name }}</h2>
-    <div class="header-actions">
-      <a class="btn btn-secondary" href="{% url 'maintainer-machine-list' %}">Cancel</a>
-    </div>
   </div>
 
   <form method="post" class="form-container">
