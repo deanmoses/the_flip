@@ -9,7 +9,7 @@
   </nav>
 
   <div class="log-header">
-    <h2>{{ report.get_status_display }} Problem Reported At {{ report.created_at|smart_date }}</h2>
+    <h2>{{ report.get_status_display }} Problem - Reported At {{ report.created_at|smart_date }}</h2>
     <div class="header-actions">
       {% if report.status == report.STATUS_OPEN %}
         <form method="post" style="display: inline;">
