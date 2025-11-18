@@ -6,7 +6,7 @@
     <h2>{{ object.display_name }}</h2>
     <div class="header-actions">
       <a class="btn btn-secondary" href="{% url 'machine-edit' object.slug %}">Edit</a>
-      <a class="btn btn-primary" href="{% url 'log-machine' object.slug %}">View Logs</a>
+      <a class="btn btn-primary" href="{% url 'log-machine' object.slug %}">Logs</a>
       <a class="btn btn-primary" href="{% url 'machine-problem-reports' object.slug %}">
         Problem Reports
         {% if open_problem_reports.count > 0 %}
@@ -17,28 +17,30 @@
   </div>
   <p>{{ object.model.manufacturer }} · {{ object.model.year }}</p>
 
-  <div class="inline-edit-group">
-    <div class="inline-edit-field">
-      <label for="status-select">Status:</label>
-      <select id="status-select" class="inline-edit-select" data-field="operational_status">
-        {% for value, label in object.STATUS_CHOICES %}
-          <option value="{{ value }}" {% if object.operational_status == value %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-      <span class="inline-edit-status" id="status-save-indicator"></span>
-    </div>
+  <fieldset class="form-section">
+    <div class="inline-edit-group">
+      <div class="inline-edit-field">
+        <label for="status-select">Status:</label>
+        <select id="status-select" class="inline-edit-select" data-field="operational_status">
+          {% for value, label in object.STATUS_CHOICES %}
+            <option value="{{ value }}" {% if object.operational_status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <span class="inline-edit-status" id="status-save-indicator"></span>
+      </div>
 
-    <div class="inline-edit-field">
-      <label for="location-select">Location:</label>
-      <select id="location-select" class="inline-edit-select" data-field="location">
-        <option value="" {% if not object.location %}selected{% endif %}>--</option>
-        {% for value, label in object.LOCATION_CHOICES %}
-          <option value="{{ value }}" {% if object.location == value %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-      <span class="inline-edit-status" id="location-save-indicator"></span>
+      <div class="inline-edit-field">
+        <label for="location-select">Location:</label>
+        <select id="location-select" class="inline-edit-select" data-field="location">
+          <option value="" {% if not object.location %}selected{% endif %}>--</option>
+          {% for value, label in object.LOCATION_CHOICES %}
+            <option value="{{ value }}" {% if object.location == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <span class="inline-edit-status" id="location-save-indicator"></span>
+      </div>
     </div>
-  </div>
+  </fieldset>
 {% endblock %}
 
 {% block extra_js %}
