@@ -46,10 +46,10 @@ class PublicMachineListView(ListView):
                 default=Value(4),
                 output_field=CharField(),
             ),
-            # Year descending (newest first, nulls last)
-            F('model__year').desc(nulls_last=True),
-            # Month descending (nulls last)
-            F('model__month').desc(nulls_last=True),
+            # Year ascending (oldest first, nulls last)
+            F('model__year').asc(nulls_last=True),
+            # Month ascending (earliest month first, nulls last)
+            F('model__month').asc(nulls_last=True),
         )
 
 
