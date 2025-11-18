@@ -2,12 +2,13 @@
 {% load core_extras %}
 {% block title %}{{ machine.display_name }} Problem Reports · {{ block.super }}{% endblock %}
 {% block content %}
-  <div class="log-header">
-    <h2><a href="{% url 'maintainer-machine-detail' machine.slug %}">{{ machine.display_name }}</a> · Problem Reports</h2>
-    <div class="header-actions">
-      <a class="btn btn-primary" href="{% url 'maintainer-machine-detail' machine.slug %}">Back to Machine</a>
-    </div>
-  </div>
+  <nav class="breadcrumb">
+    <a href="{% url 'maintainer-machine-list' %}">Machines</a>
+    <span>›</span>
+    <a href="{% url 'maintainer-machine-detail' machine.slug %}">{{ machine.display_name }}</a>
+    <span>›</span>
+    <strong>Problem Reports</strong>
+  </nav>
 
   <form method="get" action="">
     <div class="form-field">
