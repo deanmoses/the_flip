@@ -147,7 +147,7 @@ class MachineUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
 
 class MachineModelUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
-    """Edit machine model details (affects all instances of this model)."""
+    """Edit the pinball machine model."""
 
     model = MachineModel
     form_class = MachineModelForm

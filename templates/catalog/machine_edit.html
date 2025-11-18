@@ -12,14 +12,9 @@
   <div class="log-header">
     <h2>Edit</h2>
     <div class="header-actions">
-      <a class="btn btn-secondary" href="{% url 'machine-model-edit' object.model.slug %}">Edit Model</a>
+      <a class="btn btn-secondary" href="{% url 'machine-model-edit' object.model.slug %}">Edit Model Info</a>
     </div>
   </div>
-
-  <p class="text-muted">
-    To edit the pinball machine's model info (affects all instances of {{ object.model.name }}),
-    <a href="{% url 'machine-model-edit' object.model.slug %}">edit the model here</a>.
-  </p>
 
   <form method="post" class="form-container">
     {% csrf_token %}
