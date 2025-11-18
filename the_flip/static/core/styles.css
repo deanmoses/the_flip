@@ -712,3 +712,23 @@ input[type="radio"] {
   font-size: 0.875rem;
   color: var(--color-surface-text-muted);
 }
+
+/* Machine detail page styles */
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  margin-top: calc(var(--space-2) * -1);
+  margin-bottom: var(--space-5);
+}
+
+.educational-text {
+  margin: var(--space-5) 0;
+  line-height: 1.7;
+}
+
+.centered {
+  text-align: center;
+}

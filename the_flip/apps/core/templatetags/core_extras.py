@@ -23,3 +23,18 @@ def smart_date(value):
 def getfield(form, field_name):
     """Get a field from a form by name."""
     return form[field_name]
+
+
+@register.filter
+def month_name(month_number):
+    """Convert month number (1-12) to month name."""
+    if not month_number:
+        return ""
+    month_names = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ]
+    try:
+        return month_names[int(month_number) - 1]
+    except (ValueError, IndexError):
+        return ""

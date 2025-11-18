@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.humanize",
     "whitenoise.runserver_nostatic",
     "the_flip.apps.core",
     "the_flip.apps.accounts",
