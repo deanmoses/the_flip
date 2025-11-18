@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Edit Model: {{ object.name }} · {{ block.super }}{% endblock %}
+{% block content %}
+  <div class="log-header">
+    <h2>Edit Model: {{ object.name }}</h2>
+    <div class="header-actions">
+      <a class="btn btn-secondary" href="{% url 'maintainer-machine-list' %}">Cancel</a>
+    </div>
+  </div>
+
+  <form method="post" class="form-container">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <fieldset class="form-section">
+      <legend>Basic Information</legend>
+      {% for field in form %}
+        {% if field.name == "name" or field.name == "manufacturer" or field.name == "month" or field.name == "year" or field.name == "era" %}
+          <div class="form-field">
+            {{ field.label_tag }}
+            {{ field }}
+            {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
+            {% for error in field.errors %}
+              <div class="field-error">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endfor %}
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>Technical Specifications</legend>
+      {% for field in form %}
+        {% if field.name == "system" or field.name == "scoring" or field.name == "flipper_count" or field.name == "production_quantity" or field.name == "factory_address" %}
+          <div class="form-field">
+            {{ field.label_tag }}
+            {{ field }}
+            {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
+            {% for error in field.errors %}
+              <div class="field-error">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endfor %}
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>Credits & Attribution</legend>
+      {% for field in form %}
+        {% if field.name == "design_credit" or field.name == "concept_and_design_credit" or field.name == "art_credit" or field.name == "sound_credit" %}
+          <div class="form-field">
+            {{ field.label_tag }}
+            {{ field }}
+            {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
+            {% for error in field.errors %}
+              <div class="field-error">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endfor %}
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>Metadata & Documentation</legend>
+      {% for field in form %}
+        {% if field.name == "pinside_rating" or field.name == "ipdb_id" or field.name == "illustration_filename" or field.name == "educational_text" or field.name == "sources_notes" %}
+          <div class="form-field">
+            {{ field.label_tag }}
+            {{ field }}
+            {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
+            {% for error in field.errors %}
+              <div class="field-error">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endfor %}
+    </fieldset>
+
+    <div class="form-actions">
+      <a class="btn btn-secondary" href="{% url 'maintainer-machine-list' %}">Cancel</a>
+      <button type="submit" class="btn btn-primary">Save Changes</button>
+    </div>
+  </form>
+{% endblock %}

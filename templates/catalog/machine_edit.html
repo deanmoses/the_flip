@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ object.display_name }} · {{ block.super }}{% endblock %}
+{% block content %}
+  <nav class="breadcrumb">
+    <a href="{% url 'maintainer-machine-list' %}">Machines</a>
+    <span>›</span>
+    <a href="{% url 'maintainer-machine-detail' object.slug %}">{{ object.display_name }}</a>
+    <span>›</span>
+    <strong>Edit</strong>
+  </nav>
+
+  <div class="log-header">
+    <h2>Edit</h2>
+    <div class="header-actions">
+      <a class="btn btn-secondary" href="{% url 'machine-model-edit' object.model.slug %}">Edit Model</a>
+    </div>
+  </div>
+
+  <p class="text-muted">
+    To edit the pinball machine's model info (affects all instances of {{ object.model.name }}),
+    <a href="{% url 'machine-model-edit' object.model.slug %}">edit the model here</a>.
+  </p>
+
+  <form method="post" class="form-container">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    {% for field in form %}
+      <div class="form-field">
+        {{ field.label_tag }}
+        {{ field }}
+        {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
+        {% for error in field.errors %}
+          <div class="field-error">{{ error }}</div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Save Changes</button>
+    </div>
+  </form>
+{% endblock %}

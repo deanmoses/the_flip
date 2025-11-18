@@ -21,34 +21,105 @@ class MachineModel(TimeStampedModel):
         (ERA_SS, "Solid State"),
     ]
 
-    name = models.CharField(max_length=200, unique=True)
-    manufacturer = models.CharField(max_length=200, blank=True)
+    name = models.CharField(
+        max_length=200,
+        unique=True,
+        help_text="Official name of the pinball machine model"
+    )
+    slug = models.SlugField(unique=True, max_length=200, blank=True)
+    manufacturer = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Company that manufactured this machine (e.g., Bally, Williams, Stern)"
+    )
     month = models.PositiveIntegerField(
         null=True,
         blank=True,
         validators=[MinValueValidator(1), MaxValueValidator(12)],
+        help_text="Month of manufacture (1-12)"
     )
-    year = models.PositiveIntegerField(null=True, blank=True)
-    era = models.CharField(max_length=2, choices=ERA_CHOICES)
-    system = models.CharField(max_length=100, blank=True)
-    scoring = models.CharField(max_length=100, blank=True)
-    flipper_count = models.PositiveSmallIntegerField(null=True, blank=True)
+    year = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Year of manufacture"
+    )
+    era = models.CharField(
+        max_length=2,
+        choices=ERA_CHOICES,
+        help_text="Technology era of the machine"
+    )
+    system = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Electronic system type (e.g., WPC-95, System 11)"
+    )
+    scoring = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Scoring system type (e.g., Reel, 5 Digit, 7 Digit)"
+    )
+    flipper_count = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text="Number of flippers on the machine"
+    )
     pinside_rating = models.DecimalField(
         max_digits=4,
         decimal_places=2,
         null=True,
         blank=True,
+        help_text="Rating from Pinside (0.00-10.00)"
     )
-    ipdb_id = models.PositiveIntegerField(null=True, blank=True, unique=True)
-    production_quantity = models.CharField(max_length=50, blank=True)
-    factory_address = models.CharField(max_length=300, blank=True)
-    design_credit = models.CharField(max_length=200, blank=True)
-    concept_and_design_credit = models.CharField(max_length=200, blank=True)
-    art_credit = models.CharField(max_length=200, blank=True)
-    sound_credit = models.CharField(max_length=200, blank=True)
-    educational_text = models.TextField(blank=True)
-    illustration_filename = models.CharField(max_length=255, blank=True)
-    sources_notes = models.TextField(blank=True)
+    ipdb_id = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        unique=True,
+        verbose_name="IPDB ID",
+        help_text="Internet Pinball Database ID number"
+    )
+    production_quantity = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Number of units produced"
+    )
+    factory_address = models.CharField(
+        max_length=300,
+        blank=True,
+        help_text="Address where the machine was manufactured"
+    )
+    design_credit = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Designer(s) of the machine"
+    )
+    concept_and_design_credit = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Concept and design credit (if different from designer)"
+    )
+    art_credit = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Artist(s) who created the artwork"
+    )
+    sound_credit = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Sound designer(s) or composer(s)"
+    )
+    educational_text = models.TextField(
+        blank=True,
+        help_text="Educational description for museum visitors"
+    )
+    illustration_filename = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Filename of the illustration image"
+    )
+    sources_notes = models.TextField(
+        blank=True,
+        help_text="Notes about data sources and references"
+    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
@@ -69,6 +140,17 @@ class MachineModel(TimeStampedModel):
 
     def __str__(self) -> str:
         return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.name) or "model"
+            slug = base_slug
+            counter = 2
+            while MachineModel.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
 
 
 class MachineInstanceQuerySet(models.QuerySet):
@@ -105,15 +187,36 @@ class MachineInstance(TimeStampedModel):
         related_name="instances",
     )
     slug = models.SlugField(unique=True, blank=True)
-    name_override = models.CharField(max_length=200, blank=True)
-    serial_number = models.CharField(max_length=100, blank=True)
-    acquisition_notes = models.TextField(blank=True)
-    ownership_credit = models.CharField(max_length=300, blank=True)
-    location = models.CharField(max_length=20, choices=LOCATION_CHOICES, blank=True)
+    name_override = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Override the model name for this specific instance (optional)"
+    )
+    serial_number = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Serial number from manufacturer (optional)"
+    )
+    acquisition_notes = models.TextField(
+        blank=True,
+        help_text="Details about acquisition history"
+    )
+    ownership_credit = models.CharField(
+        max_length=300,
+        blank=True,
+        help_text="Credit for donation or ownership (optional)"
+    )
+    location = models.CharField(
+        max_length=20,
+        choices=LOCATION_CHOICES,
+        blank=True,
+        help_text="Current physical location"
+    )
     operational_status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
         default=STATUS_UNKNOWN,
+        help_text="Current working condition"
     )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

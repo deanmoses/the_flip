@@ -28,6 +28,8 @@ This document describes the system's data model.
       - Help: System-managed timestamp of the most recent change to the machine model record.
     - **Name (`name`)** — string, max 200 chars, unique (required)
       - Help: Official machine model name (e.g., "Godzilla"). Must be unique across all machine models.
+    - **Slug (`slug`)** — slug string, auto-generated, unique (required)
+      - Help: URL-safe identifier derived from the machine model name; auto-generated when blank using Django's slugify utility. Used in URLs like `/models/star-trek/`.
     - **Manufacturer (`manufacturer`)** — string, max 200 chars (optional)
       - Help: Manufacturer or publisher responsible for the machine.
     - **Year Manufactured (`year`)** — positive integer (optional)

@@ -1,8 +1,12 @@
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Case, CharField, Count, Prefetch, Q, Value, When
 from django.db.models.functions import Coalesce, Lower
-from django.views.generic import DetailView, ListView
+from django.http import JsonResponse
+from django.urls import reverse
+from django.views.generic import DetailView, ListView, UpdateView
 
-from the_flip.apps.catalog.models import MachineInstance
+from the_flip.apps.catalog.forms import MachineInstanceForm, MachineModelForm
+from the_flip.apps.catalog.models import MachineInstance, MachineModel
 from the_flip.apps.maintenance.forms import ProblemReportForm
 from the_flip.apps.maintenance.models import LogEntry, ProblemReport
 
@@ -84,3 +88,80 @@ class MachineDetailView(PublicMachineDetailView):
             .prefetch_related("maintainers", "media")
         )
         return context
+
+    def post(self, request, *args, **kwargs):
+        """Handle inline AJAX updates for status and location."""
+        if not request.user.is_staff:
+            return JsonResponse({"error": "Unauthorized"}, status=403)
+
+        self.object = self.get_object()
+        action = request.POST.get("action")
+
+        if action == "update_status":
+            status = request.POST.get("operational_status")
+            if status in dict(MachineInstance.STATUS_CHOICES):
+                self.object.operational_status = status
+                self.object.updated_by = request.user
+                self.object.save(update_fields=["operational_status", "updated_by", "updated_at"])
+                return JsonResponse({
+                    "status": "success",
+                    "operational_status": status,
+                    "operational_status_display": self.object.get_operational_status_display()
+                })
+            return JsonResponse({"error": "Invalid status"}, status=400)
+
+        elif action == "update_location":
+            location = request.POST.get("location")
+            if location in dict(MachineInstance.LOCATION_CHOICES):
+                self.object.location = location
+                self.object.updated_by = request.user
+                self.object.save(update_fields=["location", "updated_by", "updated_at"])
+                return JsonResponse({
+                    "status": "success",
+                    "location": location,
+                    "location_display": self.object.get_location_display()
+                })
+            return JsonResponse({"error": "Invalid location"}, status=400)
+
+        return JsonResponse({"error": "Unknown action"}, status=400)
+
+
+class MachineUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """Edit machine instance details (excluding model)."""
+
+    model = MachineInstance
+    form_class = MachineInstanceForm
+    template_name = "catalog/machine_edit.html"
+    slug_field = "slug"
+    slug_url_kwarg = "slug"
+
+    def test_func(self):
+        return self.request.user.is_staff
+
+    def form_valid(self, form):
+        form.instance.updated_by = self.request.user
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse("maintainer-machine-detail", kwargs={"slug": self.object.slug})
+
+
+class MachineModelUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """Edit machine model details (affects all instances of this model)."""
+
+    model = MachineModel
+    form_class = MachineModelForm
+    template_name = "catalog/machine_model_edit.html"
+    slug_field = "slug"
+    slug_url_kwarg = "slug"
+
+    def test_func(self):
+        return self.request.user.is_staff
+
+    def form_valid(self, form):
+        form.instance.updated_by = self.request.user
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        # For now, redirect to the machine list since model detail view doesn't exist yet
+        return reverse("maintainer-machine-list")
