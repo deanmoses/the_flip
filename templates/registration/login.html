@@ -9,26 +9,15 @@
   <p style="color: red;">Your username and password didn't match. Please try again.</p>
 {% endif %}
 
-{% if next %}
-  {% if user.is_authenticated %}
-    <p>Your account doesn't have access to this page. To proceed,
-    please login with an account that has access.</p>
-  {% else %}
-    <p>Please login to see this page.</p>
-  {% endif %}
-{% endif %}
-
 <form method="post" action="{% url 'login' %}">
   {% csrf_token %}
-  <div>
-    {{ form.username.label_tag }}
-    {{ form.username }}
+  <div class="form-field">
+    <input type="text" name="username" placeholder="Username" required id="id_username" autocomplete="username">
   </div>
-  <div>
-    {{ form.password.label_tag }}
-    {{ form.password }}
+  <div class="form-field">
+    <input type="password" name="password" placeholder="Password" required id="id_password" autocomplete="current-password">
   </div>
-  <button type="submit">Login</button>
+  <button type="submit" class="btn btn-primary">Login</button>
   <input type="hidden" name="next" value="{{ next }}" />
 </form>
 {% endblock %}

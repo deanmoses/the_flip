@@ -1,11 +1,18 @@
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.db import transaction
 from django.db.models import Case, CharField, Count, Prefetch, Q, Value, When
 from django.db.models.functions import Coalesce, Lower
 from django.http import JsonResponse
+from django.shortcuts import redirect
 from django.urls import reverse
-from django.views.generic import DetailView, ListView, UpdateView
+from django.views.generic import DetailView, FormView, ListView, UpdateView
 
-from the_flip.apps.catalog.forms import MachineInstanceForm, MachineModelForm
+from the_flip.apps.catalog.forms import (
+    MachineInstanceForm,
+    MachineModelForm,
+    MachineQuickCreateForm,
+)
 from the_flip.apps.catalog.models import MachineInstance, MachineModel
 from the_flip.apps.maintenance.forms import ProblemReportForm
 from the_flip.apps.maintenance.models import LogEntry, ProblemReport
@@ -171,3 +178,59 @@ class MachineModelUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView
     def get_success_url(self):
         # For now, redirect to the machine list since model detail view doesn't exist yet
         return reverse("maintainer-machine-list")
+
+
+class MachineQuickCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    """Quick create view for adding a new machine instance and optionally a new model.
+
+    This view provides a streamlined interface for maintainers to quickly add machines
+    to the catalog. It supports two workflows:
+    1. Creating a new model with basic info and then creating an instance
+    2. Creating an instance of an existing model with a unique name override
+    """
+
+    template_name = "catalog/machine_quick_create.html"
+    form_class = MachineQuickCreateForm
+
+    def test_func(self):
+        """Only staff members can create machines."""
+        return self.request.user.is_staff
+
+    def form_valid(self, form):
+        """Create the model (if needed) and instance, then redirect to the detail page."""
+        cleaned_data = form.cleaned_data
+        model = cleaned_data.get('model')
+        model_name = cleaned_data.get('model_name')
+        manufacturer = cleaned_data.get('manufacturer')
+        year = cleaned_data.get('year')
+        name_override = cleaned_data.get('name_override')
+
+        with transaction.atomic():
+            # If no existing model selected, create a new one
+            if not model:
+                model = MachineModel.objects.create(
+                    name=model_name,
+                    manufacturer=manufacturer or '',
+                    year=year,
+                    created_by=self.request.user,
+                    updated_by=self.request.user
+                )
+
+            # Create the machine instance
+            instance = MachineInstance.objects.create(
+                model=model,
+                name_override=name_override or '',
+                operational_status=MachineInstance.STATUS_UNKNOWN,
+                location='',  # Empty string for no location set
+                created_by=self.request.user,
+                updated_by=self.request.user
+            )
+
+        # Add success message
+        messages.success(
+            self.request,
+            f"Machine created! Click Edit or Edit Model Info to add more details."
+        )
+
+        # Redirect to the machine detail page
+        return redirect('maintainer-machine-detail', slug=instance.slug)

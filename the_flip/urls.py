@@ -24,6 +24,7 @@ from the_flip.apps.catalog.views import (
     MachineDetailView,
     MachineListView,
     MachineModelUpdateView,
+    MachineQuickCreateView,
     MachineUpdateView,
     PublicMachineDetailView,
     PublicMachineListView,
@@ -52,6 +53,7 @@ path("", RedirectView.as_view(pattern_name="problem-report-list", permanent=Fals
 
     # Maintainer machine views
     path("machines/", MachineListView.as_view(), name="maintainer-machine-list"),
+    path("machines/new/", MachineQuickCreateView.as_view(), name="machine-quick-create"),
     path("machines/<slug:slug>/", MachineDetailView.as_view(), name="maintainer-machine-detail"),
     path("machines/<slug:slug>/edit/", MachineUpdateView.as_view(), name="machine-edit"),
     # path("machines/<slug:slug>/qr/", maintenance_views.MachineQRView.as_view(), name="machine-qr"),

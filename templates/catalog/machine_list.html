@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Machines · {{ block.super }}{% endblock %}
 {% block content %}
-  <h2>Machines</h2>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h2 style="margin: 0;">Machines</h2>
+    <a href="{% url 'machine-quick-create' %}" class="btn btn-primary">+ Add Machine</a>
+  </div>
   {% if machines %}
     <ul class="list machine-list">
       {% for machine in machines %}

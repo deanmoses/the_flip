@@ -1,5 +1,6 @@
 """Forms for catalog models."""
 from django import forms
+from django.core.exceptions import ValidationError
 
 from the_flip.apps.catalog.models import MachineInstance, MachineModel
 
@@ -141,3 +142,94 @@ class MachineModelForm(forms.ModelForm):
                 "placeholder": "Notes about where information was sourced from (e.g., IPDB, Pinside, manuals)"
             }),
         }
+
+
+class MachineQuickCreateForm(forms.Form):
+    """Quick create form for adding a new machine instance and optionally a new model.
+
+    This form allows maintainers to quickly add a machine by either:
+    1. Selecting an existing model and providing a name_override
+    2. Creating a new model with basic info (name, manufacturer, year)
+    """
+
+    model = forms.ModelChoiceField(
+        queryset=MachineModel.objects.all().order_by('name'),
+        required=False,
+        empty_label="--- Create New Model ---",
+        label="Machine Model"
+    )
+
+    # Fields for creating a new model (shown when "Create New Model" is selected)
+    model_name = forms.CharField(
+        max_length=100,
+        required=False,
+        label="Model Name",
+        widget=forms.TextInput(attrs={
+            "placeholder": "e.g., Star Trek"
+        })
+    )
+
+    manufacturer = forms.CharField(
+        max_length=100,
+        required=False,
+        label="Manufacturer",
+        widget=forms.TextInput(attrs={
+            "placeholder": "e.g., Bally, Williams, Stern"
+        })
+    )
+
+    year = forms.IntegerField(
+        required=False,
+        label="Year",
+        widget=forms.NumberInput(attrs={
+            "placeholder": "e.g., 1979",
+            "style": "width: 8em;"
+        })
+    )
+
+    # Field for naming an instance of an existing model
+    name_override = forms.CharField(
+        max_length=100,
+        required=False,
+        label="Machine Name",
+        widget=forms.TextInput(attrs={
+            "placeholder": "Give this specific machine a unique name"
+        }),
+        help_text="Required when selecting an existing model to distinguish this specific machine"
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Format model choices to show "Name (Manufacturer, Year)"
+        self.fields['model'].label_from_instance = lambda obj: (
+            f"{obj.name} ({obj.manufacturer}, {obj.year})"
+            if obj.manufacturer and obj.year
+            else f"{obj.name} ({obj.manufacturer or obj.year or 'Unknown'})"
+        )
+
+    def clean(self):
+        """Validate that either an existing model is selected OR new model info is provided."""
+        cleaned_data = super().clean()
+        model = cleaned_data.get('model')
+        model_name = cleaned_data.get('model_name')
+        name_override = cleaned_data.get('name_override')
+
+        # Check if either a model is selected or model_name is provided
+        if not model and not model_name:
+            raise ValidationError(
+                "Please either select an existing model or provide a name for a new model."
+            )
+
+        # If existing model selected, name_override is required
+        if model and not name_override:
+            raise ValidationError(
+                "When selecting an existing model, you must provide a unique name for this specific machine."
+            )
+
+        # If creating new model, model_name is required
+        if not model and not model_name:
+            raise ValidationError(
+                "Please provide a model name when creating a new model."
+            )
+
+        return cleaned_data
