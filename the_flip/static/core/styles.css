@@ -77,6 +77,27 @@ header a:hover {
   text-decoration: underline;
 }
 
+header nav span {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 400;
+}
+
+.nav-logout-btn {
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-weight: 700;
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+}
+
+.nav-logout-btn:hover {
+  text-decoration: underline;
+}
+
 main {
   max-width: 960px;
   margin: 0 auto;
