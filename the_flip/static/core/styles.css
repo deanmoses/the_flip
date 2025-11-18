@@ -7,6 +7,7 @@
   --color-danger: #ef4444;
   --color-surface: #ffffff;
   --color-surface-muted: #f5f7fb;
+  --color-surface-text-muted: rgba(255, 255, 255, 0.7);
   --color-border: #e3e8ef;
   --color-text: #1f2933;
   --color-text-muted: #52606d;
@@ -643,4 +644,43 @@ select:focus {
     margin-left: 0;
     margin-top: var(--space-3);
   }
+}
+
+/* Minimal header and footer for public QR-accessible pages */
+.header-minimal {
+  background: var(--color-secondary);
+  color: var(--color-surface);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header-minimal__content {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.header-minimal h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--color-surface-text-muted);
+  font-weight: 700;
+}
+
+.footer-minimal {
+  background: var(--color-secondary);
+  color: var(--color-surface);
+  padding: var(--space-3) var(--space-4);
+  margin-top: var(--space-6);
+  text-align: center;
+}
+
+.footer-minimal__content {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.footer-minimal p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-surface-text-muted);
 }
