@@ -6,7 +6,13 @@
   {% if reports %}
     <ul class="list machine-list problem-report-list">
       {% for report in reports %}
-        <li class="machine-card">
+        <li
+          class="machine-card js-clickable-card"
+          data-url="{% url 'problem-report-detail' report.pk %}"
+          tabindex="0"
+          role="button"
+          aria-label="View problem report for {{ report.machine.display_name }}"
+        >
           <div class="machine-card__row">
             <div class="machine-card__row-left">
               <span class="machine-card__name">{{ report.machine.display_name }}</span>
