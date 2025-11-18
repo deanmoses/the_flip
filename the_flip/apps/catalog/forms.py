@@ -111,9 +111,9 @@ class MachineModelForm(forms.ModelForm):
                 "placeholder": "e.g., 2355",
                 "style": "width: 6em;"
             }),
-            "production_quantity": forms.NumberInput(attrs={
-                "placeholder": "e.g., 5000",
-                "style": "width: 8em;"
+            "production_quantity": forms.TextInput(attrs={
+                "placeholder": "e.g., ~50,000",
+                "style": "width: 20em;"
             }),
             "factory_address": forms.TextInput(attrs={
                 "placeholder": "e.g., Chicago, Illinois"

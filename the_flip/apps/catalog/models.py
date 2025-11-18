@@ -77,10 +77,11 @@ class MachineModel(TimeStampedModel):
         verbose_name="IPDB ID",
         help_text="Internet Pinball Database ID number"
     )
-    production_quantity = models.PositiveIntegerField(
+    production_quantity = models.CharField(
+        max_length=50,
         null=True,
         blank=True,
-        help_text="Number of units produced"
+        help_text="Number of units produced (e.g., ~50,000)"
     )
     factory_address = models.CharField(
         max_length=300,

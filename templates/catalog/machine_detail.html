@@ -20,7 +20,7 @@
   {% if object.model.production_quantity or object.model.factory_address or object.model.design_credit or object.model.concept_and_design_credit or object.model.art_credit or object.model.sound_credit %}
     <div class="card">
       {% if object.model.production_quantity %}
-        <p><strong>Production:</strong> {{ object.model.production_quantity|intcomma }} units</p>
+        <p><strong>Production:</strong> {{ object.model.production_quantity }}</p>
       {% endif %}
 
       {% if object.model.factory_address %}
