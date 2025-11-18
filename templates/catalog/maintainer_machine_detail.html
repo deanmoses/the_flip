@@ -7,7 +7,12 @@
     <div class="header-actions">
       <a class="btn btn-secondary" href="{% url 'machine-edit' object.slug %}">Edit</a>
       <a class="btn btn-primary" href="{% url 'log-machine' object.slug %}">View Logs</a>
-      <a class="btn btn-primary" href="{% url 'machine-problem-reports' object.slug %}">Problem Reports</a>
+      <a class="btn btn-primary" href="{% url 'machine-problem-reports' object.slug %}">
+        Problem Reports
+        {% if open_problem_reports.count > 0 %}
+          <span class="badge badge--status-open" style="margin-left: var(--space-2);">{{ open_problem_reports.count }}</span>
+        {% endif %}
+      </a>
     </div>
   </div>
   <p>{{ object.model.manufacturer }} · {{ object.model.year }}</p>
@@ -34,38 +39,6 @@
       <span class="inline-edit-status" id="location-save-indicator"></span>
     </div>
   </div>
-
-  {% if open_problem_reports %}
-    <section>
-      <h3>Open Problem Reports</h3>
-      <ul class="list machine-list">
-        {% for report in open_problem_reports %}
-          <li
-            class="machine-card js-clickable-card"
-            data-url="{% url 'problem-report-detail' report.pk %}"
-            tabindex="0"
-            role="button"
-            aria-label="View problem report"
-          >
-            <div class="machine-card__row">
-              <div class="machine-card__row-left">
-                {% if report.problem_type != report.PROBLEM_OTHER %}
-                  <span class="machine-card__problem-label">{{ report.get_problem_type_display }}:</span>
-                {% endif %}
-                {{ report.description|default:"No description provided." }}
-              </div>
-              <div class="machine-card__meta-group">
-                <span class="machine-card__timestamp">{{ report.created_at|smart_date }}</span>
-                <span class="badge badge-status badge-status--{{ report.status }}">
-                  {{ report.get_status_display }}
-                </span>
-              </div>
-            </div>
-          </li>
-        {% endfor %}
-      </ul>
-    </section>
-  {% endif %}
 {% endblock %}
 
 {% block extra_js %}
