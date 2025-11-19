@@ -108,6 +108,8 @@ class ProblemReportCreateView(FormView):
         report.machine = self.machine
         report.ip_address = self.request.META.get("REMOTE_ADDR")
         report.device_info = self.request.META.get("HTTP_USER_AGENT", "")[:200]  # Truncate to field max length
+        if self.request.user.is_authenticated:
+            report.reported_by_user = self.request.user
         report.save()
         messages.success(self.request, "Thanks! The maintenance team has been notified.")
         return redirect(self.machine.get_absolute_url())

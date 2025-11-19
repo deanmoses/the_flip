@@ -95,6 +95,27 @@ class ProblemReportDetailViewTests(TestCase):
         self.assertContains(response, "192.168.1.1")
         self.assertContains(response, "Open")
 
+    def test_detail_view_with_reported_by_user_hides_device_information(self):
+        """If report was submitted by a logged-in user, only show the user."""
+        submitter = User.objects.create_user(
+            username="reportsubmitter",
+            password="testpass123",
+            first_name="Report",
+            last_name="Submitter",
+            is_staff=True,
+        )
+        self.report.reported_by_user = submitter
+        self.report.save()
+
+        self.client.login(username="staffuser", password="testpass123")
+        response = self.client.get(self.detail_url)
+
+        self.assertContains(response, "Report Submitter")
+        self.assertNotContains(response, "John Doe")
+        self.assertNotContains(response, "john@example.com")
+        self.assertNotContains(response, "iPhone 12")
+        self.assertNotContains(response, "192.168.1.1")
+
     def test_detail_view_shows_close_button_for_open_report(self):
         """Detail page should show 'Close Problem Report' button for open reports."""
         self.client.login(username="staffuser", password="testpass123")
@@ -376,6 +397,24 @@ class ProblemReportCreateViewTests(TestCase):
         report = ProblemReport.objects.first()
         self.assertIn("iPhone", report.device_info)
         self.assertIn("Mozilla", report.device_info)
+
+    def test_create_problem_report_records_logged_in_user(self):
+        """Submitting while authenticated should set reported_by_user."""
+        maintainer = User.objects.create_user(
+            username="maintainer",
+            password="testpass123",
+            is_staff=True,
+        )
+        self.client.login(username="maintainer", password="testpass123")
+        data = {
+            "problem_type": ProblemReport.PROBLEM_STUCK_BALL,
+            "description": "Ball locked up",
+        }
+        self.client.post(self.url, data, REMOTE_ADDR="203.0.113.42")
+
+        report = ProblemReport.objects.first()
+        self.assertEqual(report.reported_by_user, maintainer)
+        self.assertEqual(report.ip_address, "203.0.113.42")
 
     def test_rate_limiting_blocks_excessive_submissions(self):
         """Rate limiting should block submissions after exceeding the limit."""

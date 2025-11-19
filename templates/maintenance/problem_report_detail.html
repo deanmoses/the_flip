@@ -37,29 +37,24 @@
     {% endif %}
   </section>
 
-  {% if report.reported_by_user or report.reported_by_name or report.reported_by_contact %}
+  {% if report.reported_by_user or report.reported_by_name or report.reported_by_contact or report.device_info or report.ip_address %}
     <section class="card">
       <h3>Reported By</h3>
       {% if report.reported_by_user %}
         <p><strong>User:</strong> {{ report.reported_by_user.get_full_name|default:report.reported_by_user.username }}</p>
-      {% endif %}
-      {% if report.reported_by_name %}
-        <p><strong>Name:</strong> {{ report.reported_by_name }}</p>
-      {% endif %}
-      {% if report.reported_by_contact %}
-        <p><strong>Contact:</strong> {{ report.reported_by_contact }}</p>
-      {% endif %}
-    </section>
-  {% endif %}
-
-  {% if report.device_info or report.ip_address %}
-    <section class="card">
-      <h3>Submitter Details</h3>
-      {% if report.device_info %}
-        <p><strong>Device:</strong> {{ report.device_info }}</p>
-      {% endif %}
-      {% if report.ip_address %}
-        <p><strong>IP Address:</strong> {{ report.ip_address }}</p>
+      {% else %}
+        {% if report.reported_by_name %}
+          <p><strong>Name:</strong> {{ report.reported_by_name }}</p>
+        {% endif %}
+        {% if report.reported_by_contact %}
+          <p><strong>Contact:</strong> {{ report.reported_by_contact }}</p>
+        {% endif %}
+        {% if report.device_info %}
+          <p><strong>Device:</strong> {{ report.device_info }}</p>
+        {% endif %}
+        {% if report.ip_address %}
+          <p><strong>IP Address:</strong> {{ report.ip_address }}</p>
+        {% endif %}
       {% endif %}
     </section>
   {% endif %}
