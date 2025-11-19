@@ -14,11 +14,10 @@ python manage.py migrate
 python manage.py collectstatic --no-input
 
 # Import legacy maintainers and make some of them admins
-python manage.py import_legacy_maintainers
+python manage.py import_maintainers
 
 # Create default pinball machines
 python manage.py import_machines
 
 # Import legacy maintenance records
-python manage.py import_legacy_maintenance_records
-
+python manage.py import_maintenance_records
