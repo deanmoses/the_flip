@@ -14,6 +14,6 @@ class Command(BaseCommand):
         call_command("import_machines")
 
         self.stdout.write(self.style.NOTICE("Importing maintenance records..."))
-        call_command("import_maintenance_records", clear=True)
+        call_command("import_maintenance_records")
 
         self.stdout.write(self.style.SUCCESS("Legacy import complete."))

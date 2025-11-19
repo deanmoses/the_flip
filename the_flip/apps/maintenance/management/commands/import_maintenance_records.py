@@ -16,7 +16,7 @@ from the_flip.apps.maintenance.models import LogEntry, LogEntryMedia, ProblemRep
 
 
 class Command(BaseCommand):
-    help = "Import legacy problems and log entries from docs/legacy_data"
+    help = "Import legacy problem reports and log entries"
 
     problems_filename = "Maintenance - Problems.csv"
     logs_filename = "Maintenance - Log entries.csv"
@@ -33,25 +33,10 @@ class Command(BaseCommand):
             self.normalize_name("Wlliam"): "William",
         }
 
-    def add_arguments(self, parser):
-        parser.add_argument(
-            "--clear",
-            action="store_true",
-            help="Delete existing problem reports and log entries before importing.",
-        )
-
     def handle(self, *args, **options):
         base_path = Path(settings.BASE_DIR) / "docs" / "legacy_data"
         problems_path = base_path / self.problems_filename
         logs_path = base_path / self.logs_filename
-
-        if options["clear"]:
-            self.stdout.write(
-                self.style.WARNING("Clearing ProblemReports, LogEntries, and media...")
-            )
-            LogEntryMedia.objects.all().delete()
-            LogEntry.objects.all().delete()
-            ProblemReport.objects.all().delete()
 
         if problems_path.exists():
             self.import_problems(problems_path)
