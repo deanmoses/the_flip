@@ -79,7 +79,7 @@
 ### Video Transcode (Complete Command)
 ```bash
 ffmpeg -i "$INPUT" \
-  -vf "scale='if(gt(iw,ih),2400,-2)':'if(gt(ih,iw),2400,-2)'" \
+  -vf "scale=min(iw\\,2400):min(ih\\,2400):force_original_aspect_ratio=decrease" \
   -c:v libx264 \
   -pix_fmt yuv420p \
   -profile:v main \
@@ -104,7 +104,7 @@ ffmpeg -i "$INPUT" \
 ### Critical FFmpeg Parameters Explained
 
 **Video Processing:**
-- `-vf "scale='if(gt(iw,ih),2400,-2)':'if(gt(ih,iw),2400,-2)'"`: Resize only if larger than 2400px on long side, maintains aspect ratio (`:−2` ensures even dimensions for H.264)
+- `-vf "scale=min(iw\,2400):min(ih\,2400):force_original_aspect_ratio=decrease"`: Resize down so the long side is max 2400px; never upscale; preserves aspect ratio and keeps dimensions even for H.264
 - `-c:v libx264`: H.264 video codec (universal browser support vs HEVC/H.265)
 - `-pix_fmt yuv420p`: **CRITICAL** - Pixel format required for iOS Safari playback (without this, videos won't play on iPhones)
 - `-profile:v main`: H.264 main profile (good compatibility balance vs high/baseline profiles)
@@ -167,12 +167,13 @@ rq-scheduler==0.13.1  # Optional, for cleanup jobs
 
 **File:** `the_flip/settings/base.py`
 ```python
+import os
+
 # RQ Configuration
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 RQ_QUEUES = {
     'default': {
-        'HOST': 'localhost',
-        'PORT': 6379,
-        'DB': 0,
+        'URL': REDIS_URL,
         'DEFAULT_TIMEOUT': 600,  # 10 minutes for video processing
     }
 }
@@ -184,12 +185,8 @@ import os
 
 # Override for production
 if 'REDIS_URL' in os.environ:
-    RQ_QUEUES = {
-        'default': {
-            'URL': os.environ['REDIS_URL'],
-            'DEFAULT_TIMEOUT': 600,
-        }
-    }
+    REDIS_URL = os.environ['REDIS_URL']
+# RQ_QUEUES picks up REDIS_URL from base
 ```
 
 ### Phase 3: Video Processing Backend
@@ -249,10 +246,13 @@ def transcode_video_job(media_id):
 
         logger.info(f"Successfully transcoded video {media_id}")
 
+    except LogEntryMedia.DoesNotExist:
+        logger.error(f"Media {media_id} not found for transcode job")
+        return
     except Exception as e:
         logger.error(f"Failed to transcode video {media_id}: {e}", exc_info=True)
         media.transcode_status = 'failed'
-        media.save()
+        media.save(update_fields=["transcode_status"])
         raise
 ```
 
@@ -310,8 +310,9 @@ def form_valid(self, form):
 
         if is_video:
             # Enqueue transcode job
-            redis_conn = Redis.from_url(settings.RQ_QUEUES['default']['URL'])
-            queue = Queue('default', connection=redis_conn)
+            redis_url = settings.RQ_QUEUES['default']['URL']
+            redis_conn = Redis.from_url(redis_url)
+            queue = Queue('default', connection=redis_conn, default_timeout=settings.RQ_QUEUES['default']['DEFAULT_TIMEOUT'])
             queue.enqueue('the_flip.apps.maintenance.tasks.transcode_video_job', media.id)
 
     # ... rest of method ...
