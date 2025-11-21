@@ -1,6 +1,6 @@
 # Video Uploads Plan - Redis-Backed Version
 
-This document contains the requirements and spec for supporting maintainers uploading videos as part of a log entry. 
+Requirements and spec for pinball machine maintainers uploading videos.
 
 **⚠️ THIS DESIGN WAS NOT CHOSEN**
 
