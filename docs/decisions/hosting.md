@@ -163,7 +163,6 @@ Low latency WOULD be nice; who doesn't appreciate a fast system?
 | [Regions](#low-latency) | US-East (New Jersey) | us-east-1 | Ohio |
 | Long Term Viability | Mature, well-funded | Younger/smaller; unclear runway | Established PaaS |
 | Customer Satisfaction | Widely praised; very strong developer experience | Minimal public review footprint | Strong reputation; good developer experience |
-| Overall Complexity | Slightly higher complexity (services + volumes + environment variables) | Very simple conceptual model: one plan, many apps | Moderate: projects/environments model + separate billing |
 
 ### 💰 Costs
 
