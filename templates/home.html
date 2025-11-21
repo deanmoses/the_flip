@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Home · {{ block.super }}{% endblock %}
+{% block content %}
+  <div class="card">
+    <p>This is a prototype of The Flip's pinball machine maintenance system.</p>
+  </div>
+
+  <div class="card">
+    <h3>Public Access</h3>
+    <p>Anyone can browse the collection of machines and submit problem reports:</p>
+    <p>
+      <a href="{% url 'public-machine-list' %}" class="btn btn-primary">Browse All Machines</a>
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>Things to Try When Logged In</h3>
+    <ul style="display: flex; flex-direction: column; gap: var(--space-3);">
+      <li>
+        <strong>See all open problem reports:</strong>
+        <a href="/problem-reports/" class="btn btn-primary">Problem Reports</a>
+      </li>
+      <li>
+        <strong>Log work, with photos:</strong>
+        {% if sample_machine %}
+          <a href="{% url 'log-create-machine' sample_machine.slug %}" class="btn btn-primary">Add Log for {{ sample_machine.display_name }}</a>
+        {% else %}
+          Visit a machine detail page and click "Log Work"
+        {% endif %}
+      </li>
+      <li>
+        <strong>Add a new machine:</strong>
+        <a href="{% url 'machine-quick-create' %}" class="btn btn-primary">Add Machine</a>
+      </li>
+      <li>
+        <strong>Access Django admin:</strong>
+        <a href="/admin/" class="btn btn-primary">Django Admin</a>
+      </li>
+    </ul>
+  </div>
+{% endblock %}

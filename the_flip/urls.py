@@ -29,11 +29,12 @@ from the_flip.apps.catalog.views import (
     PublicMachineDetailView,
     PublicMachineListView,
 )
+from the_flip.apps.core.views import HomeView
 from the_flip.apps.maintenance import views as maintenance_views
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
-path("", RedirectView.as_view(pattern_name="problem-report-list", permanent=False), name="home"),
+    path("", HomeView.as_view(), name="home"),
     
     # Django admin app
     path("admin/", admin.site.urls),
