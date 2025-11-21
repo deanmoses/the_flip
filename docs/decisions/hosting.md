@@ -145,7 +145,7 @@ Low latency WOULD be nice; who doesn't appreciate a fast system?
 | [Monthly Cost](#modest-predictable-cost) | ~$22-25 ([details below](#costs)) | $5 now, $13 in 1-2 years ([details below](#costs)) | ❌ ~$64/mo for 2 devs ([details below](#costs)) |
 | [# Developers For Free](#multiple-developers-no-per-seat-charges) | Unlimited | 5 included | None (every seat billed) |
 | [Additional Per-Seat Cost](#multiple-developers-no-per-seat-charges) | $0 | $0 for first 5; unspecified beyond | ❗$19/dev/mo |
-| [GitHub auto-deploys](#simple-hosting-platform) | ✅ | ✅  | ✅  |
+| [GitHub auto-deploys](#simple-hosting-platform) | ✅ | ❌ Does not yet support GitHub - showstopper  | ✅  | 
 | [Automatic Upgrades (certs, OS, etc)](#zero-ongoing-maintenance) | ✅  | ✅ | ✅ |
 | [Fully Managed PaaS](#paas-not-vps) | ✅ | ✅ | ✅ |
 | [DB - Supports Postgres](#managed-postgresql) | ✅ | ✅ | ✅ |
