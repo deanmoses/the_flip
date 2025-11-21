@@ -17,7 +17,7 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, re_path
 from django.views.generic import RedirectView
 
 from the_flip.apps.catalog.views import (
@@ -32,6 +32,7 @@ from the_flip.apps.catalog.views import (
 from the_flip.apps.core.views import HomeView
 from the_flip.apps.maintenance import views as maintenance_views
 from django.contrib.auth import views as auth_views
+from the_flip.views import serve_media
 
 urlpatterns = [
     path("", HomeView.as_view(), name="home"),
@@ -73,6 +74,12 @@ urlpatterns = [
     path("logs/<slug:slug>/entries/", maintenance_views.MachineLogPartialView.as_view(), name="log-entries"),
     path("logs/<slug:slug>/", maintenance_views.MachineLogView.as_view(), name="log-machine"),
 ]
+
+media_url = settings.MEDIA_URL.lstrip("/")
+if media_url:
+    urlpatterns += [
+        re_path(rf"^{media_url}(?P<path>.*)$", serve_media, name="media"),
+    ]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
