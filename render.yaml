@@ -1,3 +1,4 @@
+# Config file for building and deploying on Render.com hosting
 services:
   - type: web
     name: the-flip
