@@ -12,13 +12,13 @@ This document contains the requirements and spec for supporting maintainers uplo
 ## Approach
 - Use **django-q2** with the ORM broker (tasks stored in Postgres/SQLite).
 - Run a single worker process (`python manage.py qcluster`) to process transcodes.
-- ffmpeg runs in the worker; cap video long side at 2400px and generate a poster.
+- `ffmpeg` runs in the worker; cap video long side at 2400px and generate a poster.
 - Automatically prune old task rows via django-q2 settings.
 - Worker recycling after N tasks to prevent memory bloat from FFmpeg.
 
 ## Dependencies
 - Add `django-q2` to `requirements.txt`.
-- Ensure ffmpeg is installed (Render/ Railway build steps already add ffmpeg; devcontainer has it).
+- Ensure `ffmpeg` is installed (Render/ Railway build steps already add `ffmpeg`).
 
 ## Settings
 
@@ -41,12 +41,6 @@ Q_CLUSTER = {
     "max_attempts": 1,             # Only try once (user can re-upload if needed)
 }
 ```
-
-**Why these settings:**
-- **`recycle: 5`**: FFmpeg can accumulate memory. After 5 videos, worker restarts cleanly.
-- **`timeout: 600, retry: 660`**: Must have `retry > timeout` or django-q2 errors out.
-- **`save_limit: 50`**: Auto-cleanup prevents database bloat (50 tasks = ~50KB).
-- **`max_attempts: 1`**: Simpler than complex retry logic; users can re-upload.
 
 ## Model changes
 - Extend `LogEntryMedia` (already has `transcoded_file`, `poster_file`, `transcode_status`, `duration`).
@@ -467,223 +461,21 @@ After deploying worker:
 - [ ] Verify original file deleted (check storage size)
 - [ ] Check worker memory usage after 5 videos (should recycle/drop)
 
-## Optional: CI Testing with GitHub Actions
+## Test for FFmpeg in CI Pipeline
 
-You can add automated testing for FFmpeg availability in your CI pipeline to catch deployment issues early.
-
-### Why Test FFmpeg in CI?
-
-**Problem it solves:**
+Add automated testing for FFmpeg availability in your CI pipeline to catch deployment issues early:
 - Railway/Render build changes could break FFmpeg installation
 - nixpacks.toml or render.yaml edits might remove FFmpeg
 - Dependency conflicts could prevent FFmpeg from being available
 - Catch issues before deploying to production
 
-**What it tests:**
+### Implementation
+Add a test case to the Django Test Suite; ensure the suite runs in the CI.  It tests that:
 - FFmpeg binary is available on PATH
 - FFprobe binary is available on PATH
 - Both execute successfully
 - Versions are reported (useful for debugging)
 
-### Implementation Options
-
-#### Option 1: Add to Existing Django Test Suite
-
-If you have tests, add this test case:
-
-**File:** `the_flip/apps/maintenance/tests/test_video_processing.py`
-
-```python
-from django.test import TestCase
-import subprocess
-
-class FFmpegAvailabilityTest(TestCase):
-    """Test that FFmpeg and FFprobe are available for video processing."""
-
-    def test_ffmpeg_available(self):
-        """Ensure ffmpeg is installed and executable."""
-        try:
-            result = subprocess.run(
-                ['ffmpeg', '-version'],
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=5
-            )
-            self.assertIn('ffmpeg version', result.stdout.lower())
-        except FileNotFoundError:
-            self.fail("FFmpeg not found on PATH")
-        except subprocess.TimeoutExpired:
-            self.fail("FFmpeg command timed out")
-
-    def test_ffprobe_available(self):
-        """Ensure ffprobe is installed and executable."""
-        try:
-            result = subprocess.run(
-                ['ffprobe', '-version'],
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=5
-            )
-            self.assertIn('ffprobe version', result.stdout.lower())
-        except FileNotFoundError:
-            self.fail("FFprobe not found on PATH")
-        except subprocess.TimeoutExpired:
-            self.fail("FFprobe command timed out")
-```
-
-Run with: `python manage.py test the_flip.apps.maintenance.tests.test_video_processing`
-
-#### Option 2: Dedicated GitHub Actions Workflow
-
-**File:** `.github/workflows/ffmpeg-check.yml`
-
-```yaml
-name: Check FFmpeg Availability
-
-on:
-  push:
-    branches: [main, develop]
-    paths:
-      - 'nixpacks.toml'
-      - 'render.yaml'
-      - '.github/workflows/ffmpeg-check.yml'
-  pull_request:
-    branches: [main, develop]
-    paths:
-      - 'nixpacks.toml'
-      - 'render.yaml'
-
-jobs:
-  test-ffmpeg:
-    runs-on: ubuntu-latest
-    name: Verify FFmpeg Installation
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install FFmpeg
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
-
-      - name: Check FFmpeg version
-        run: |
-          ffmpeg -version
-          echo "✓ FFmpeg is available"
-
-      - name: Check FFprobe version
-        run: |
-          ffprobe -version
-          echo "✓ FFprobe is available"
-
-      - name: Test video processing command
-        run: |
-          # Create a 1-second test video
-          ffmpeg -f lavfi -i testsrc=duration=1:size=320x240:rate=1 \
-            -c:v libx264 -pix_fmt yuv420p \
-            test_video.mp4 -y
-
-          # Verify output exists
-          test -f test_video.mp4 || exit 1
-          echo "✓ Video encoding works"
-
-      - name: Test poster extraction
-        run: |
-          # Extract poster frame
-          ffmpeg -i test_video.mp4 \
-            -vf "thumbnail,scale=320:-2" \
-            -frames:v 1 \
-            test_poster.jpg -y
-
-          # Verify output exists
-          test -f test_poster.jpg || exit 1
-          echo "✓ Poster extraction works"
-```
-
-**What this workflow does:**
-1. Runs on changes to `nixpacks.toml`, `render.yaml`, or the workflow itself
-2. Installs FFmpeg on Ubuntu (similar to Railway/Render)
-3. Verifies both ffmpeg and ffprobe are available
-4. Tests actual video encoding with the exact parameters you'll use
-5. Tests poster extraction with thumbnail filter
-6. Fails the CI build if anything is broken
-
-**When it's useful:**
-- ✅ Catches config file errors before deploy
-- ✅ Documents required dependencies
-- ✅ Prevents "works on my machine" issues
-- ✅ Regression testing for build changes
-
-**When it's overkill:**
-- ❌ Small team that doesn't frequently change configs
-- ❌ No existing CI/CD pipeline
-- ❌ Manual testing is sufficient
-
-#### Option 3: Simple Shell Script
-
-**File:** `scripts/check_video_deps.sh`
-
-```bash
-#!/bin/bash
-# Check video processing dependencies
-
-echo "Checking video processing dependencies..."
-
-# Check FFmpeg
-if ! command -v ffmpeg &> /dev/null; then
-    echo "✗ FFmpeg not found"
-    exit 1
-fi
-echo "✓ FFmpeg found: $(ffmpeg -version | head -n1)"
-
-# Check FFprobe
-if ! command -v ffprobe &> /dev/null; then
-    echo "✗ FFprobe not found"
-    exit 1
-fi
-echo "✓ FFprobe found: $(ffprobe -version | head -n1)"
-
-# Test encoding
-echo "Testing video encoding..."
-ffmpeg -f lavfi -i testsrc=duration=1:size=320x240:rate=1 \
-  -c:v libx264 -pix_fmt yuv420p -y /tmp/test.mp4 2>&1 | grep -q "video:0kB"
-if [ $? -eq 0 ]; then
-    echo "✓ Video encoding works"
-else
-    echo "✗ Video encoding failed"
-    exit 1
-fi
-
-echo ""
-echo "All checks passed! ✓"
-```
-
-Run manually: `./scripts/check_video_deps.sh`
-
-Or in CI:
-```yaml
-- name: Check video dependencies
-  run: ./scripts/check_video_deps.sh
-```
-
-### Recommendation
-
-**For your project:** Start with **Option 3 (shell script)** because:
-- Simple to run manually during deployment
-- Can be added to CI later if needed
-- No test framework overhead
-- Easy for volunteers to understand
-
-**Upgrade to Option 1 or 2** when:
-- You have an active CI/CD pipeline
-- Multiple people making deployment changes
-- Want automated regression testing
-- Config files change frequently
-
-The shell script gives you 80% of the value with 20% of the complexity.
 
 ## Rejected Alternative: Redis + RQ
 
@@ -754,26 +546,9 @@ See [videos_redis.md](videos_redis.md) for the full Redis-backed plan that was c
 ### When Redis Would Be Better
 
 Redis + RQ would be the better choice if:
-- ❌ Processing >100 videos/day (you process ~0.3/day)
-- ❌ Need sub-second job pickup (you don't)
-- ❌ Complex multi-queue workflows (you have one queue)
-- ❌ High-throughput requirements (you have low volume)
-- ❌ Already using Redis for caching (you're not)
-- ❌ Full-time DevOps team (you have volunteers)
-
-**None of these apply to your project**, so database-backed queue is objectively better.
-
-### Migration Path
-
-If you ever need to switch to Redis (e.g., scaling to 100+ videos/day), it's trivial:
-
-```python
-# Change one line in settings:
-Q_CLUSTER = {
-    # "orm": "default",  # Remove this
-    "redis": os.getenv("REDIS_URL"),  # Add this
-    # ... rest stays the same
-}
-```
-
-No code changes needed! Same `async_task()` API works with both backends.
+- ❌ Processing >100 videos/day (we process ~0.3/day)
+- ❌ Need sub-second job pickup (we don't)
+- ❌ Complex multi-queue workflows (we have one queue)
+- ❌ High-throughput requirements (we have low volume)
+- ❌ Already using Redis for caching (we're not)
+- ❌ Full-time DevOps team (we have volunteers)
