@@ -8,20 +8,23 @@
 
 ## Requirements
 - **Redis** for RQ queue.
-- **RQ** Python package (worker + scheduler optional).
+- **RQ** Python package (`rq` only - no scheduler needed).
 - **FFmpeg** available at runtime for transcode/poster extraction.
-- **Storage** headroom for originals + MP4s + posters (consider pruning originals after success).
+- **Storage** headroom for MP4s + posters (originals deleted after successful transcode).
 
 ## App Changes (code-level)
-- **Dependencies**: add `rq`, `rq-scheduler` (if periodic), and ensure FFmpeg is present.
-- **Settings**: `RQ_REDIS_URL` (from env), job timeouts/concurrency defaults.
-- **Models**: extend `LogEntryMedia` for videos: fields for `transcoded_file`, `poster_file`, `duration`, `width`, `height`, `transcode_status` (pending/processing/ready/failed), maybe `original_kept` flag.
-- **Tasks**:
-  - Enqueue on upload: `enqueue(transcode_video, media_id)`.
-  - `transcode_video`: run FFmpeg to H.264/AAC MP4, cap long side at 2400px and constrain bitrate, extract poster (JPEG), store metadata, mark status.
-  - Cleanup task to delete originals after successful transcode.
-- **Validation**: server-side size limit (e.g., 200–500 MB), allowed MIME/ext for video; client hint via `accept="video/*"`.
-- **UI**: render videos with `<video controls poster="...">` once ready; show “processing” status for pending/processing; surface errors if failed.
+- **Dependencies**: add `rq` only (no scheduler), ensure FFmpeg is present in build.
+- **Settings**: `REDIS_URL` from env with localhost fallback, 600s job timeout.
+- **Models**: extend `LogEntryMedia` for videos:
+  - `transcoded_file` (FileField) - the processed MP4
+  - `poster_file` (ImageField) - extracted poster frame
+  - `transcode_status` (CharField: pending/processing/ready/failed)
+  - `duration` (IntegerField, nullable) - video length in seconds
+- **Tasks** (`tasks.py`):
+  - `enqueue_transcode(media_id)`: Helper to enqueue job (called from views)
+  - `transcode_video_job(media_id)`: RQ job that runs FFmpeg, saves transcoded file + poster, deletes original on success
+- **Validation**: 200MB max file size, accept `image/*,video/*`
+- **UI**: Show `<video controls poster>` when ready, "Processing..." spinner when pending/processing, "Upload failed" message when failed (no retry button)
 
 ## Deploy: Render (YAML-driven)
 - Add Redis service in `render.yaml`:
@@ -47,17 +50,6 @@
       - key: REDIS_URL
         fromService: the-flip-redis
   ```
-- (Optional) Scheduler:
-  ```yaml
-  - type: worker
-    name: the-flip-rq-scheduler
-    runtime: python
-    buildCommand: "<same as web>"
-    startCommand: "rqscheduler --url $REDIS_URL"
-    envVars:
-      - key: REDIS_URL
-        fromService: the-flip-redis
-  ```
 - Web service: keep existing, add `REDIS_URL` env from Redis service.
 
 ## Deploy: Railway (manual Redis provision)
@@ -71,7 +63,6 @@
   - Build: reuse `build.sh`.
   - Start command: `rq worker --url $REDIS_URL default`.
   - Env: set `REDIS_URL` from the Redis plugin variable.
-- (Optional) Scheduler service: `rqscheduler --url $REDIS_URL`.
 - Web service: add `REDIS_URL` env var.
 
 ## FFmpeg Commands
@@ -135,7 +126,7 @@ ffmpeg -i "$INPUT" \
 ### Phase 1: Database Schema
 **File:** `the_flip/apps/maintenance/models.py`
 
-Add to `LogEntryMedia` model:
+Add to `LogEntryMedia` model (4 fields only):
 ```python
 transcoded_file = models.FileField(upload_to=..., blank=True, null=True)
 poster_file = models.ImageField(upload_to=..., blank=True, null=True)
@@ -151,10 +142,11 @@ transcode_status = models.CharField(
     blank=True,
 )
 duration = models.IntegerField(null=True, blank=True, help_text="Duration in seconds")
-original_width = models.IntegerField(null=True, blank=True)
-original_height = models.IntegerField(null=True, blank=True)
-original_kept = models.BooleanField(default=True, help_text="Whether original file is retained")
 ```
+
+**Removed fields** (unnecessary complexity):
+- `original_width`, `original_height`: Not used in UI or logic
+- `original_kept`: Not needed (originals always deleted after success)
 
 Create and run migration: `python manage.py makemigrations && python manage.py migrate`
 
@@ -162,99 +154,122 @@ Create and run migration: `python manage.py makemigrations && python manage.py m
 **File:** `requirements.txt`
 ```
 rq==1.16.2
-rq-scheduler==0.13.1  # Optional, for cleanup jobs
 ```
 
-**File:** `the_flip/settings/base.py`
+**File:** `the_flip/settings/base.py` (add to existing file)
 ```python
 import os
 
 # RQ Configuration
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 RQ_QUEUES = {
     'default': {
-        'URL': REDIS_URL,
+        'URL': os.getenv('REDIS_URL', 'redis://localhost:6379/0'),
         'DEFAULT_TIMEOUT': 600,  # 10 minutes for video processing
     }
 }
 ```
 
-**File:** `the_flip/settings/prod.py`
-```python
-import os
-
-# Override for production
-if 'REDIS_URL' in os.environ:
-    REDIS_URL = os.environ['REDIS_URL']
-# RQ_QUEUES picks up REDIS_URL from base
-```
+**No prod.py changes needed** - base.py handles both dev and production via environment variable.
 
 ### Phase 3: Video Processing Backend
-**File:** `the_flip/apps/maintenance/video_utils.py` (new file)
+**File:** `the_flip/apps/maintenance/tasks.py` (new file - single file for all video logic)
 
-Create utilities:
-- `get_video_info(file_path)`: Use ffprobe to extract codec, dimensions, duration
-- `transcode_video(input_path, output_path, max_dimension=2400)`: Run FFmpeg transcode
-- `generate_poster(video_path, output_path)`: Extract poster frame
-- Helper: `is_hevc(file_path)`: Check if video needs conversion
-
-**File:** `the_flip/apps/maintenance/tasks.py` (new file)
-
-Create RQ job:
 ```python
-from rq import get_current_job
-from rq.job import Job
+"""Background tasks for video processing."""
+import subprocess
+import json
+import tempfile
 import logging
+from pathlib import Path
+from django.core.files import File
+from rq import Queue
+from redis import Redis
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+
+def enqueue_transcode(media_id):
+    """Helper to enqueue transcode job. Called from views."""
+    redis_url = settings.RQ_QUEUES['default']['URL']
+    redis_conn = Redis.from_url(redis_url)
+    queue = Queue('default', connection=redis_conn)
+    queue.enqueue(transcode_video_job, media_id)
+
+
 def transcode_video_job(media_id):
     """
-    RQ job to transcode uploaded video.
-    Updates LogEntryMedia.transcode_status throughout process.
+    RQ job: transcode video to H.264/AAC MP4, extract poster, save metadata.
+    Deletes original file on success.
     """
+    from .models import LogEntryMedia  # Import here to avoid circular imports
+
     try:
         media = LogEntryMedia.objects.get(id=media_id)
         media.transcode_status = 'processing'
-        media.save()
+        media.save(update_fields=['transcode_status'])
 
-        # Get video info
-        info = get_video_info(media.file.path)
-        media.duration = info['duration']
-        media.original_width = info['width']
-        media.original_height = info['height']
-        media.save()
+        input_path = media.file.path
 
-        # Transcode video
-        transcoded_path = transcode_video(media.file.path)
-        media.transcoded_file.save(
-            f"transcoded_{media.file.name}",
-            File(open(transcoded_path, 'rb')),
-            save=False
-        )
+        # Get video duration using ffprobe
+        result = subprocess.run([
+            'ffprobe', '-v', 'quiet', '-print_format', 'json',
+            '-show_entries', 'format=duration', input_path
+        ], capture_output=True, text=True, check=True)
+        duration = int(float(json.loads(result.stdout)['format']['duration']))
+        media.duration = duration
+        media.save(update_fields=['duration'])
 
-        # Generate poster
-        poster_path = generate_poster(transcoded_path)
-        media.poster_file.save(
-            f"poster_{media.id}.jpg",
-            File(open(poster_path, 'rb')),
-            save=False
-        )
+        # Transcode video to H.264/AAC MP4
+        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as tmp_video:
+            subprocess.run([
+                'ffmpeg', '-i', input_path,
+                '-vf', 'scale=min(iw\\,2400):min(ih\\,2400):force_original_aspect_ratio=decrease',
+                '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-profile:v', 'main',
+                '-crf', '23', '-preset', 'medium',
+                '-c:a', 'aac', '-b:a', '128k',
+                '-movflags', '+faststart',
+                '-y', tmp_video.name
+            ], check=True, capture_output=True)
+
+            with open(tmp_video.name, 'rb') as f:
+                media.transcoded_file.save(f'video_{media.id}.mp4', File(f), save=False)
+
+        # Extract poster frame
+        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp_poster:
+            subprocess.run([
+                'ffmpeg', '-i', input_path,
+                '-vf', 'thumbnail,scale=320:-2',
+                '-frames:v', '1',
+                '-y', tmp_poster.name
+            ], check=True, capture_output=True)
+
+            with open(tmp_poster.name, 'rb') as f:
+                media.poster_file.save(f'poster_{media.id}.jpg', File(f), save=False)
+
+        # Delete original file to save storage
+        media.file.delete(save=False)
 
         media.transcode_status = 'ready'
         media.save()
 
         logger.info(f"Successfully transcoded video {media_id}")
 
-    except LogEntryMedia.DoesNotExist:
-        logger.error(f"Media {media_id} not found for transcode job")
-        return
     except Exception as e:
         logger.error(f"Failed to transcode video {media_id}: {e}", exc_info=True)
-        media.transcode_status = 'failed'
-        media.save(update_fields=["transcode_status"])
+        try:
+            media.transcode_status = 'failed'
+            media.save(update_fields=['transcode_status'])
+        except:
+            pass  # Media may not exist
         raise
 ```
+
+**Why one file?**
+- All FFmpeg logic only used by background job
+- Easier for volunteers to find all video processing code
+- Fewer files to navigate
+- `enqueue_transcode()` helper simplifies view code
 
 ### Phase 4: Upload Flow
 **File:** `the_flip/apps/maintenance/forms.py`
@@ -291,9 +306,7 @@ def clean_media(self):
 
 Update create view to enqueue job:
 ```python
-from rq import Queue
-from redis import Redis
-from django.conf import settings
+from .tasks import enqueue_transcode
 
 def form_valid(self, form):
     # ... existing code ...
@@ -309,11 +322,7 @@ def form_valid(self, form):
         )
 
         if is_video:
-            # Enqueue transcode job
-            redis_url = settings.RQ_QUEUES['default']['URL']
-            redis_conn = Redis.from_url(redis_url)
-            queue = Queue('default', connection=redis_conn, default_timeout=settings.RQ_QUEUES['default']['DEFAULT_TIMEOUT'])
-            queue.enqueue('the_flip.apps.maintenance.tasks.transcode_video_job', media.id)
+            enqueue_transcode(media.id) 
 
     # ... rest of method ...
 ```
@@ -329,9 +338,6 @@ Update media display:
             <source src="{{ media.transcoded_file.url }}" type="video/mp4">
             Your browser doesn't support video playback.
         </video>
-        {% if media.duration %}
-            <p class="text-muted">Duration: {{ media.duration|format_duration }}</p>
-        {% endif %}
     {% elif media.transcode_status == 'processing' or media.transcode_status == 'pending' %}
         <div class="alert alert-info">
             <i class="spinner-border spinner-border-sm"></i>
@@ -339,26 +345,12 @@ Update media display:
         </div>
     {% elif media.transcode_status == 'failed' %}
         <div class="alert alert-danger">
-            Video processing failed.
-            <a href="{% url 'retry_transcode' media.id %}" class="btn btn-sm btn-primary">Retry</a>
+            Video processing failed. Please try uploading again.
         </div>
     {% endif %}
 {% else %}
     <img src="{{ media.file.url }}" alt="Log entry photo" style="max-width: 100%;">
 {% endif %}
-```
-
-Add template filter for duration formatting:
-```python
-# the_flip/apps/maintenance/templatetags/media_filters.py
-@register.filter
-def format_duration(seconds):
-    """Format seconds as MM:SS"""
-    if not seconds:
-        return ""
-    minutes = seconds // 60
-    secs = seconds % 60
-    return f"{minutes}:{secs:02d}"
 ```
 
 ### Phase 6: Management Commands
@@ -447,9 +439,9 @@ class Command(BaseCommand):
 - [ ] Run `python manage.py check_ffmpeg` in production
 
 ## Operational Notes
-- Set RQ worker concurrency and timeouts conservatively to fit host CPU/RAM (default: 1 worker, 600s timeout)
-- Track job status to show UI feedback; retry failed jobs with backoff
-- Logging: capture FFmpeg stderr for debugging (already in task code)
-- Monitor Redis memory usage; set `maxmemory-policy noeviction` for job queue reliability
-- Consider cleanup job to delete original files after 30 days if `transcode_status='ready'`
-- Storage projection: ~40GB over 3 years at ~2 videos/week (per hosting.md)
+- RQ worker: 1 worker, 600s timeout (sufficient for Railway/Render starter plans)
+- Original files deleted immediately after successful transcode (saves ~50% storage)
+- Storage projection: ~20GB over 3 years at ~2 videos/week (MP4s + posters only)
+- FFmpeg stderr captured in logs for debugging failures
+- Redis: set `maxmemory-policy noeviction` for job queue reliability
+- Failed jobs: User re-uploads (no retry mechanism needed for low-volume use case)
