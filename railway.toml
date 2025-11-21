@@ -6,8 +6,8 @@ buildCommand = "./build.sh"
 
 [deploy]
 startCommand = "gunicorn the_flip.wsgi:application"
-# Health check hits the front door
-healthcheckPath = "/"
+# Disable Railway health checks (blank path/null per Railway docs)
+healthcheckPath = ""
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
