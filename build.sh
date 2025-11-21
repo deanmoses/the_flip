@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build script for deployment to test environment on Render.com
+# Build script for deployment on hosting providers like Render.com and Railway
 
 # exit on error
 set -o errexit
@@ -16,7 +16,7 @@ python manage.py collectstatic --no-input
 # Import legacy maintainers and make some of them admins
 python manage.py import_maintainers
 
-# Create default pinball machines
+# Import legacy pinball machines
 python manage.py import_machines
 
 # Import legacy maintenance records
