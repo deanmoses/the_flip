@@ -393,21 +393,23 @@ input[type="radio"] {
   color: #fff;
 }
 
-.log-header {
+.section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: var(--space-3);
   margin-bottom: var(--space-4);
+  flex-wrap: wrap;
 }
 
-.log-header h2 {
+.section-header h2 {
   margin: 0;
 }
 
-.log-header .header-actions {
+.section-header__actions {
   display: flex;
   gap: var(--space-2);
+  margin-left: auto;
 }
 
 .log-entry-link {
@@ -662,9 +664,14 @@ input[type="radio"] {
     padding: var(--space-4) var(--space-3);
   }
 
-  .log-header {
+  .section-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .section-header__actions {
+    margin-left: 0;
+    margin-top: var(--space-3);
   }
 
   .breadcrumb--with-actions {
