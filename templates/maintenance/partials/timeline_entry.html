@@ -9,11 +9,13 @@
 >
   <div class="machine-card__row">
     <div class="machine-card__row-left">
-      <strong>{{ entry.created_at|smart_date }}</strong>
+      <strong class="log-entry-meta">{{ entry.created_at|smart_date }}</strong>
+    </div>
+    <div class="log-entry-meta">
       {% if entry.maintainers.all %}
-        <span> by {{ entry.maintainers.all|join:", " }}</span>
+        <span>by {{ entry.maintainers.all|join:", " }}</span>
       {% elif entry.maintainer_names %}
-        <span> by {{ entry.maintainer_names }}</span>
+        <span>by {{ entry.maintainer_names }}</span>
       {% endif %}
     </div>
   </div>
@@ -50,17 +52,19 @@
 >
   <div class="machine-card__row">
     <div class="machine-card__row-left">
-      {% if entry.problem_type != entry.PROBLEM_OTHER %}
-        <span class="machine-card__problem-label">{{ entry.get_problem_type_display }}:</span>
-      {% endif %}
-      {{ entry.description|default:"Problem reported (no description)" }}
+      <strong class="log-entry-meta">{{ entry.created_at|smart_date }}</strong>
     </div>
-    <div class="machine-card__meta-group">
-      <span class="machine-card__timestamp">{{ entry.created_at|smart_date }}</span>
+    <div class="log-entry-meta">
       <span class="badge badge-status badge-status--{{ entry.status }}">
         {{ entry.get_status_display }}
       </span>
     </div>
+  </div>
+  <div class="machine-card__problem">
+    {% if entry.problem_type != entry.PROBLEM_OTHER %}
+      <span class="machine-card__problem-label">{{ entry.get_problem_type_display }}:</span>
+    {% endif %}
+    {{ entry.description|default:"Problem reported (no description)" }}
   </div>
 </li>
 {% endif %}
