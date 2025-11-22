@@ -22,7 +22,7 @@
         <a href="/problem-reports/" class="btn btn-primary">Problem Reports</a>
       </li>
       <li>
-        <strong>Log work, with photos:</strong>
+        <strong>Log work:</strong>
         {% if sample_machine %}
           <a href="{% url 'log-create-machine' sample_machine.slug %}" class="btn btn-primary">Add Log for {{ sample_machine.display_name }}</a>
         {% else %}
@@ -33,10 +33,33 @@
         <strong>Add a new machine:</strong>
         <a href="{% url 'machine-quick-create' %}" class="btn btn-primary">Add Machine</a>
       </li>
-      <li>
-        <strong>Access Django admin:</strong>
-        <a href="/admin/" class="btn btn-primary">Django Admin</a>
-      </li>
     </ul>
   </div>
+
+  <div class="card">
+    <h3>Maintainers</h3>
+    <p>These are all the accounts in the system.  If your name is on this list, log in!  The passwords are all <code>test123</code>.</p>
+    {% if maintainers %}
+      <p>
+        {% for maintainer in maintainers %}
+          <code>{{ maintainer.display_name }}</code>{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+      </p>
+    {% else %}
+      <p>No maintainers found.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Superusers</h3>
+        <p>Sysadmins, like William, can access Django Admin. Add new users here.</p>
+        <a href="/admin/" class="btn btn-primary">Django Admin</a>
+  </div>
+
+  <div class="card">
+    <h3>Log bug or feature request</h3>
+    <p>Found a bug?  Have an idea?  File an issue.  <i>Requires GitHub account.</i></p>
+    <a href="https://github.com/deanmoses/the_flip/issues" class="btn btn-primary">GitHub Issues</a>
+  </div>
+
 {% endblock %}
