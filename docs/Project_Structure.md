@@ -1,6 +1,6 @@
 # Project Structure
 
-This document captures the target layout for a rebuilt version of The Flip so new contributors understand where domain logic belongs. It favors conventional Django practices: each business concern lives in its own app, shared utilities are centralized, and project-level settings stay thin.
+This document describes the project's structure. It favors conventional Django practices: each business concern lives in its own app, shared utilities are centralized, and project-level settings stay thin.
 
 ```
 the_flip/
@@ -26,10 +26,7 @@ the_flip/
 - **maintenance**: owns Problem Reports (visitor submissions), maintainer-created tasks, and Log Entries. Encapsulates workflows such as auto-closing tasks when machines are marked “good”, rate-limiting submissions, and the “select-or-type” maintainer attribution control.
 - **core**: shared helpers that don’t belong to a single domain app—decorators, custom admin mixins, base templates, date utilities, etc.
 
-### General conventions
+### Conventions
 - Keep each app’s `models.py`, `admin.py`, `forms.py`, and `tests/` focused on that domain. For larger modules, split into packages (e.g., `catalog/models/machine.py`).
-- Prefer `apps.<domain>.urls` for any public routes rather than cramming everything into the project `urls.py`.
-- Place development documentation in [`docs/`](Development.md) so architectural references live together.
+- Prefer putting routes in the root `urls.py` rather than per-app, to keep them all together and scannable.
 - Use `settings/base.py` for shared defaults and layer `dev.py` (local development), `test.py` (CI/automated tests), and `prod.py` (production). Point the `DJANGO_SETTINGS_MODULE` environment variable at the appropriate module per environment.
-
-This structure makes it clear where new code belongs and eliminates the need for proxy-admin hacks: register each model in its native app, then customize admin ordering via `CustomAdminSite.get_app_list`. When we refactor toward this layout, update `INSTALLED_APPS` and migrate files gradually (accounts → catalog → maintenance) to keep diffs manageable.

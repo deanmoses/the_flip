@@ -7,9 +7,6 @@ It allows museum visitors to report problems with pinball machines (via QR codes
 ## Live System
 It's live at https://the-flip-production.up.railway.app
 
-## AI Assistant Instructions
-AI helpers like Claude and Codex must read and follow `docs/Development.md` before answering questions or generating assets. That guide spells out how AI assistants are to work with HTML, CSS, Django/Python, the project structure, data model, and tests.
-
 ## Local Development Setup
 It's in Django.
 
@@ -27,8 +24,8 @@ It's in Django.
 
 2. **Create and activate virtual environment**
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
 
 3. **Install dependencies**
@@ -80,6 +77,8 @@ Maintainers need both a Django user account and a Maintainer profile:
 Alternatively, staff users (with `is_staff=True`) can also manage reports without a Maintainer profile.
 
 
-## Developing
+## Developing, Testing, Deploying
 
-See [docs/Development.md](docs/Development.md). 
+See [docs/README.md](docs/README.md). 
+
+AI helpers like Claude and Codex **MUST** read and follow the docs linked at [docs/README.md](docs/README.md) before answering questions or generating assets. That guide spells out how AI assistants are to work with HTML, CSS, Django/Python, the project structure, data model, and testing.

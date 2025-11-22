@@ -24,7 +24,7 @@ When adding new tests:
 From the repo root:
 
 ```bash
-source venv/bin/activate        # if not already active
+source .venv/bin/activate       # if not already active
 python manage.py test           # runs the entire suite
 ```
 
