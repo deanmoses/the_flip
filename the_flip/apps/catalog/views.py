@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db import transaction
-from django.db.models import Case, CharField, Count, F, Prefetch, Q, Value, When
+from django.db.models import Case, CharField, Count, F, Max, Prefetch, Q, Value, When
 from django.db.models.functions import Coalesce, Lower
 from django.http import JsonResponse
 from django.shortcuts import redirect
@@ -25,8 +25,14 @@ class PublicMachineListView(ListView):
 
     def get_queryset(self):
         return MachineInstance.objects.visible().annotate(
+            # Count open problem reports
             open_report_count=Count(
                 'problem_reports',
+                filter=Q(problem_reports__status=ProblemReport.STATUS_OPEN)
+            ),
+            # Get the most recent open problem report date
+            latest_open_report_date=Max(
+                'problem_reports__created_at',
                 filter=Q(problem_reports__status=ProblemReport.STATUS_OPEN)
             )
         ).prefetch_related(
@@ -38,18 +44,20 @@ class PublicMachineListView(ListView):
                 to_attr='latest_open_report'
             )
         ).order_by(
-            # Location priority: floor, workshop, storage, unknown
+            # 1. Status priority: fixing, broken, unknown, good
             Case(
-                When(location=MachineInstance.LOCATION_FLOOR, then=Value(1)),
-                When(location=MachineInstance.LOCATION_WORKSHOP, then=Value(2)),
-                When(location=MachineInstance.LOCATION_STORAGE, then=Value(3)),
-                default=Value(4),
+                When(operational_status=MachineInstance.STATUS_FIXING, then=Value(1)),
+                When(operational_status=MachineInstance.STATUS_BROKEN, then=Value(2)),
+                When(operational_status=MachineInstance.STATUS_UNKNOWN, then=Value(3)),
+                When(operational_status=MachineInstance.STATUS_GOOD, then=Value(4)),
+                default=Value(5),
                 output_field=CharField(),
             ),
-            # Year ascending (oldest first, nulls last)
-            F('model__year').asc(nulls_last=True),
-            # Month ascending (earliest month first, nulls last)
-            F('model__month').asc(nulls_last=True),
+            # 2. Machines with open problem reports first (nulls last means machines with no reports come last)
+            F('latest_open_report_date').desc(nulls_last=True),
+            # 3. Within machines with open reports, sort by most recent report first (already handled by step 2)
+            # 4. Machine name as tie-breaker
+            Lower('model__name'),
         )
 
 
