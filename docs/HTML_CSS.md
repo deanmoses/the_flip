@@ -54,10 +54,10 @@ The rest of this guide focuses on day-to-day markup and component expectations.
 
 ## 7. Deliverables Checklist
 
-1. Reference the tokens defined in the scaffold doc.  
-2. Write base reset + typography rules.  
-3. Implement components with agreed naming method.  
-4. Provide responsive behavior for header, main grids, tables, and cards at the specified breakpoints.  
-5. Ensure no inline styles remain; all templates rely solely on classes.  
-6. Verify focus styles and reduced-motion handling.  
-7. Keep CSS lean (no unused classes or framework imports).
+ - Reference the tokens defined in the scaffold doc.  
+ - Write base reset + typography rules.  
+ - Implement components with agreed naming method.  
+ - Provide responsive behavior for header, main grids, tables, and cards at the specified breakpoints.  
+ - Ensure no inline styles remain; all templates rely solely on classes.  
+ - Verify focus styles and reduced-motion handling.  
+ - Keep CSS lean: no unused classes or framework imports.

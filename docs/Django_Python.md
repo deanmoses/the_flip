@@ -67,12 +67,12 @@ The baseline project layout, settings modules, and deployment hooks live in [`sc
 
 ## 10. Testing & Quality
 
-- See [`Testing_Guide.md`](Testing_Guide.md) for the full testing strategy, coverage expectations, and runner instructions. Follow that doc whenever creating or updating tests.
+- See [`Testing.md`](Testing.md) for the full testing strategy, coverage expectations, and runner instructions. Follow that doc whenever creating or updating tests.
 - This section simply reiterates the core expectation: every feature must be backed by automated tests (unit, form, view, or integration) before merging to `main`.
 
 ## 11. Documentation & Communication
 
-- When generating new modules, include docstrings summarizing intent and reference related docs ([`Data_Model.md`](Data_Model.md), [`Maintenance_Workflows.md`](../Maintenance_Workflows.md)) when relevant.
+- When generating new modules, include docstrings summarizing intent and reference related docs ([`Datamodel.md`](Datamodel.md), [`plans/Maintenance_Workflows.md`](plans/Maintenance_Workflows.md)) when relevant.
 - Update [`README.md`](../README.md) and domain docs whenever behavior changes so humans and future AI runs have accurate context.
 - Prefer explicit TODO comments over implied context; include the “why” so a later generation can safely finish or remove the item.
 

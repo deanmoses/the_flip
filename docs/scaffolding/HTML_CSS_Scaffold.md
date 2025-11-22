@@ -1,6 +1,6 @@
 # HTML & CSS Scaffold Reference
 
-Use this document when regenerating the base UI from scratch. It captures the design tokens, layout defaults, and breakpoint rules that the initial build used. Day-to-day maintenance work should refer to [`../HTML_CSS_Guide.md`](../HTML_CSS_Guide.md), while this file is for scaffolding or large visual refreshes.
+Use this document when regenerating the base UI from scratch. It captures the design tokens, layout defaults, and breakpoint rules that the initial build used. Day-to-day maintenance work should refer to [`../HTML_CSS.md`](../HTML_CSS.md), while this file is for scaffolding or large visual refreshes.
 
 ## Visual System & Tokens
 

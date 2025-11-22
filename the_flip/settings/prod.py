@@ -8,6 +8,6 @@ SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
-# Trust X-Forwarded-Proto header from reverse proxies (Railway, Render, etc.)
+# Trust X-Forwarded-Proto header from hosting system's reverse proxy
 # This is required when the proxy terminates SSL
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

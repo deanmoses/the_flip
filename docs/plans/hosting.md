@@ -2,6 +2,16 @@
 
 This is the hosting and devops requirements of this project and alternatives considered.
 
+## ✅ Decision: Railway
+
+**Railway was selected as the hosting platform.** The production system is deployed at https://the-flip-production.up.railway.app/
+
+See [docs/Deployment.md](../Deployment.md) for deployment instructions.
+
+---
+
+## Background: Requirements Analysis and Platform Comparison
+
 ## Project Description
 
 This project is a small internal web application for maintaining the pinball machines at a pinball museum.  It's used by the volunteer staff to log maintenance issues, upload photos and videos of problems, and track work over time.  The application is a Django-based system maintained by museum volunteers.

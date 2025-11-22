@@ -5,25 +5,20 @@ This document captures the target layout for a rebuilt version of The Flip so ne
 ```
 the_flip/
 ├── manage.py
-├── README.md
-├── build.sh / render.yaml / runtime.txt / requirements.txt
-├── docs/
-│   └── dev_guide/           # development guides
+├── build.sh / railway.toml / runtime.txt / requirements.txt
+├── docs/                     # development guides, deployment docs, and plans
 ├── templates/                # Django templates organized by app
 └── the_flip/                 # Django project package
     ├── __init__.py
     ├── settings/             # split settings module (base/dev/test/prod)
-    ├── urls.py
-    ├── asgi.py / wsgi.py
+    ├── urls.py / asgi.py / wsgi.py
     ├── apps/
     │   ├── accounts/         # Maintainer profiles & auth glue
-    │   ├── catalog/          # MachineModel + MachineInstance catalog
-    │   ├── maintenance/      # Problem reports, log entries, workflows
+    │   ├── catalog/          # Catalog of pinball machines and models
+    │   ├── maintenance/      # Problem reports, log entries
     │   └── core/             # Shared utilities & decorators
     └── static/               # Project-level static files
 ```
-
-Refer to the repository-level [`README.md`](../README.md) for onboarding and environment setup.
 
 ### App responsibilities
 - **accounts**: wraps Django’s `AUTH_USER_MODEL` with the Maintainer profile. Handles admin customization (list filters, field ordering) and any future features like maintainer onboarding or role management.
@@ -34,7 +29,7 @@ Refer to the repository-level [`README.md`](../README.md) for onboarding and env
 ### General conventions
 - Keep each app’s `models.py`, `admin.py`, `forms.py`, and `tests/` focused on that domain. For larger modules, split into packages (e.g., `catalog/models/machine.py`).
 - Prefer `apps.<domain>.urls` for any public routes rather than cramming everything into the project `urls.py`.
-- Place development documentation in [`docs/dev_guide/`](README.md) so architectural references live together.
+- Place development documentation in [`docs/`](Development.md) so architectural references live together.
 - Use `settings/base.py` for shared defaults and layer `dev.py` (local development), `test.py` (CI/automated tests), and `prod.py` (production). Point the `DJANGO_SETTINGS_MODULE` environment variable at the appropriate module per environment.
 
 This structure makes it clear where new code belongs and eliminates the need for proxy-admin hacks: register each model in its native app, then customize admin ordering via `CustomAdminSite.get_app_list`. When we refactor toward this layout, update `INSTALLED_APPS` and migrate files gradually (accounts → catalog → maintenance) to keep diffs manageable.

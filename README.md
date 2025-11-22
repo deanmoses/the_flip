@@ -1,14 +1,14 @@
-# Prototype of The Flip Pinball Musuem's Maintenance System
+# The Flip Pinball Musuem's Maintenance System
 
-This is a prototype web app for managing pinball machine problem reports at The Flip pinball museum.
+This is a web app for managing pinball machine problem reports at The Flip pinball museum.
 
 It allows museum visitors to report problems with pinball machines (via QR codes on each machine), and enables maintainers to track, update, and resolve these issues. 
 
 ## Live System
-Check out the prototype live at https://the-flip.onrender.com
+It's live at https://the-flip-production.up.railway.app
 
 ## AI Assistant Instructions
-AI helpers like Claude and Codex must read and follow `docs/dev_guide/README.md` before answering questions or generating assets. That guide spells out how AI assistants are to work with HTML, CSS, Django/Python, the project structure, data model, and tests.
+AI helpers like Claude and Codex must read and follow `docs/Development.md` before answering questions or generating assets. That guide spells out how AI assistants are to work with HTML, CSS, Django/Python, the project structure, data model, and tests.
 
 ## Local Development Setup
 It's in Django.
@@ -80,8 +80,6 @@ Maintainers need both a Django user account and a Maintainer profile:
 Alternatively, staff users (with `is_staff=True`) can also manage reports without a Maintainer profile.
 
 
-## Deploying the Public Prototype
+## Developing
 
-The prototype at https://the-flip.onrender.com is deployed every time this repo's main branch is pushed to Github.
-
-Render runs `build.sh`, which installs dependencies, applies migrations, collects static files, and seeds the database by calling the same management commands listed above. That process imports maintainers, machines, and maintenance history on every deploy, so any data added through the site will be wiped the next time the build runs. 
+See [docs/Development.md](docs/Development.md). 

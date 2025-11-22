@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build script for deployment on hosting providers like Render.com and Railway
+# Build script for deployment on Railway
 
 # exit on error
 set -o errexit

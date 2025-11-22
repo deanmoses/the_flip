@@ -312,33 +312,7 @@ If video processing fails:
 
 ## Deployment
 
-### Render (render.yaml)
-Add worker service:
-```yaml
-services:
-  - type: web
-    name: the-flip
-    # ... existing config ...
-
-  - type: worker
-    name: the-flip-worker
-    runtime: python
-    buildCommand: |
-      apt-get update
-      apt-get install -y libheif1 libheif-dev ffmpeg
-      ./build.sh
-    startCommand: python manage.py qcluster
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: the-flip-db
-          property: connectionString
-      # Add other env vars from web service
-```
-
-**Cost:** Worker service ~$7/mo (starter plan)
-
-### Railway
+### Railway (Active Platform)
 1. **Add Worker Service** via dashboard:
    - Service name: `the-flip-worker`
    - Source: Same repo as web service

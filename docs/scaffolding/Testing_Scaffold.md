@@ -1,6 +1,6 @@
 # Testing Scaffold Reference
 
-Use this document when setting up or re-generating the automated test harness from scratch. It captures the baseline runner, directory layout, and environment configuration. Day-to-day test authoring belongs in [`../Testing_Guide.md`](../Testing_Guide.md).
+Use this document when setting up or re-generating the automated test harness from scratch. It captures the baseline runner, directory layout, and environment configuration. Day-to-day test authoring belongs in [`../Testing.md`](../Testing.md).
 
 ## Directory Layout
 
