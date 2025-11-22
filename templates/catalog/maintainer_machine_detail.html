@@ -46,6 +46,24 @@
       </div>
     </div>
   </fieldset>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h2 style="margin: 0;">Recent Activity</h2>
+    <div>
+      <a class="btn btn-primary" href="{% url 'log-create-machine' object.slug %}">Add Log Entry</a>
+      <a class="btn btn-secondary" href="{% url 'problem-report-create' object.slug %}">Add Problem Report</a>
+    </div>
+  </div>
+
+  {% if timeline_entries %}
+    <ul class="list machine-list">
+      {% for entry in timeline_entries %}
+        {% include "maintenance/partials/timeline_entry.html" with entry=entry %}
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No recent activity.</p>
+  {% endif %}
 {% endblock %}
 
 {% block extra_js %}

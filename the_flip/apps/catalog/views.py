@@ -94,6 +94,34 @@ class MachineDetailView(PublicMachineDetailView):
             LogEntry.objects.filter(machine=machine)
             .prefetch_related("maintainers", "media")
         )
+
+        # Combine logs and problem reports into a unified timeline
+        recent_logs = list(
+            LogEntry.objects.filter(machine=machine)
+            .prefetch_related("maintainers", "media")
+            .order_by("-created_at")[:20]
+        )
+        recent_reports = list(
+            ProblemReport.objects.filter(machine=machine)
+            .select_related("reported_by_user")
+            .order_by("-created_at")[:20]
+        )
+
+        # Add entry_type attribute for template differentiation
+        for log in recent_logs:
+            log.entry_type = "log"
+        for report in recent_reports:
+            report.entry_type = "problem_report"
+
+        # Combine and sort by created_at, newest first, limit to 20
+        timeline_entries = sorted(
+            recent_logs + recent_reports,
+            key=lambda x: x.created_at,
+            reverse=True
+        )[:20]
+
+        context["timeline_entries"] = timeline_entries
+
         return context
 
     def post(self, request, *args, **kwargs):
