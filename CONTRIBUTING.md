@@ -1,11 +1,11 @@
 # Contributing to The Flip
 
-Thank you for your interest in contributing to The Flip! This guide will help you get set up and understand the development workflow.
+This guide covers the contribution workflow, code quality standards, and testing requirements.
 
 ## Table of Contents
 
 - [Getting Started](#getting-started)
-- [Development Setup](#development-setup)
+- [Contributor Setup](#contributor-setup)
 - [Development Workflow](#development-workflow)
 - [Code Quality](#code-quality)
 - [Testing](#testing)
@@ -16,96 +16,55 @@ Thank you for your interest in contributing to The Flip! This guide will help yo
 
 Before you begin:
 
-1. Read the main [README.md](README.md) for project overview and basic setup
-2. Review the documentation in [docs/](docs/) to understand the architecture and conventions
-3. Familiarize yourself with the [data model](docs/Datamodel.md) and [Django conventions](docs/Django_Python.md)
+1. **Follow the setup in [README.md](README.md)** - Get the app running locally first
+2. **Review [docs/](docs/)** - Understand the architecture and conventions:
+   - [Project Structure](docs/Project_Structure.md) - Directory layout and app organization
+   - [Data Model](docs/Datamodel.md) - Database schema and relationships
+   - [Django/Python](docs/Django_Python.md) - Coding conventions and patterns
+   - [HTML/CSS](docs/HTML_CSS.md) - Frontend conventions
+   - [Testing](docs/Testing.md) - Testing strategies
 
-## Development Setup
+## Contributor Setup
 
-### Prerequisites
+After completing the basic setup in README.md, add these contributor tools:
 
-- **Python 3.13+**
-- **pip** (Python package manager)
-- **FFmpeg** (required for video processing)
-  - macOS: `brew install ffmpeg`
-  - Ubuntu/Debian: `apt-get install ffmpeg`
-  - Windows: Download from [ffmpeg.org](https://ffmpeg.org/)
-- **Git**
+### 1. Install Development Dependencies
 
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/deanmoses/the_flip.git
-   cd the_flip
-   ```
-
-2. **Create and activate virtual environment**
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
-
-3. **Install dependencies**
-   ```bash
-   # Production dependencies
-   pip install -r requirements.txt
-
-   # Development dependencies (linters, formatters, testing tools)
-   pip install -r requirements-dev.txt
-   ```
-
-4. **Configure environment variables**
-   ```bash
-   cp .env.example .env
-   ```
-
-   Edit `.env` and set values:
-   - Generate `SECRET_KEY` using: `python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'`
-   - Set `ALLOWED_HOSTS=localhost,127.0.0.1`
-
-5. **Run migrations**
-   ```bash
-   python manage.py migrate
-   ```
-
-6. **Create a superuser**
-   ```bash
-   python manage.py createsuperuser
-   ```
-
-7. **Load sample data (optional)**
-   ```bash
-   python manage.py import_maintainers
-   python manage.py import_machines
-   python manage.py import_maintenance_records
-   ```
-
-8. **Install pre-commit hooks** (recommended)
-   ```bash
-   pre-commit install
-   ```
-
-   This automatically runs code quality checks before each commit.
-
-### Running the Application
-
-**Development server:**
 ```bash
-make runserver
-# Or: python manage.py runserver
+pip install -r requirements-dev.txt
 ```
 
-Access at http://localhost:8000/
+This installs:
+- **ruff** - Fast linter and formatter
+- **mypy** - Type checker
+- **coverage** - Test coverage reporting
+- **pre-commit** - Git hooks for automated checks
 
-**Background worker** (for video transcoding and async tasks):
+### 2. Install Pre-commit Hooks
+
+```bash
+pre-commit install
+```
+
+This automatically runs code quality checks before each commit. If checks fail, the commit is blocked until you fix the issues.
+
+### 3. Install FFmpeg (for video features)
+
+Required for testing video transcoding:
+- macOS: `brew install ffmpeg`
+- Ubuntu/Debian: `apt-get install ffmpeg`
+- Windows: Download from [ffmpeg.org](https://ffmpeg.org/)
+
+### 4. Run Background Worker (when testing videos)
+
+Video transcoding requires the Django Q worker running:
+
 ```bash
 # In a separate terminal
 make runq
-# Or: python manage.py qcluster
 ```
 
-The background worker processes video uploads using FFmpeg. Without it running, video transcoding will queue but not complete.
+Without this, video uploads will queue but not process.
 
 ## Development Workflow
 
