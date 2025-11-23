@@ -134,9 +134,9 @@ Your username or identifier (e.g., `moses`, `claude`, `yourname`)
 
 - `feat/claude/add-contributing-guide`
 - `fix/moses/video-upload-timeout`
-- `docs/claude/architecture-overview`
+- `docs/codex/architecture-overview`
 - `chore/moses/update-dependencies`
-- `test/claude/add-catalog-tests`
+- `test/gemini/add-catalog-tests`
 
 ## Commit Messages
 
