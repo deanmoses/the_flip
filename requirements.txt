@@ -4,6 +4,10 @@ Django==5.2.8
 # Configuration Management
 python-decouple==3.8
 
+# Database
+psycopg2-binary==2.9.10
+dj-database-url==2.3.0
+
 # Production Server
 gunicorn==23.0.0
 
