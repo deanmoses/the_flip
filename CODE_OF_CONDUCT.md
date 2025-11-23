@@ -59,9 +59,9 @@ representative at an online or offline event.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the project maintainers responsible for enforcement at
-[INSERT CONTACT EMAIL]. All complaints will be reviewed and investigated
-promptly and fairly.
+reported by opening a confidential issue at
+[github.com/deanmoses/the_flip/issues](https://github.com/deanmoses/the_flip/issues).
+All complaints will be reviewed and investigated promptly and fairly.
 
 All project maintainers are obligated to respect the privacy and security of the
 reporter of any incident.
