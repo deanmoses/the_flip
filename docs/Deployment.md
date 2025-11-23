@@ -44,8 +44,6 @@ When you create a pull request, an ephemeral test environment is automatically c
 4. Deployment completes (~2-5 minutes)
 5. New version is live
 
-⚠️ **Production deploys automatically on every `main` branch push**
-
 ## Platform: Railway
 
 [Railway](https://railway.app/) is the hosting platform.

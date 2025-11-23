@@ -11,8 +11,6 @@ The development documentation for The Flip maintenance system.
 - **[Deployment.md](Deployment.md)** - Deployment pipeline (PR environments, production)
 - **[Operations.md](Operations.md)** - Operations guide (monitoring, rollback, backups)
 
-⚠️ The app is deployed every time the main branch is pushed to Github! See [Deployment.md](Deployment.md).
-
 ## For AI Assistants
 
 AI assistants must read and understand these docs before responding.  AI assistants must confirm relevant sections from these documents before generating code or explanations. Cite which guide sections informed the answer whenever practical.
