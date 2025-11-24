@@ -12,7 +12,6 @@ from pathlib import Path
 
 import requests
 from decouple import config
-from django.core.files import File
 from django_q.tasks import async_task
 
 from the_flip.apps.maintenance.models import LogEntryMedia
@@ -41,13 +40,15 @@ def transcode_video_job(media_id: int):
         logger.info("Transcode skipped for non-video media %s", media_id)
         return
 
-    # Check if HTTP transfer is configured
-    use_http_transfer = DJANGO_WEB_SERVICE_URL and TRANSCODING_UPLOAD_TOKEN
+    # Validate HTTP transfer configuration
+    if not DJANGO_WEB_SERVICE_URL or not TRANSCODING_UPLOAD_TOKEN:
+        msg = "DJANGO_WEB_SERVICE_URL and TRANSCODING_UPLOAD_TOKEN must be configured"
+        logger.error("Transcode job %s aborted: %s", media_id, msg)
+        media.transcode_status = LogEntryMedia.STATUS_FAILED
+        media.save(update_fields=["transcode_status", "updated_at"])
+        raise ValueError(msg)
 
-    if use_http_transfer:
-        logger.info("Using HTTP transfer to web service for media %s", media_id)
-    else:
-        logger.info("Using direct file save (local mode) for media %s", media_id)
+    logger.info("Transcoding video %s for HTTP transfer to web service", media_id)
 
     input_path = Path(media.file.path)
     media.transcode_status = LogEntryMedia.STATUS_PROCESSING
@@ -106,25 +107,9 @@ def transcode_video_job(media_id: int):
             ]
         )
 
-        if use_http_transfer:
-            # Upload transcoded files to web service via HTTP
-            _upload_transcoded_files(media_id, tmp_video.name, tmp_poster.name)
-            logger.info("Successfully uploaded transcoded video %s", media_id)
-        else:
-            # Save files directly (local development mode)
-            with open(tmp_video.name, "rb") as f:
-                media.transcoded_file.save(f"video_{media.id}.mp4", File(f), save=False)
-
-            with open(tmp_poster.name, "rb") as f:
-                media.poster_file.save(f"poster_{media.id}.jpg", File(f), save=False)
-
-            media.file.delete(save=False)
-
-            media.transcode_status = LogEntryMedia.STATUS_READY
-            media.save(
-                update_fields=["transcoded_file", "poster_file", "transcode_status", "updated_at"]
-            )
-            logger.info("Successfully transcoded video %s", media_id)
+        # Upload transcoded files to web service via HTTP
+        _upload_transcoded_files(media_id, tmp_video.name, tmp_poster.name)
+        logger.info("Successfully uploaded transcoded video %s", media_id)
 
     except Exception as exc:  # noqa: BLE001
         logger.error("Failed to transcode video %s: %s", media_id, exc, exc_info=True)
