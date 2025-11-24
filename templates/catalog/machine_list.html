@@ -21,7 +21,7 @@
               <span class="machine-card__name">{{ machine.display_name }}</span>
               <span class="machine-card__meta">・{{ machine.model.year }} {{ machine.model.manufacturer }}</span>
             </div>
-            <span class="badge badge-status badge-status--{{ machine.operational_status }}">
+            <span class="badge badge-status badge--{{ machine.operational_status }}">
               {{ machine.get_operational_status_display }}
             </span>
           </div>

@@ -16,7 +16,7 @@
          href="{% url 'machine-problem-reports' object.slug %}">
         Problem Reports
         {% if open_problem_reports.count > 0 %}
-          <span class="badge badge--status-open" style="margin-left: var(--space-2);">{{ open_problem_reports.count }}</span>
+          <span class="badge badge--open" style="margin-left: var(--space-2);">{{ open_problem_reports.count }}</span>
         {% endif %}
       </a>
     </div>
