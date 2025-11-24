@@ -34,8 +34,8 @@ Tips:
 - If you add dependencies for tests, ensure they land in `requirements.txt`.
 
 ## 5. When to Run Tests
-- **Before every push to `main`:** `main` deploys directly to the Render-hosted UAT site, so always run `python manage.py test` locally first.
-- **Before opening or updating a PR:** keeps reviews fast and reduces deploy blockers.
+- **Before opening or updating a PR:** CI will run tests automatically, but running locally first keeps reviews fast and reduces deploy blockers.
+- **During development:** Run tests frequently to catch issues early.
 
 ## 6. Coverage Expectations
 This is still a prototype headed toward v1, so prioritize the highest-value flows:
@@ -46,6 +46,15 @@ This is still a prototype headed toward v1, so prioritize the highest-value flow
 
 End-to-end browser coverage is intentionally out of scope right now to keep the suite fast. If we later need smoke tests, consider lightweight HTTP checks or component-level tests before introducing heavier tooling.
 
-## 7. Future Enhancements
+## 7. Continuous Integration
+
+GitHub Actions automatically runs tests on all pull requests and pushes to `main`. The CI workflow:
+- Runs the full test suite with `python manage.py test`
+- Uses Python 3.13 and PostgreSQL 15 to match production
+- Installs system dependencies (FFmpeg, libheif) from `nixpacks.toml`
+- Optionally runs linting (`make lint`) and type checking (`make typecheck`)
+
+See [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) for the complete configuration.
+
+## 8. Future Enhancements
 - Add code coverage reporting (`coverage.py`) once the suite grows, but keep it optional until we stabilize v1.
-- If/when CI is added, reuse the `python manage.py test` command so local and remote runs stay identical.
