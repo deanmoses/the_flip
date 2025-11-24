@@ -46,13 +46,7 @@ When you create a pull request, an ephemeral test environment is automatically c
 
 ## Platform: Railway
 
-[Railway](https://railway.app/) is the hosting platform.
-
-**Services:**
-- Web application (Django + Gunicorn)
-- PostgreSQL database
-- Persistent disk storage (for photo & video files)
-- Background worker (Django Q, for async video processing)
+[Railway](https://railway.app/) is the hosting platform. See [Architecture.md](Architecture.md) for system components.
 
 ---
 

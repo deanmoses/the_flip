@@ -3,6 +3,7 @@
 The development documentation for The Flip maintenance system.
 
 - **[CONTRIBUTING.md](../CONTRIBUTING.md)** - Contribution workflow (branches, PRs, code quality checks)
+- **[Architecture.md](Architecture.md)** - System components and how they work together
 - **[Project_Structure.md](Project_Structure.md)** - Directory layout, app organization, file placement conventions
 - **[Datamodel.md](Datamodel.md)** - Domain models, database schema, field definitions, and data relationships
 - **[HTML_CSS.md](HTML_CSS.md)** - CSS token system, responsive design rules, component patterns, and styling conventions
