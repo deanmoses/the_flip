@@ -5,13 +5,11 @@ How to monitor, troubleshoot, and maintain the running application.
 ## Rollback
 
 If a deployment causes issues, you can rollback to a previous version.
+- Go to Railway dashboard
+- Select the deployment
+- Click rollback (point and click)
 
-**Process:**
-1. Go to Railway dashboard
-2. Select the deployment
-3. Click rollback (point and click)
-
-**Important:**
+**To Note:**
 - Rollbacks only affect application code
 - Database changes (migrations) are NOT rolled back
 - If a migration caused issues, you may need to create a reverse migration

@@ -13,6 +13,5 @@ AI assistant rules live in `docs/README.md`. Read that file before answering que
 **If the user says the PR was merged:**
 1. Switch to main: `git checkout main`
 2. Pull latest: `git pull origin main`
-3. Create new branch: `git checkout -b feature/descriptive-name`
-
-See `docs/AI_Workflow.md` for full details.
+3. Create new branch with appropriate prefix: `git checkout -b prefix/descriptive-name`
+   - Common prefixes: `feature/`, `fix/`, `refactor/`, `docs/`, `chore/`
