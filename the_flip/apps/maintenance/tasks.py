@@ -41,8 +41,14 @@ def transcode_video_job(media_id: int):
         return
 
     # Validate HTTP transfer configuration
-    if not DJANGO_WEB_SERVICE_URL or not TRANSCODING_UPLOAD_TOKEN:
-        msg = "DJANGO_WEB_SERVICE_URL and TRANSCODING_UPLOAD_TOKEN must be configured"
+    missing = []
+    if not DJANGO_WEB_SERVICE_URL:
+        missing.append("DJANGO_WEB_SERVICE_URL")
+    if not TRANSCODING_UPLOAD_TOKEN:
+        missing.append("TRANSCODING_UPLOAD_TOKEN")
+
+    if missing:
+        msg = f"Required environment variables not configured: {', '.join(missing)}"
         logger.error("Transcode job %s aborted: %s", media_id, msg)
         media.transcode_status = LogEntryMedia.STATUS_FAILED
         media.save(update_fields=["transcode_status", "updated_at"])
@@ -142,8 +148,14 @@ def _upload_transcoded_files(
     Raises:
         Exception: If upload fails after all retries
     """
-    if not DJANGO_WEB_SERVICE_URL or not TRANSCODING_UPLOAD_TOKEN:
-        msg = "DJANGO_WEB_SERVICE_URL and TRANSCODING_UPLOAD_TOKEN must be configured"
+    missing = []
+    if not DJANGO_WEB_SERVICE_URL:
+        missing.append("DJANGO_WEB_SERVICE_URL")
+    if not TRANSCODING_UPLOAD_TOKEN:
+        missing.append("TRANSCODING_UPLOAD_TOKEN")
+
+    if missing:
+        msg = f"Required environment variables not configured: {', '.join(missing)}"
         raise ValueError(msg)
 
     upload_url = f"{DJANGO_WEB_SERVICE_URL.rstrip('/')}/api/transcoding/upload/"
