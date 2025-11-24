@@ -24,12 +24,12 @@ When adding new tests:
 From the repo root:
 
 ```bash
-source .venv/bin/activate       # if not already active
-python manage.py test           # runs the entire suite
+make test           # runs the entire suite
 ```
 
 Tips:
-- To scope to a single module: `python manage.py test app.tests.test_feature`.
+- `make test` handles activating the virtual environment and setting the correct Django settings module
+- To scope to a single module: `DJANGO_SETTINGS_MODULE=the_flip.settings.test .venv/bin/python manage.py test app.tests.test_feature`
 - Tests rely on the default SQLite database that Django creates in memory; no extra services or env vars are required.
 - If you add dependencies for tests, ensure they land in `requirements.txt`.
 
