@@ -17,7 +17,11 @@ DJANGO_SETTINGS_MODULE=the_flip.settings.test python manage.py test
 echo "✓ All tests passed"
 
 # Run migrations
+echo "Running migrations..."
 python manage.py migrate
+echo "✓ Migrations complete"
 
 # Collect static files
+echo "Collecting static files..."
 python manage.py collectstatic --no-input
+echo "✓ Static files collected"
