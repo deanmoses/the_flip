@@ -19,9 +19,9 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: '\.csv$'
+        exclude: '\.csv$|\.md$'
       - id: end-of-file-fixer
-        exclude: '\.csv$'
+        exclude: '\.csv$|\.md$'
       - id: check-yaml
       - id: check-added-large-files
         args: ['--maxkb=1000']
