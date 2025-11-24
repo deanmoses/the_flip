@@ -7,8 +7,9 @@ set -o errexit
 # Install dependencies
 pip install -r requirements.txt
 
-# Create media directory if it doesn't exist
+# Create directories if they don't exist
 mkdir -p media
+mkdir -p static_collected
 
 # Run tests
 echo "Running tests..."
