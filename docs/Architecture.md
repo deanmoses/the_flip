@@ -2,17 +2,18 @@
 
 ## System Components
 
-**Web Application**
+### Web Application
 - Serves the website and handles user requests
 
-**Background Worker**
+### Background Worker
 - Processes video transcoding asynchronously to keep it off the UI thread
-- Uses Django Q task queue
 
-**Database**
+### Persistent File Storage
+- Store uploaded photos and videos
+- *In prod*: a persistent disk attached to the web application
+- *In dev*: the local project directory
+
+### Database
 - Stores all application data
-- PostgreSQL in production, SQLite for local development
-
-**File Storage**
-- Photos and videos uploaded by users
-- Persistent disk in production, local project directory for development
+- *In prod*: PostgreSQL
+- *In dev*: SQLite
