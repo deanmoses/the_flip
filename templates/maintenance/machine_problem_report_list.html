@@ -2,7 +2,7 @@
 {% load core_extras %}
 {% block title %}{{ machine.display_name }} Problem Reports · {{ block.super }}{% endblock %}
 {% block content %}
-  <nav class="breadcrumb breadcrumb--with-actions">
+  <nav class="breadcrumb breadcrumb-with-actions">
     <div class="breadcrumb__trail">
       <a href="{% url 'maintainer-machine-list' %}">Machines</a>
       <span>›</span>
@@ -35,7 +35,7 @@
             </div>
             <div class="machine-card__meta-group">
               <span class="machine-card__timestamp">{{ report.created_at|smart_date }}</span>
-              <span class="badge badge-status badge-status--{{ report.status }}">{{ report.get_status_display }}</span>
+              <span class="badge badge-status badge-{{ report.status }}">{{ report.get_status_display }}</span>
             </div>
           </div>
         </li>

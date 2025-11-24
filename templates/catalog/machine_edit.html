@@ -2,7 +2,7 @@
 {% load core_extras %}
 {% block title %}Edit {{ object.display_name }} · {{ block.super }}{% endblock %}
 {% block content %}
-  <nav class="breadcrumb breadcrumb--with-actions">
+  <nav class="breadcrumb breadcrumb-with-actions">
     <div class="breadcrumb__trail">
       <a href="{% url 'maintainer-machine-list' %}">Machines</a>
       <span>›</span>

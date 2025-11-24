@@ -2,7 +2,7 @@
 {% load core_extras %}
 {% block title %}QR Code: {{ machine.display_name }} · {{ block.super }}{% endblock %}
 {% block content %}
-  <nav class="breadcrumb breadcrumb--with-actions no-print">
+  <nav class="breadcrumb breadcrumb-with-actions no-print">
     <div class="breadcrumb__trail">
       <a href="{% url 'maintainer-machine-list' %}">Machines</a>
       <span>›</span>

@@ -238,12 +238,33 @@ input[type="radio"] {
   color: var(--color-text);
 }
 
-.badge--status-open {
-  background: var(--color-warning);
+/* Badge status variants */
+.badge-good {
+  background: var(--color-accent);
   color: #fff;
 }
 
-.badge--status-closed {
+.badge-unknown {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.badge-fixing {
+  background: var(--color-warning);
+  color: #1f1f1f;
+}
+
+.badge-broken {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.badge-open {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.badge-closed {
   background: var(--color-accent);
   color: #fff;
 }
@@ -354,6 +375,7 @@ input[type="radio"] {
   font-size: 0.9rem;
 }
 
+/* Badge positioning utility - aligns badge to right */
 .badge-status {
   margin-left: auto;
   white-space: nowrap;
@@ -361,36 +383,6 @@ input[type="radio"] {
 
 .machine-card__meta-group .badge-status {
   margin-left: 0;
-}
-
-.badge-status--good {
-  background: var(--color-accent);
-  color: #fff;
-}
-
-.badge-status--unknown {
-  background: var(--color-border);
-  color: var(--color-text);
-}
-
-.badge-status--fixing {
-  background: var(--color-warning);
-  color: #1f1f1f;
-}
-
-.badge-status--broken {
-  background: var(--color-danger);
-  color: #fff;
-}
-
-.badge-status--open {
-  background: var(--color-danger);
-  color: #fff;
-}
-
-.badge-status--closed {
-  background: var(--color-accent);
-  color: #fff;
 }
 
 .section-header {
@@ -493,7 +485,7 @@ input[type="radio"] {
   user-select: none;
 }
 
-.breadcrumb--with-actions {
+.breadcrumb-with-actions {
   display: flex;
   align-items: center;
   gap: var(--space-4);
@@ -674,7 +666,7 @@ input[type="radio"] {
     margin-top: var(--space-3);
   }
 
-  .breadcrumb--with-actions {
+  .breadcrumb-with-actions {
     flex-direction: column;
     align-items: flex-start;
   }
