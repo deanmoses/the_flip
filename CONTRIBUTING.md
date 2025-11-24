@@ -16,7 +16,7 @@ This guide covers how to contribute to the project and submit a PR.
 4. **Run tests** to ensure nothing breaks
 5. **Commit your changes** with clear commit messages
 6. **Push your branch** to GitHub
-7. **Create a Pull Request** following the PR template
+7. **Create a Pull Request** against `main`
 
 ## Code Quality
 
@@ -25,20 +25,15 @@ This guide covers how to contribute to the project and submit a PR.
 **Before committing, run:**
 
 ```bash
-# Check for linting issues
-make lint # Or .venv/bin/ruff check .
+make quality  # Format code and run all quality checks
+```
 
-# Auto-format code
-make format # Or .venv/bin/ruff format .
+Or run individual checks:
 
-# Type checking
-make typecheck # Or .venv/bin/mypy the_flip
-
-# Template linting
-make lint-templates # Or .venv/bin/djlint templates/ --check
-
-# Run all quality checks at once
-make quality
+```bash
+make format     # Auto-format code and templates
+make lint       # Lint code and templates
+make typecheck  # Check Python types
 ```
 
 ### Pre-commit Hooks
@@ -47,7 +42,7 @@ If you installed pre-commit hooks (`pre-commit install`), these checks run autom
 
 To manually run all pre-commit checks:
 ```bash
-pre-commit run --all-files
+make precommit
 ```
 
 ## Testing
@@ -57,18 +52,15 @@ pre-commit run --all-files
 ```bash
 # Run all tests
 make test
-
-# Run tests with coverage report
-make coverage
 ```
 
-**For detailed testing guidelines, see [docs/Testing.md](docs/Testing.md)**
+**For testing guidelines, see [docs/Testing.md](docs/Testing.md)**
 
 ## Pull Request Process
 
 - **Push your branch** to GitHub
 - **Create a Pull Request** against the `main` branch
-- **Fill out the [PR template](.github/pull_request_template.md)**
+- **Write a clear description** of what changed and why (link to related issues if applicable)
 - **Test in hosted env**.  When you create a PR, a temporary test environment is automatically created with a unique URL to click-test your changes before merging. For details, see [docs/Deployment.md](docs/Deployment.md).
 - **Address review feedback** by pushing new commits to your branch
 - **Wait for approval** - maintainers will review and may request changes
@@ -95,28 +87,8 @@ Your username or identifier (e.g., `moses`, `claude`, `yourname`)
 
 ### Examples
 
-- `feat/claude/add-contributing-guide`
-- `fix/moses/video-upload-timeout`
-- `docs/codex/architecture-overview`
-- `chore/moses/update-dependencies`
-- `test/gemini/add-catalog-tests`
-
-## Commit Messages
-
-Write clear, descriptive commit messages:
-
-**Good:**
-```
-Add pre-commit hooks for code quality checks
-
-- Configure ruff for linting and formatting
-- Add mypy for type checking
-- Update CONTRIBUTING.md with setup instructions
-```
-
-**Avoid:**
-```
-fixed stuff
-wip
-updates
-```
+- `feat/codex/add-contributing-guide`
+- `fix/joeseph/video-upload-timeout`
+- `docs/gemini/architecture-overview`
+- `chore/pat/update-dependencies`
+- `test/claude/add-catalog-tests`

@@ -15,10 +15,11 @@ help:
 	@echo "  make coverage       - Run tests with coverage report"
 	@echo ""
 	@echo "Code Quality:"
-	@echo "  make lint           - Check code with ruff"
-	@echo "  make format         - Auto-format code with ruff"
+	@echo "  make lint           - Check code and templates"
+	@echo "  make format         - Auto-format code and templates"
 	@echo "  make typecheck      - Run mypy type checker"
-	@echo "  make quality        - Run all quality checks (lint + typecheck)"
+	@echo "  make quality        - Format code and run all quality checks"
+	@echo "  make precommit      - Run pre-commit hooks on all files"
 	@echo ""
 	@echo "Database:"
 	@echo "  make migrate        - Run database migrations"
@@ -85,26 +86,25 @@ import-data:
 .PHONY: lint
 lint:
 	.venv/bin/ruff check .
+	.venv/bin/djlint templates/ --check
 
 .PHONY: format
 format:
 	.venv/bin/ruff format .
+	.venv/bin/djlint templates/ --reformat --quiet
 
 .PHONY: typecheck
 typecheck:
 	.venv/bin/mypy the_flip
 
-.PHONY: lint-templates
-lint-templates:
-	.venv/bin/djlint templates/ --check
-
-.PHONY: format-templates
-format-templates:
-	.venv/bin/djlint templates/ --reformat --quiet
-
 .PHONY: quality
-quality: lint typecheck lint-templates
+quality: format lint typecheck
 	@echo "All quality checks passed!"
+
+.PHONY: precommit
+precommit:
+	@echo "Running pre-commit checks..."
+	.venv/bin/pre-commit run --all-files
 
 .PHONY: coverage
 coverage:
