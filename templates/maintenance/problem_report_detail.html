@@ -2,7 +2,7 @@
 {% load core_extras %}
 {% block title %}Problem Report #{{ report.pk }} · {{ block.super }}{% endblock %}
 {% block content %}
-  <nav class="breadcrumb breadcrumb--with-actions">
+  <nav class="breadcrumb breadcrumb-with-actions">
     <div class="breadcrumb__trail">
       <a href="{% url 'maintainer-machine-list' %}">Machines</a>
       <span>›</span>
@@ -10,7 +10,7 @@
       <span>›</span>
       <a href="{% url 'machine-problem-reports' machine.slug %}">Problem Reports</a>
       <span>›</span>
-      <strong>{{ report.created_at|smart_date }} <span class="badge badge-status badge--{{ report.status }}">{{ report.get_status_display }}</span></strong>
+      <strong>{{ report.created_at|smart_date }} <span class="badge badge-status badge-{{ report.status }}">{{ report.get_status_display }}</span></strong>
     </div>
     <div class="breadcrumb__actions">
       {% if report.status == report.STATUS_OPEN %}

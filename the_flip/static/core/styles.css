@@ -239,32 +239,32 @@ input[type="radio"] {
 }
 
 /* Badge status variants */
-.badge--good {
+.badge-good {
   background: var(--color-accent);
   color: #fff;
 }
 
-.badge--unknown {
+.badge-unknown {
   background: var(--color-border);
   color: var(--color-text);
 }
 
-.badge--fixing {
+.badge-fixing {
   background: var(--color-warning);
   color: #1f1f1f;
 }
 
-.badge--broken {
+.badge-broken {
   background: var(--color-danger);
   color: #fff;
 }
 
-.badge--open {
+.badge-open {
   background: var(--color-danger);
   color: #fff;
 }
 
-.badge--closed {
+.badge-closed {
   background: var(--color-accent);
   color: #fff;
 }
@@ -485,7 +485,7 @@ input[type="radio"] {
   user-select: none;
 }
 
-.breadcrumb--with-actions {
+.breadcrumb-with-actions {
   display: flex;
   align-items: center;
   gap: var(--space-4);
@@ -666,7 +666,7 @@ input[type="radio"] {
     margin-top: var(--space-3);
   }
 
-  .breadcrumb--with-actions {
+  .breadcrumb-with-actions {
     flex-direction: column;
     align-items: flex-start;
   }

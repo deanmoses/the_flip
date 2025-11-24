@@ -55,7 +55,7 @@
         <strong class="log-entry-meta">{{ entry.created_at|smart_date }}</strong>
       </div>
       <div class="log-entry-meta">
-        <span class="badge badge-status badge--{{ entry.status }}">{{ entry.get_status_display }}</span>
+        <span class="badge badge-status badge-{{ entry.status }}">{{ entry.get_status_display }}</span>
       </div>
     </div>
     <div class="machine-card__problem">

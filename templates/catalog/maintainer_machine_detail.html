@@ -2,7 +2,7 @@
 {% load core_extras %}
 {% block title %}{{ object.display_name }} · {{ block.super }}{% endblock %}
 {% block content %}
-  <nav class="breadcrumb breadcrumb--with-actions">
+  <nav class="breadcrumb breadcrumb-with-actions">
     <div class="breadcrumb__trail">
       <a href="{% url 'maintainer-machine-list' %}">Machines</a>
       <span>›</span>
@@ -16,7 +16,7 @@
          href="{% url 'machine-problem-reports' object.slug %}">
         Problem Reports
         {% if open_problem_reports.count > 0 %}
-          <span class="badge badge--open" style="margin-left: var(--space-2);">{{ open_problem_reports.count }}</span>
+          <span class="badge badge-open" style="margin-left: var(--space-2);">{{ open_problem_reports.count }}</span>
         {% endif %}
       </a>
     </div>
