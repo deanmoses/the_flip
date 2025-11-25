@@ -1,8 +1,6 @@
 # Django & Python Conventions
 
-Project-specific conventions for this codebase. For general Django/Python best practices, follow official Django docs and PEP 8.
-
-## Project-Specific Rules
+## Rules
 
 - **URLs**: All routes live in root `urls.py` (not per-app) for scannability
 - **Shared code**: Put helpers in `core` app, never in `__init__.py`
