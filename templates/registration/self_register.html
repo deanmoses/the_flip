@@ -154,6 +154,13 @@
           return;
         }
 
+        // Check if user selected from datalist (value matches an option exactly)
+        const options = Array.from(datalist.options).map(o => o.value);
+        if (options.includes(query)) {
+          checkUsername();
+          return;
+        }
+
         debounceTimer = setTimeout(function() {
           fetch('/register/check-username/?q=' + encodeURIComponent(query))
             .then(r => r.json())
@@ -166,7 +173,7 @@
       });
 
       // Check username availability
-      checkBtn.addEventListener('click', function() {
+      function checkUsername() {
         const username = usernameInput.value.trim();
         if (!username) {
           statusEl.textContent = 'Please enter a username';
@@ -191,13 +198,15 @@
               profileSection.hidden = true;
             }
           });
-      });
+      }
+
+      checkBtn.addEventListener('click', checkUsername);
 
       // Also check on Enter key in username field
       usernameInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
           e.preventDefault();
-          checkBtn.click();
+          checkUsername();
         }
       });
 
