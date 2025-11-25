@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import base64
-from datetime import timedelta
+from datetime import datetime, timedelta
+from datetime import timezone as dt_timezone
 from io import BytesIO
 from pathlib import Path
 
@@ -223,6 +224,21 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         description = form.cleaned_data["text"].strip()
         media_file = form.cleaned_data["media_file"]
         work_date = form.cleaned_data["work_date"]
+
+        # Convert work_date to browser's timezone if offset provided
+        tz_offset_str = self.request.POST.get("tz_offset", "")
+        if tz_offset_str:
+            try:
+                tz_offset_minutes = int(tz_offset_str)
+                # Create timezone from offset (invert sign: JS gives minutes behind UTC)
+                browser_tz = dt_timezone(timedelta(minutes=-tz_offset_minutes))
+                # Replace the timezone info with browser's timezone
+                # First make naive, then attach browser timezone
+                naive_dt = work_date.replace(tzinfo=None)
+                work_date = naive_dt.replace(tzinfo=browser_tz)
+            except (ValueError, TypeError):
+                pass  # Keep original work_date if conversion fails
+
         log_entry = LogEntry.objects.create(
             machine=self.machine, text=description, work_date=work_date
         )
@@ -378,17 +394,27 @@ class LogEntryDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             return JsonResponse({"success": True})
 
         elif action == "update_work_date":
-            from datetime import datetime
-
             work_date_str = request.POST.get("work_date", "")
             if not work_date_str:
                 return JsonResponse({"success": False, "error": "No date provided"}, status=400)
             try:
                 # Parse datetime-local format: YYYY-MM-DDTHH:MM
                 naive_dt = datetime.strptime(work_date_str, "%Y-%m-%dT%H:%M")
-                work_date = timezone.make_aware(naive_dt)
-                # Validate not in the future
-                if work_date.date() > timezone.localdate():
+
+                # Get browser timezone offset (minutes behind UTC, negative = ahead)
+                tz_offset_str = request.POST.get("tz_offset", "")
+                if tz_offset_str:
+                    tz_offset_minutes = int(tz_offset_str)
+                    # Create timezone from offset (invert sign: JS gives minutes behind UTC)
+                    browser_tz = dt_timezone(timedelta(minutes=-tz_offset_minutes))
+                    work_date = naive_dt.replace(tzinfo=browser_tz)
+                else:
+                    # Fallback to server timezone if no offset provided
+                    work_date = timezone.make_aware(naive_dt)
+
+                # Validate not in the future (compare in browser's timezone)
+                now_in_browser_tz = timezone.now().astimezone(work_date.tzinfo)
+                if work_date.date() > now_in_browser_tz.date():
                     return JsonResponse(
                         {"success": False, "error": "Date cannot be in the future."}, status=400
                     )

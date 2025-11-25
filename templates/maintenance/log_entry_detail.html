@@ -13,7 +13,7 @@
       <input type="datetime-local"
              id="work-date"
              class="work-date-edit"
-             value="{{ entry.work_date|date:'Y-m-d' }}T{{ entry.work_date|time:'H:i' }}"
+             data-utc="{{ entry.work_date.isoformat }}"
              data-entry-id="{{ entry.pk }}">
       <div id="work-date-status" class="save-status"></div>
     </div>
@@ -75,18 +75,39 @@
       const ENTRY_ID = {{ entry.pk }};
       const CSRF_TOKEN = '{{ csrf_token }}';
 
+      // Helper: format Date as datetime-local value (YYYY-MM-DDTHH:MM)
+      function toDateTimeLocalValue(date) {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          return `${year}-${month}-${day}T${hours}:${minutes}`;
+      }
+
       // Auto-save work_date
       const workDateInput = document.getElementById('work-date');
       const workDateStatus = document.getElementById('work-date-status');
+
+      // On page load: convert UTC to browser local time
+      const utcDateStr = workDateInput.dataset.utc;
+      if (utcDateStr) {
+          const utcDate = new Date(utcDateStr);
+          workDateInput.value = toDateTimeLocalValue(utcDate);
+      }
 
       workDateInput.addEventListener('change', async () => {
           workDateStatus.textContent = 'Saving...';
           workDateStatus.className = 'save-status editing';
 
           try {
+              // Get timezone offset in minutes (negative for ahead of UTC)
+              const tzOffsetMinutes = new Date().getTimezoneOffset();
+
               const formData = new FormData();
               formData.append('action', 'update_work_date');
               formData.append('work_date', workDateInput.value);
+              formData.append('tz_offset', tzOffsetMinutes);
               formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
 
               const response = await fetch(window.location.href, {

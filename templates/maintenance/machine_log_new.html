@@ -13,6 +13,7 @@
   <section class="card">
     <form method="post" enctype="multipart/form-data">
       {% csrf_token %}
+      <input type="hidden" name="tz_offset" id="tz-offset">
       <div class="form-field">
         <label for="{{ form.work_date.id_for_label }}">Date of work</label>
         {{ form.work_date }}
@@ -36,4 +37,28 @@
       <button type="submit" class="btn btn-primary">Create Log Entry</button>
     </form>
   </section>
+{% endblock %}
+{% block extra_scripts %}
+  <script>
+      // Helper: format Date as datetime-local value (YYYY-MM-DDTHH:MM)
+      function toDateTimeLocalValue(date) {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          return `${year}-${month}-${day}T${hours}:${minutes}`;
+      }
+
+      // Set timezone offset for form submission
+      document.getElementById('tz-offset').value = new Date().getTimezoneOffset();
+
+      // Set default work_date to today at midnight in browser's local time
+      const workDateInput = document.getElementById('{{ form.work_date.id_for_label }}');
+      if (workDateInput && !workDateInput.value) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          workDateInput.value = toDateTimeLocalValue(today);
+      }
+  </script>
 {% endblock %}
