@@ -8,7 +8,15 @@
       <span>›</span>
       <a href="{% url 'log-machine' entry.machine.slug %}">Logs</a>
     </nav>
-    <h2>{{ entry.created_at|smart_date }}</h2>
+    <div class="work-date-container">
+      <label for="work-date">Date of work</label>
+      <input type="datetime-local"
+             id="work-date"
+             class="work-date-edit"
+             data-utc="{{ entry.work_date.isoformat }}"
+             data-entry-id="{{ entry.pk }}">
+      <div id="work-date-status" class="save-status"></div>
+    </div>
     <p>
       {% if entry.maintainers.all %}
         by {{ entry.maintainers.all|join:", " }}
@@ -66,6 +74,65 @@
   <script>
       const ENTRY_ID = {{ entry.pk }};
       const CSRF_TOKEN = '{{ csrf_token }}';
+
+      // Helper: format Date as datetime-local value (YYYY-MM-DDTHH:MM)
+      function toDateTimeLocalValue(date) {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          return `${year}-${month}-${day}T${hours}:${minutes}`;
+      }
+
+      // Auto-save work_date
+      const workDateInput = document.getElementById('work-date');
+      const workDateStatus = document.getElementById('work-date-status');
+
+      // On page load: convert UTC to browser local time
+      const utcDateStr = workDateInput.dataset.utc;
+      if (utcDateStr) {
+          const utcDate = new Date(utcDateStr);
+          workDateInput.value = toDateTimeLocalValue(utcDate);
+      }
+
+      workDateInput.addEventListener('change', async () => {
+          workDateStatus.textContent = 'Saving...';
+          workDateStatus.className = 'save-status editing';
+
+          try {
+              // Get timezone offset in minutes (negative for ahead of UTC)
+              const tzOffsetMinutes = new Date().getTimezoneOffset();
+
+              const formData = new FormData();
+              formData.append('action', 'update_work_date');
+              formData.append('work_date', workDateInput.value);
+              formData.append('tz_offset', tzOffsetMinutes);
+              formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
+
+              const response = await fetch(window.location.href, {
+                  method: 'POST',
+                  body: formData
+              });
+
+              const data = await response.json();
+              if (response.ok && data.success) {
+                  workDateStatus.textContent = 'Saved';
+                  workDateStatus.className = 'save-status saved';
+                  setTimeout(() => {
+                      workDateStatus.textContent = '';
+                      workDateStatus.className = 'save-status';
+                  }, 2000);
+              } else {
+                  workDateStatus.textContent = data.error || 'Error saving';
+                  workDateStatus.className = 'save-status error';
+              }
+          } catch (error) {
+              console.error('Save error:', error);
+              workDateStatus.textContent = 'Error saving';
+              workDateStatus.className = 'save-status error';
+          }
+      });
 
       // Auto-save text with debounce
       const textarea = document.getElementById('entry-text');
@@ -212,6 +279,28 @@
       document.querySelectorAll('.btn-delete-media').forEach(attachDeleteHandler);
   </script>
   <style>
+      .work-date-container {
+          margin-bottom: 1.5rem;
+      }
+
+      .work-date-container label {
+          display: block;
+          font-weight: 600;
+          margin-bottom: 0.5rem;
+      }
+
+      .work-date-edit {
+          padding: 0.5rem;
+          font-size: 1rem;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+      }
+
+      .work-date-edit:focus {
+          outline: none;
+          border-color: #0066cc;
+      }
+
       .entry-text-container {
           margin-bottom: 2rem;
       }
