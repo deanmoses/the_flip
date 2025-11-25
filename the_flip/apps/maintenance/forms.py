@@ -46,7 +46,7 @@ class LogEntryQuickForm(forms.Form):
         max_length=1000,
     )
     media_file = forms.FileField(
-        label="Photo or Video",
+        label="Photo",
         required=False,
         widget=forms.ClearableFileInput(
             attrs={"accept": "image/*,video/*,.heic,.heif,image/heic,image/heif"}
