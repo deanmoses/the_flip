@@ -19,9 +19,11 @@
                id="id_username"
                value="{{ form.username.value|default:'' }}"
                required
-               autocomplete="username"
+               autocomplete="off"
                list="username-suggestions"
-               placeholder="New or existing username">
+               placeholder="New or existing username"
+               data-1p-ignore="true"
+               data-lpignore="true">
         <button type="button" id="check-username-btn" class="btn btn-secondary">Check</button>
       </div>
       <datalist id="username-suggestions"></datalist>
