@@ -2,24 +2,11 @@
 {% block title %}Home · {{ block.super }}{% endblock %}
 {% block content %}
   <div class="card">
-    <p>Welcone to The Flip's pinball machine maintenance system.</p>
+    <p>Welcome to The Flip's pinball machine maintenance system.</p>
   </div>
   <div class="card">
-    <h3>Existing Accounts</h3>
-    <p>
-      These are all the accounts in the system.  If your name is here, log in!  Passwords are all <code>test123</code>.
-    </p>
-    {% if maintainers %}
-      <p>
-        {% for maintainer in maintainers %}
-          <code>{{ maintainer.display_name }}</code>
-          {% if not forloop.last %},{% endif %}
-        {% endfor %}
-      </p>
-    {% else %}
-      <p>No maintainers found.</p>
-    {% endif %}
-    If you don't see your name here, ask William for an account.
+    <h3>How to Get a Login</h3>
+    <p>Ask William for an invitation link.</p>
   </div>
   <div class="card">
     <h3>Bugs &amp; Feature Requests</h3>
