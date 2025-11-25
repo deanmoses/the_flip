@@ -666,6 +666,26 @@ input[type="radio"] {
   margin-top: 0;
 }
 
+/* Compact markdown in truncated/card contexts */
+.machine-card__problem.markdown-content p,
+.machine-card__problem.markdown-content ul,
+.machine-card__problem.markdown-content ol {
+  margin: 0;
+  display: inline;
+}
+
+.machine-card__problem.markdown-content li {
+  display: inline;
+}
+
+.machine-card__problem.markdown-content li::before {
+  content: " • ";
+}
+
+.machine-card__problem.markdown-content li:first-child::before {
+  content: "";
+}
+
 /* ==========================================================================
    Messages & Alerts
    Base: .message
