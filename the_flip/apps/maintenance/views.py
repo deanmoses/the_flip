@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import base64
-from datetime import timedelta
+from datetime import datetime, timedelta
+from datetime import timezone as dt_timezone
 from io import BytesIO
 from pathlib import Path
 
@@ -178,7 +179,7 @@ class MachineLogView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             LogEntry.objects.filter(machine=self.machine)
             .select_related("machine")
             .prefetch_related("maintainers", "media")
-            .order_by("-created_at")
+            .order_by("-work_date")
         )
         paginator = Paginator(logs, 10)
         page_obj = paginator.get_page(self.request.GET.get("page"))
@@ -209,6 +210,7 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             initial["submitter_name"] = (
                 self.request.user.get_full_name() or self.request.user.get_username()
             )
+        # work_date default is set by JavaScript to use browser's local timezone
         return initial
 
     def get_context_data(self, **kwargs):
@@ -220,7 +222,25 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         submitter_name = form.cleaned_data["submitter_name"].strip()
         description = form.cleaned_data["text"].strip()
         media_file = form.cleaned_data["media_file"]
-        log_entry = LogEntry.objects.create(machine=self.machine, text=description)
+        work_date = form.cleaned_data["work_date"]
+
+        # Convert work_date to browser's timezone if offset provided
+        tz_offset_str = self.request.POST.get("tz_offset", "")
+        if tz_offset_str:
+            try:
+                tz_offset_minutes = int(tz_offset_str)
+                # Create timezone from offset (invert sign: JS gives minutes behind UTC)
+                browser_tz = dt_timezone(timedelta(minutes=-tz_offset_minutes))
+                # Replace the timezone info with browser's timezone
+                # First make naive, then attach browser timezone
+                naive_dt = work_date.replace(tzinfo=None)
+                work_date = naive_dt.replace(tzinfo=browser_tz)
+            except (ValueError, TypeError):
+                pass  # Keep original work_date if conversion fails
+
+        log_entry = LogEntry.objects.create(
+            machine=self.machine, text=description, work_date=work_date
+        )
 
         maintainer = self.match_maintainer(submitter_name)
         if maintainer:
@@ -277,7 +297,7 @@ class MachineLogPartialView(LoginRequiredMixin, UserPassesTestMixin, View):
             LogEntry.objects.filter(machine=machine)
             .select_related("machine")
             .prefetch_related("maintainers", "media")
-            .order_by("-created_at")
+            .order_by("-work_date")
         )
         paginator = Paginator(logs, 10)
         page_obj = paginator.get_page(request.GET.get("page"))
@@ -308,7 +328,7 @@ class LogListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             LogEntry.objects.all()
             .select_related("machine")
             .prefetch_related("maintainers", "media")
-            .order_by("-created_at")
+            .order_by("-work_date")
         )
         paginator = Paginator(logs, 10)
         page_obj = paginator.get_page(self.request.GET.get("page"))
@@ -334,7 +354,7 @@ class LogListPartialView(LoginRequiredMixin, UserPassesTestMixin, View):
             LogEntry.objects.all()
             .select_related("machine")
             .prefetch_related("maintainers", "media")
-            .order_by("-created_at")
+            .order_by("-work_date")
         )
         paginator = Paginator(logs, 10)
         page_obj = paginator.get_page(request.GET.get("page"))
@@ -371,6 +391,39 @@ class LogEntryDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             self.object.text = request.POST.get("text", "")
             self.object.save(update_fields=["text", "updated_at"])
             return JsonResponse({"success": True})
+
+        elif action == "update_work_date":
+            work_date_str = request.POST.get("work_date", "")
+            if not work_date_str:
+                return JsonResponse({"success": False, "error": "No date provided"}, status=400)
+            try:
+                # Parse datetime-local format: YYYY-MM-DDTHH:MM
+                naive_dt = datetime.strptime(work_date_str, "%Y-%m-%dT%H:%M")
+
+                # Get browser timezone offset (minutes behind UTC, negative = ahead)
+                tz_offset_str = request.POST.get("tz_offset", "")
+                if tz_offset_str:
+                    tz_offset_minutes = int(tz_offset_str)
+                    # Create timezone from offset (invert sign: JS gives minutes behind UTC)
+                    browser_tz = dt_timezone(timedelta(minutes=-tz_offset_minutes))
+                    work_date = naive_dt.replace(tzinfo=browser_tz)
+                else:
+                    # Fallback to server timezone if no offset provided
+                    work_date = timezone.make_aware(naive_dt)
+
+                # Validate not in the future (compare in browser's timezone)
+                now_in_browser_tz = timezone.now().astimezone(work_date.tzinfo)
+                if work_date.date() > now_in_browser_tz.date():
+                    return JsonResponse(
+                        {"success": False, "error": "Date cannot be in the future."}, status=400
+                    )
+                self.object.work_date = work_date
+                self.object.save(update_fields=["work_date", "updated_at"])
+                return JsonResponse({"success": True})
+            except ValueError:
+                return JsonResponse(
+                    {"success": False, "error": "Invalid date format"}, status=400
+                )
 
         elif action == "upload_media":
             if "file" in request.FILES:
