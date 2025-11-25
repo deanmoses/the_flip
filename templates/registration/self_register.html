@@ -2,7 +2,7 @@
 {% block title %}Register - The Flip{% endblock %}
 {% block content %}
   <h2>Register</h2>
-  <p>Create a new account or claim an existing one.</p>
+  <p>Create a new account or claim an existing one that was imported with the legacy maintenance records.</p>
   <form method="post" id="registration-form">
     {% csrf_token %}
     {% if form.non_field_errors %}
@@ -179,7 +179,7 @@
               statusEl.className = 'available';
               profileSection.hidden = false;
               usernameHidden.value = username;
-              registeringAs.textContent = 'Registering as: ' + username;
+              registeringAs.innerHTML = (data.exists ? 'Claiming existing account: ' : 'Registering as: ') + '<code>' + username + '</code>';
               // Focus the first name field
               document.getElementById('id_first_name').focus();
             } else {
@@ -207,7 +207,7 @@
       {% if form.errors %}
         profileSection.hidden = false;
         usernameHidden.value = usernameInput.value;
-        registeringAs.textContent = 'Registering as: ' + usernameInput.value;
+        registeringAs.innerHTML = 'Registering as: ' + '<code>' + usernameInput.value + '</code>';
       {% endif %}
     })();
   </script>
