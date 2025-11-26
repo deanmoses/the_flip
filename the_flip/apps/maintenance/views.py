@@ -11,7 +11,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
@@ -80,8 +80,16 @@ class ProblemReportListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        reports = ProblemReport.objects.select_related("machine", "machine__model").order_by(
-            "-status", "-created_at"
+        # Prefetch the most recent log entry for each problem report
+        latest_log_prefetch = Prefetch(
+            "log_entries",
+            queryset=LogEntry.objects.order_by("-created_at"),
+            to_attr="prefetched_log_entries",
+        )
+        reports = (
+            ProblemReport.objects.select_related("machine", "machine__model")
+            .prefetch_related(latest_log_prefetch)
+            .order_by("-status", "-created_at")
         )
 
         search_query = self.request.GET.get("q", "").strip()
@@ -113,8 +121,16 @@ class ProblemReportListPartialView(LoginRequiredMixin, UserPassesTestMixin, View
         return self.request.user.is_staff
 
     def get(self, request, *args, **kwargs):
-        reports = ProblemReport.objects.select_related("machine", "machine__model").order_by(
-            "-status", "-created_at"
+        # Prefetch the most recent log entry for each problem report
+        latest_log_prefetch = Prefetch(
+            "log_entries",
+            queryset=LogEntry.objects.order_by("-created_at"),
+            to_attr="prefetched_log_entries",
+        )
+        reports = (
+            ProblemReport.objects.select_related("machine", "machine__model")
+            .prefetch_related(latest_log_prefetch)
+            .order_by("-status", "-created_at")
         )
 
         search_query = request.GET.get("q", "").strip()
@@ -130,6 +146,37 @@ class ProblemReportListPartialView(LoginRequiredMixin, UserPassesTestMixin, View
         items_html = "".join(
             render_to_string(self.template_name, {"report": report})
             for report in page_obj.object_list
+        )
+        return JsonResponse(
+            {
+                "items": items_html,
+                "has_next": page_obj.has_next(),
+                "next_page": page_obj.next_page_number() if page_obj.has_next() else None,
+            }
+        )
+
+
+class ProblemReportLogEntriesPartialView(LoginRequiredMixin, UserPassesTestMixin, View):
+    """AJAX endpoint for infinite scrolling log entries on a problem report detail page."""
+
+    template_name = "maintenance/partials/problem_report_log_entry.html"
+
+    def test_func(self):
+        return self.request.user.is_staff
+
+    def get(self, request, *args, **kwargs):
+        problem_report = get_object_or_404(ProblemReport, pk=kwargs["pk"])
+        log_entries = (
+            LogEntry.objects.filter(problem_report=problem_report)
+            .select_related("machine")
+            .prefetch_related("maintainers", "media")
+            .order_by("-created_at")
+        )
+
+        paginator = Paginator(log_entries, 10)
+        page_obj = paginator.get_page(request.GET.get("page"))
+        items_html = "".join(
+            render_to_string(self.template_name, {"entry": entry}) for entry in page_obj.object_list
         )
         return JsonResponse(
             {
@@ -254,9 +301,21 @@ class ProblemReportDetailView(LoginRequiredMixin, UserPassesTestMixin, View):
     def render_response(self, request, report):
         from django.shortcuts import render
 
+        # Get log entries for this problem report with pagination
+        log_entries = (
+            LogEntry.objects.filter(problem_report=report)
+            .select_related("machine")
+            .prefetch_related("maintainers", "media")
+            .order_by("-created_at")
+        )
+        paginator = Paginator(log_entries, 10)
+        page_obj = paginator.get_page(request.GET.get("page"))
+
         context = {
             "report": report,
             "machine": report.machine,
+            "page_obj": page_obj,
+            "log_entries": page_obj.object_list,
         }
         return render(request, self.template_name, context)
 
@@ -275,7 +334,7 @@ class MachineLogView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         logs = (
             LogEntry.objects.filter(machine=self.machine)
-            .select_related("machine")
+            .select_related("machine", "problem_report")
             .prefetch_related("maintainers", "media")
             .order_by("-work_date")
         )
@@ -310,7 +369,17 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         return self.request.user.is_staff
 
     def dispatch(self, request, *args, **kwargs):
-        self.machine = get_object_or_404(MachineInstance, slug=kwargs["slug"])
+        # Two modes: either a machine slug OR a problem report pk
+        self.problem_report = None
+        if "pk" in kwargs:
+            # Creating log entry for a problem report - inherit machine from it
+            self.problem_report = get_object_or_404(
+                ProblemReport.objects.select_related("machine"), pk=kwargs["pk"]
+            )
+            self.machine = self.problem_report.machine
+        else:
+            # Creating log entry for a machine directly
+            self.machine = get_object_or_404(MachineInstance, slug=kwargs["slug"])
         return super().dispatch(request, *args, **kwargs)
 
     def get_initial(self):
@@ -331,6 +400,7 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["machine"] = self.machine
+        context["problem_report"] = self.problem_report
         # Check if current user is a shared account (show autocomplete for maintainer selection)
         is_shared_account = False
         if hasattr(self.request.user, "maintainer"):
@@ -360,6 +430,7 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         log_entry = LogEntry.objects.create(
             machine=self.machine,
+            problem_report=self.problem_report,
             text=description,
             work_date=work_date,
             created_by=self.request.user,
@@ -394,6 +465,10 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 reverse("log-detail", kwargs={"pk": log_entry.pk}),
             ),
         )
+
+        # Redirect back to problem report if created from there, otherwise to machine log
+        if self.problem_report:
+            return redirect("problem-report-detail", pk=self.problem_report.pk)
         return redirect("log-machine", slug=self.machine.slug)
 
     def match_maintainer(self, name: str):
@@ -418,7 +493,7 @@ class MachineLogPartialView(LoginRequiredMixin, UserPassesTestMixin, View):
         machine = get_object_or_404(MachineInstance, slug=kwargs["slug"])
         logs = (
             LogEntry.objects.filter(machine=machine)
-            .select_related("machine")
+            .select_related("machine", "problem_report")
             .prefetch_related("maintainers", "media")
             .order_by("-work_date")
         )
@@ -459,7 +534,7 @@ class LogListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         logs = (
             LogEntry.objects.all()
-            .select_related("machine", "machine__model")
+            .select_related("machine", "machine__model", "problem_report")
             .prefetch_related("maintainers", "media")
             .order_by("-work_date")
         )
@@ -498,7 +573,7 @@ class LogListPartialView(LoginRequiredMixin, UserPassesTestMixin, View):
     def get(self, request, *args, **kwargs):
         logs = (
             LogEntry.objects.all()
-            .select_related("machine", "machine__model")
+            .select_related("machine", "machine__model", "problem_report")
             .prefetch_related("maintainers", "media")
             .order_by("-work_date")
         )

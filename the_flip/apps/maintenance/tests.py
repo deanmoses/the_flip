@@ -604,7 +604,7 @@ class ProblemReportCreateViewTests(TestCase):
         for i in range(settings.RATE_LIMIT_REPORTS_PER_IP):
             data = {
                 "problem_type": ProblemReport.PROBLEM_OTHER,
-                "description": f"Report {i+1}",
+                "description": f"Report {i + 1}",
             }
             response = self.client.post(self.url, data, REMOTE_ADDR="192.168.1.100")
             self.assertEqual(response.status_code, 302)
@@ -628,7 +628,7 @@ class ProblemReportCreateViewTests(TestCase):
         for i in range(settings.RATE_LIMIT_REPORTS_PER_IP):
             data = {
                 "problem_type": ProblemReport.PROBLEM_OTHER,
-                "description": f"Report from IP1 - {i+1}",
+                "description": f"Report from IP1 - {i + 1}",
             }
             response = self.client.post(self.url, data, REMOTE_ADDR="192.168.1.100")
 
@@ -649,7 +649,7 @@ class ProblemReportCreateViewTests(TestCase):
         for i in range(settings.RATE_LIMIT_REPORTS_PER_IP):
             data = {
                 "problem_type": ProblemReport.PROBLEM_OTHER,
-                "description": f"Report {i+1}",
+                "description": f"Report {i + 1}",
             }
             self.client.post(self.url, data, REMOTE_ADDR="192.168.1.100")
 
@@ -1321,3 +1321,282 @@ class MaintainerAutocompleteViewTests(TestCase):
         display_names = [m["display_name"] for m in data["maintainers"]]
 
         self.assertEqual(display_names, sorted(display_names, key=str.lower))
+
+
+class LogEntryProblemReportTests(TestCase):
+    """Tests for creating log entries from problem reports."""
+
+    def setUp(self):
+        """Set up test data."""
+        self.machine_model = MachineModel.objects.create(
+            name="Test Machine",
+            manufacturer="Test Mfg",
+            year=2020,
+            era=MachineModel.ERA_SS,
+        )
+        self.machine = MachineInstance.objects.create(
+            model=self.machine_model,
+            slug="test-machine",
+            operational_status=MachineInstance.STATUS_GOOD,
+        )
+        self.problem_report = ProblemReport.objects.create(
+            machine=self.machine,
+            status=ProblemReport.STATUS_OPEN,
+            problem_type=ProblemReport.PROBLEM_STUCK_BALL,
+            description="Ball stuck in the playfield",
+        )
+        self.staff_user = User.objects.create_user(
+            username="staffuser",
+            password="testpass123",
+            is_staff=True,
+        )
+        self.create_url = reverse(
+            "log-create-problem-report", kwargs={"pk": self.problem_report.pk}
+        )
+
+    def test_create_view_accessible_to_staff(self):
+        """Staff users should be able to access the log entry create form from problem report."""
+        self.client.login(username="staffuser", password="testpass123")
+        response = self.client.get(self.create_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "maintenance/machine_log_new.html")
+
+    def test_create_view_shows_problem_report_context(self):
+        """Create form should show the problem report context."""
+        self.client.login(username="staffuser", password="testpass123")
+        response = self.client.get(self.create_url)
+
+        self.assertContains(response, "Problem Report")
+        self.assertContains(response, self.machine.display_name)
+
+    def test_create_log_entry_inherits_machine_from_problem_report(self):
+        """Log entry created from problem report should inherit the machine."""
+        self.client.login(username="staffuser", password="testpass123")
+
+        response = self.client.post(
+            self.create_url,
+            {
+                "work_date": timezone.now().strftime("%Y-%m-%dT%H:%M"),
+                "submitter_name": "Test User",
+                "text": "Investigated the stuck ball issue",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(LogEntry.objects.count(), 1)
+
+        log_entry = LogEntry.objects.first()
+        self.assertEqual(log_entry.machine, self.machine)
+
+    def test_create_log_entry_links_to_problem_report(self):
+        """Log entry created from problem report should be linked to the problem report."""
+        self.client.login(username="staffuser", password="testpass123")
+
+        response = self.client.post(
+            self.create_url,
+            {
+                "work_date": timezone.now().strftime("%Y-%m-%dT%H:%M"),
+                "submitter_name": "Test User",
+                "text": "Fixed the stuck ball",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        log_entry = LogEntry.objects.first()
+        self.assertEqual(log_entry.problem_report, self.problem_report)
+
+    def test_create_log_entry_redirects_to_problem_report(self):
+        """After creating log entry from problem report, should redirect back to problem report."""
+        self.client.login(username="staffuser", password="testpass123")
+
+        response = self.client.post(
+            self.create_url,
+            {
+                "work_date": timezone.now().strftime("%Y-%m-%dT%H:%M"),
+                "submitter_name": "Test User",
+                "text": "Fixed the issue",
+            },
+        )
+
+        expected_url = reverse("problem-report-detail", kwargs={"pk": self.problem_report.pk})
+        self.assertRedirects(response, expected_url)
+
+    def test_regular_log_entry_has_no_problem_report(self):
+        """Log entries created from machine context should not have a problem_report."""
+        self.client.login(username="staffuser", password="testpass123")
+        regular_url = reverse("log-create-machine", kwargs={"slug": self.machine.slug})
+
+        response = self.client.post(
+            regular_url,
+            {
+                "work_date": timezone.now().strftime("%Y-%m-%dT%H:%M"),
+                "submitter_name": "Test User",
+                "text": "Regular maintenance",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        log_entry = LogEntry.objects.first()
+        self.assertIsNone(log_entry.problem_report)
+
+
+class ProblemReportDetailLogEntriesTests(TestCase):
+    """Tests for log entries display on problem report detail page."""
+
+    def setUp(self):
+        """Set up test data."""
+        self.machine_model = MachineModel.objects.create(
+            name="Test Machine",
+            manufacturer="Test Mfg",
+            year=2020,
+            era=MachineModel.ERA_SS,
+        )
+        self.machine = MachineInstance.objects.create(
+            model=self.machine_model,
+            slug="test-machine",
+            operational_status=MachineInstance.STATUS_GOOD,
+        )
+        self.problem_report = ProblemReport.objects.create(
+            machine=self.machine,
+            status=ProblemReport.STATUS_OPEN,
+            problem_type=ProblemReport.PROBLEM_STUCK_BALL,
+            description="Ball stuck",
+        )
+        self.staff_user = User.objects.create_user(
+            username="staffuser",
+            password="testpass123",
+            is_staff=True,
+        )
+        self.detail_url = reverse("problem-report-detail", kwargs={"pk": self.problem_report.pk})
+
+    def test_detail_page_shows_add_log_entry_button(self):
+        """Problem report detail should have Add Log Entry button."""
+        self.client.login(username="staffuser", password="testpass123")
+        response = self.client.get(self.detail_url)
+
+        self.assertContains(response, "Add Log Entry")
+        add_url = reverse("log-create-problem-report", kwargs={"pk": self.problem_report.pk})
+        self.assertContains(response, add_url)
+
+    def test_detail_page_shows_linked_log_entries(self):
+        """Problem report detail should display linked log entries."""
+        LogEntry.objects.create(
+            machine=self.machine,
+            problem_report=self.problem_report,
+            text="Investigated the issue",
+        )
+
+        self.client.login(username="staffuser", password="testpass123")
+        response = self.client.get(self.detail_url)
+
+        self.assertContains(response, "Investigated the issue")
+
+    def test_detail_page_shows_no_log_entries_message(self):
+        """Problem report detail should show message when no log entries exist."""
+        self.client.login(username="staffuser", password="testpass123")
+        response = self.client.get(self.detail_url)
+
+        self.assertContains(response, "No log entries yet")
+
+
+class ProblemReportLogEntriesPartialViewTests(TestCase):
+    """Tests for the log entries AJAX endpoint on problem report detail."""
+
+    def setUp(self):
+        """Set up test data."""
+        self.machine_model = MachineModel.objects.create(
+            name="Test Machine",
+            manufacturer="Test Mfg",
+            year=2020,
+            era=MachineModel.ERA_SS,
+        )
+        self.machine = MachineInstance.objects.create(
+            model=self.machine_model,
+            slug="test-machine",
+            operational_status=MachineInstance.STATUS_GOOD,
+        )
+        self.problem_report = ProblemReport.objects.create(
+            machine=self.machine,
+            status=ProblemReport.STATUS_OPEN,
+            problem_type=ProblemReport.PROBLEM_STUCK_BALL,
+            description="Ball stuck",
+        )
+        self.staff_user = User.objects.create_user(
+            username="staffuser",
+            password="testpass123",
+            is_staff=True,
+        )
+        self.entries_url = reverse(
+            "problem-report-log-entries", kwargs={"pk": self.problem_report.pk}
+        )
+
+    def test_returns_json(self):
+        """AJAX endpoint should return JSON response."""
+        self.client.login(username="staffuser", password="testpass123")
+        LogEntry.objects.create(
+            machine=self.machine,
+            problem_report=self.problem_report,
+            text="Test log entry",
+        )
+
+        response = self.client.get(self.entries_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/json")
+
+        data = response.json()
+        self.assertIn("items", data)
+        self.assertIn("has_next", data)
+        self.assertIn("next_page", data)
+
+    def test_only_returns_linked_log_entries(self):
+        """AJAX endpoint should only return log entries linked to this problem report."""
+        LogEntry.objects.create(
+            machine=self.machine,
+            problem_report=self.problem_report,
+            text="Linked entry",
+        )
+        LogEntry.objects.create(
+            machine=self.machine,
+            text="Unlinked entry",
+        )
+
+        self.client.login(username="staffuser", password="testpass123")
+        response = self.client.get(self.entries_url)
+
+        data = response.json()
+        self.assertIn("Linked entry", data["items"])
+        self.assertNotIn("Unlinked entry", data["items"])
+
+    def test_pagination(self):
+        """AJAX endpoint should paginate results."""
+        self.client.login(username="staffuser", password="testpass123")
+        # Create 15 log entries
+        for i in range(15):
+            LogEntry.objects.create(
+                machine=self.machine,
+                problem_report=self.problem_report,
+                text=f"Log entry {i}",
+            )
+
+        # First page
+        response = self.client.get(self.entries_url, {"page": 1})
+        data = response.json()
+        self.assertTrue(data["has_next"])
+        self.assertEqual(data["next_page"], 2)
+
+        # Second page
+        response = self.client.get(self.entries_url, {"page": 2})
+        data = response.json()
+        self.assertFalse(data["has_next"])
+        self.assertIsNone(data["next_page"])
+
+    def test_requires_staff(self):
+        """AJAX endpoint should require staff permission."""
+        User.objects.create_user(
+            username="regularuser",
+            password="testpass123",
+            is_staff=False,
+        )
+        self.client.login(username="regularuser", password="testpass123")
+        response = self.client.get(self.entries_url)
+        self.assertEqual(response.status_code, 403)

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load core_extras %}
+{% load static core_extras %}
 {% block title %}Problem Report #{{ report.pk }} · {{ block.super }}{% endblock %}
 {% block content %}
   <nav class="page-header">
@@ -61,4 +61,33 @@
       {% endif %}
     </section>
   {% endif %}
+  <section>
+    <div class="list-header">
+      <div class="list-header__left">
+        <h3>Log Entries</h3>
+      </div>
+      <div class="list-header__right">
+        <a href="{% url 'log-create-problem-report' report.pk %}" class="btn btn-primary">Add Log Entry</a>
+      </div>
+    </div>
+    <div id="log-container"
+         data-fetch-url="{% url 'problem-report-log-entries' report.pk %}">
+      {% if log_entries %}
+        <ul class="list" id="log-list">
+          {% for entry in log_entries %}
+            {% include "maintenance/partials/problem_report_log_entry.html" with entry=entry %}
+          {% endfor %}
+        </ul>
+        <div id="log-pagination"
+             data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}0{% endif %}"></div>
+      {% else %}
+        <p class="text-muted">No log entries yet.</p>
+      {% endif %}
+    </div>
+    <div id="log-loading" class="hidden">Loading…</div>
+    <div id="log-sentinel"></div>
+  </section>
+{% endblock %}
+{% block extra_scripts %}
+  <script src="{% static 'core/infinite_scroll.js' %}" defer></script>
 {% endblock %}

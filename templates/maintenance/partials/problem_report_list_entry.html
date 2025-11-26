@@ -19,4 +19,11 @@
     {% endif %}
     {{ report.description|default:"No description provided." }}
   </div>
+  {% if report.prefetched_log_entries %}
+    {% with latest_log=report.prefetched_log_entries.0 %}
+      <div class="machine-card__log-excerpt text-muted">
+        <strong>Latest log:</strong> {{ latest_log.text|truncatewords:15 }}
+      </div>
+    {% endwith %}
+  {% endif %}
 </li>

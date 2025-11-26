@@ -10,7 +10,6 @@
       {% else %}
         <span>:</span>
       {% endif %}
-      {% if entry.problem_report %}<span class="badge badge-problem-report">Problem Report</span>{% endif %}
     </div>
     <div class="log-entry-text markdown-content markdown-content--compact">{{ entry.text|render_markdown }}</div>
     {% if entry.media.all %}
@@ -19,7 +18,7 @@
           {% if media.media_type == 'video' %}
             {% if media.transcode_status == 'ready' and media.poster_file %}
               <img src="{{ media.poster_file.url }}"
-                   alt="Video poster for {{ machine.display_name }}"
+                   alt="Video poster"
                    width="200">
             {% elif media.transcode_status == 'processing' or media.transcode_status == 'pending' %}
               <span class="media-status">Video processing…</span>
@@ -28,7 +27,7 @@
             {% endif %}
           {% else %}
             <img src="{{ media.file.url }}"
-                 alt="Photo for {{ machine.display_name }}"
+                 alt="Photo"
                  width="200">
           {% endif %}
         {% endfor %}

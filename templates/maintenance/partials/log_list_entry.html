@@ -7,6 +7,7 @@
   <div class="machine-card__row">
     <div class="machine-card__row-left">
       <span class="machine-card__name">{{ machine.display_name }}</span>
+      {% if entry.problem_report %}<span class="badge badge-problem-report">Problem Report</span>{% endif %}
     </div>
     <div class="log-entry-meta">
       <strong>{{ entry.work_date|smart_date }}</strong>

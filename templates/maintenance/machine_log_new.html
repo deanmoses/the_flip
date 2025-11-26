@@ -1,17 +1,42 @@
 {% extends "base.html" %}
+{% load core_extras %}
 {% block title %}New Log Entry · {{ block.super }}{% endblock %}
 {% block content %}
   <nav class="page-header">
     <div class="page-header__left breadcrumb">
-      <a href="{% url 'maintainer-machine-list' %}">Machines</a>
-      <span>›</span>
-      <a href="{% url 'maintainer-machine-detail' machine.slug %}">{{ machine.display_name }}</a>
-      <span>›</span>
-      <a href="{% url 'log-machine' machine.slug %}">Logs</a>
-      <span>›</span>
-      <strong>New Log Entry</strong>
+      {% if problem_report %}
+        <a href="{% url 'maintainer-machine-list' %}">Machines</a>
+        <span>›</span>
+        <a href="{% url 'maintainer-machine-detail' machine.slug %}">{{ machine.display_name }}</a>
+        <span>›</span>
+        <a href="{% url 'machine-problem-reports' machine.slug %}">Problem Reports</a>
+        <span>›</span>
+        <a href="{% url 'problem-report-detail' problem_report.pk %}">{{ problem_report.created_at|smart_date }}</a>
+        <span>›</span>
+        <strong>New Log Entry</strong>
+      {% else %}
+        <a href="{% url 'maintainer-machine-list' %}">Machines</a>
+        <span>›</span>
+        <a href="{% url 'maintainer-machine-detail' machine.slug %}">{{ machine.display_name }}</a>
+        <span>›</span>
+        <a href="{% url 'log-machine' machine.slug %}">Logs</a>
+        <span>›</span>
+        <strong>New Log Entry</strong>
+      {% endif %}
     </div>
   </nav>
+  {% if problem_report %}
+    <section class="card">
+      <h3>Problem Report</h3>
+      <p><strong>Machine:</strong> {{ machine.display_name }}</p>
+      {% if problem_report.problem_type != problem_report.PROBLEM_OTHER %}
+        <p><strong>Type:</strong> {{ problem_report.get_problem_type_display }}</p>
+      {% endif %}
+      {% if problem_report.description %}
+        <p>{{ problem_report.description }}</p>
+      {% endif %}
+    </section>
+  {% endif %}
   <section class="card">
     <form method="post" enctype="multipart/form-data">
       {% csrf_token %}

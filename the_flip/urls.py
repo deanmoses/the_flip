@@ -107,6 +107,11 @@ urlpatterns = [
         name="problem-report-detail",
     ),
     path(
+        "problem-reports/<int:pk>/log-entries/",
+        maintenance_views.ProblemReportLogEntriesPartialView.as_view(),
+        name="problem-report-log-entries",
+    ),
+    path(
         "problem-reports/<slug:slug>/",
         maintenance_views.MachineProblemReportListView.as_view(),
         name="machine-problem-reports",
@@ -143,6 +148,11 @@ urlpatterns = [
         "logs/new/<slug:slug>/",
         maintenance_views.MachineLogCreateView.as_view(),
         name="log-create-machine",
+    ),
+    path(
+        "logs/new/problem-report/<int:pk>/",
+        maintenance_views.MachineLogCreateView.as_view(),
+        name="log-create-problem-report",
     ),
     path(
         "logs/<slug:slug>/entries/",
