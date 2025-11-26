@@ -20,7 +20,7 @@
         {% for error in form.work_date.errors %}<div class="error">{{ error }}</div>{% endfor %}
       </div>
       <div class="form-field">
-        <label for="{{ form.submitter_name.id_for_label }}">Your name</label>
+        <label for="{{ form.submitter_name.id_for_label }}">Maintainer name</label>
         {% if is_shared_account %}
           <div class="autocomplete" id="submitter-autocomplete">
             {{ form.submitter_name }}

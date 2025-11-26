@@ -229,10 +229,16 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def get_initial(self):
         initial = super().get_initial()
+        # Pre-fill maintainer name only for individual accounts (not shared accounts)
         if self.request.user.is_authenticated:
-            initial["submitter_name"] = (
-                self.request.user.get_full_name() or self.request.user.get_username()
+            is_shared = (
+                hasattr(self.request.user, "maintainer")
+                and self.request.user.maintainer.is_shared_account
             )
+            if not is_shared:
+                initial["submitter_name"] = (
+                    self.request.user.get_full_name() or self.request.user.get_username()
+                )
         # work_date default is set by JavaScript to use browser's local timezone
         return initial
 
