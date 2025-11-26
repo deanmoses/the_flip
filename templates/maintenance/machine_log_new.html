@@ -80,13 +80,21 @@
               .then(data => { maintainers = data.maintainers || []; })
               .catch(() => { maintainers = []; });
 
+          function formatMaintainer(m) {
+              // If display_name equals username, just show username once
+              if (m.display_name === m.username) {
+                  return m.username;
+              }
+              return `${m.display_name} (${m.username})`;
+          }
+
           function showDropdown(filtered) {
               if (filtered.length === 0) {
                   dropdown.classList.add('hidden');
                   return;
               }
               dropdown.innerHTML = filtered.map((m, i) =>
-                  `<div class="autocomplete__item${i === activeIndex ? ' autocomplete__item-active' : ''}" data-index="${i}" data-username="${m.username}">${m.display_name} (${m.username})</div>`
+                  `<div class="autocomplete__item${i === activeIndex ? ' autocomplete__item-active' : ''}" data-index="${i}" data-username="${m.username}">${formatMaintainer(m)}</div>`
               ).join('');
               dropdown.classList.remove('hidden');
           }
@@ -99,9 +107,11 @@
           function filterMaintainers(query) {
               const q = query.toLowerCase().trim();
               if (!q) return maintainers;
+              // Match start of first name, last name, or username
               return maintainers.filter(m =>
-                  m.display_name.toLowerCase().includes(q) ||
-                  m.username.toLowerCase().includes(q)
+                  m.first_name.toLowerCase().startsWith(q) ||
+                  m.last_name.toLowerCase().startsWith(q) ||
+                  m.username.toLowerCase().startsWith(q)
               );
           }
 

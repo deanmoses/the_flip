@@ -45,14 +45,22 @@ class MaintainerAutocompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
         for m in maintainers:
             display_name = m.display_name
             username = m.user.username
-            # Filter by query (match against display name or username)
-            if query and query not in display_name.lower() and query not in username.lower():
+            first_name = (m.user.first_name or "").lower()
+            last_name = (m.user.last_name or "").lower()
+            # Filter by query (match start of first name, last name, or username)
+            if query and not (
+                first_name.startswith(query)
+                or last_name.startswith(query)
+                or username.lower().startswith(query)
+            ):
                 continue
             results.append(
                 {
                     "id": m.id,
                     "display_name": display_name,
                     "username": username,
+                    "first_name": m.user.first_name or "",
+                    "last_name": m.user.last_name or "",
                 }
             )
 
