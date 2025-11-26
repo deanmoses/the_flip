@@ -14,7 +14,7 @@ Usage:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from django.contrib.auth import get_user_model
 
@@ -23,9 +23,9 @@ from the_flip.apps.catalog.models import MachineInstance, MachineModel
 from the_flip.apps.maintenance.models import LogEntry, ProblemReport
 
 if TYPE_CHECKING:
-    from django.contrib.auth.models import AbstractUser
+    from django.contrib.auth.models import User
 
-User = get_user_model()
+UserModel = cast("type[User]", get_user_model())
 
 
 # Counter for unique names
@@ -52,7 +52,7 @@ def create_user(
     last_name: str = "",
     email: str | None = None,
     **kwargs,
-) -> AbstractUser:
+) -> User:
     """Create a test user with sensible defaults.
 
     Args:
@@ -74,7 +74,7 @@ def create_user(
         email = f"{username}@example.com"
 
     if is_superuser:
-        return User.objects.create_superuser(
+        return UserModel.objects.create_superuser(
             username=username,
             email=email,
             password=password,
@@ -82,7 +82,7 @@ def create_user(
             last_name=last_name,
             **kwargs,
         )
-    return User.objects.create_user(
+    return UserModel.objects.create_user(
         username=username,
         email=email,
         password=password,
@@ -93,7 +93,7 @@ def create_user(
     )
 
 
-def create_staff_user(username: str | None = None, **kwargs) -> AbstractUser:
+def create_staff_user(username: str | None = None, **kwargs) -> User:
     """Create a staff user (maintainer).
 
     Convenience wrapper around create_user with is_staff=True.
@@ -101,7 +101,7 @@ def create_staff_user(username: str | None = None, **kwargs) -> AbstractUser:
     return create_user(username=username, is_staff=True, **kwargs)
 
 
-def create_superuser(username: str | None = None, **kwargs) -> AbstractUser:
+def create_superuser(username: str | None = None, **kwargs) -> User:
     """Create a superuser (admin).
 
     Convenience wrapper around create_user with is_superuser=True.
@@ -203,7 +203,7 @@ def create_problem_report(
 def create_log_entry(
     machine: MachineInstance | None = None,
     text: str | None = None,
-    created_by: AbstractUser | None = None,
+    created_by: User | None = None,
     **kwargs,
 ) -> LogEntry:
     """Create a test LogEntry.

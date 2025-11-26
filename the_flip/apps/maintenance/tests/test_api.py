@@ -20,12 +20,8 @@ class MaintainerAutocompleteViewTests(TestCase):
     """Tests for the maintainer autocomplete API endpoint."""
 
     def setUp(self):
-        self.user1 = create_staff_user(
-            username="alice", first_name="Alice", last_name="Smith"
-        )
-        self.user2 = create_staff_user(
-            username="bob", first_name="Bob", last_name="Jones"
-        )
+        self.user1 = create_staff_user(username="alice", first_name="Alice", last_name="Smith")
+        self.user2 = create_staff_user(username="bob", first_name="Bob", last_name="Jones")
         self.shared_terminal = create_shared_terminal(username="workshop-terminal")
         self.autocomplete_url = reverse("api-maintainer-autocomplete")
 
@@ -130,9 +126,7 @@ class ReceiveTranscodedMediaViewTests(TestDataMixin, TestCase):
 
     def test_rejects_invalid_token(self):
         """Request with wrong token should be rejected."""
-        response = self.client.post(
-            self.upload_url, {}, HTTP_AUTHORIZATION="Bearer wrong-token"
-        )
+        response = self.client.post(self.upload_url, {}, HTTP_AUTHORIZATION="Bearer wrong-token")
         self.assertEqual(response.status_code, 403)
         self.assertIn("Invalid authentication token", response.json()["error"])
 
@@ -248,8 +242,6 @@ class ReceiveTranscodedMediaViewTests(TestDataMixin, TestCase):
         """If TRANSCODING_UPLOAD_TOKEN is not set, should return 500."""
         settings.TRANSCODING_UPLOAD_TOKEN = None
 
-        response = self.client.post(
-            self.upload_url, {}, HTTP_AUTHORIZATION="Bearer some-token"
-        )
+        response = self.client.post(self.upload_url, {}, HTTP_AUTHORIZATION="Bearer some-token")
         self.assertEqual(response.status_code, 500)
         self.assertIn("Server not configured", response.json()["error"])

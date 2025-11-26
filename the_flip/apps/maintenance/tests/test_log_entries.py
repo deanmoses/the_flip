@@ -21,7 +21,6 @@ class LogEntryWorkDateTests(TestDataMixin, TestCase):
     """Tests for LogEntry work_date field."""
 
     def test_work_date_defaults_to_now(self):
-        """LogEntry work_date should default to current time."""
         before = timezone.now()
         log_entry = create_log_entry(machine=self.machine, text="Test entry")
         after = timezone.now()
@@ -31,7 +30,6 @@ class LogEntryWorkDateTests(TestDataMixin, TestCase):
         self.assertLessEqual(log_entry.work_date, after)
 
     def test_work_date_can_be_set_explicitly(self):
-        """LogEntry work_date can be set to a specific datetime."""
         specific_date = timezone.now() - timedelta(days=5)
         log_entry = create_log_entry(
             machine=self.machine, text="Historical entry", work_date=specific_date
@@ -39,7 +37,6 @@ class LogEntryWorkDateTests(TestDataMixin, TestCase):
         self.assertEqual(log_entry.work_date, specific_date)
 
     def test_log_entries_ordered_by_work_date_descending(self):
-        """LogEntry queryset should be ordered by work_date descending."""
         old_entry = create_log_entry(
             machine=self.machine,
             text="Old entry",
@@ -56,10 +53,7 @@ class LogEntryWorkDateTests(TestDataMixin, TestCase):
 
 @tag("forms")
 class LogEntryQuickFormWorkDateTests(TestCase):
-    """Tests for LogEntryQuickForm work_date validation."""
-
     def test_form_valid_with_past_date(self):
-        """Form should be valid with a past work_date."""
         past_date = timezone.now() - timedelta(days=5)
         form_data = {
             "work_date": past_date.strftime("%Y-%m-%dT%H:%M"),
@@ -70,7 +64,6 @@ class LogEntryQuickFormWorkDateTests(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_form_valid_with_today(self):
-        """Form should be valid with today's date."""
         today = timezone.localtime().replace(hour=12, minute=0, second=0, microsecond=0)
         form_data = {
             "work_date": today.strftime("%Y-%m-%dT%H:%M"),
@@ -81,7 +74,6 @@ class LogEntryQuickFormWorkDateTests(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_form_invalid_with_future_date(self):
-        """Form should be invalid with a future work_date."""
         future_date = timezone.now() + timedelta(days=5)
         form_data = {
             "work_date": future_date.strftime("%Y-%m-%dT%H:%M"),
@@ -96,14 +88,11 @@ class LogEntryQuickFormWorkDateTests(TestCase):
 
 @tag("views")
 class MachineLogCreateViewWorkDateTests(TestDataMixin, TestCase):
-    """Tests for MachineLogCreateView work_date handling."""
-
     def setUp(self):
         super().setUp()
         self.create_url = reverse("log-create-machine", kwargs={"slug": self.machine.slug})
 
     def test_create_log_entry_with_work_date(self):
-        """Creating a log entry should save the work_date."""
         self.client.login(username="staffuser", password="testpass123")
 
         work_date = timezone.now() - timedelta(days=3)
@@ -126,7 +115,6 @@ class MachineLogCreateViewWorkDateTests(TestDataMixin, TestCase):
         )
 
     def test_create_log_entry_rejects_future_date(self):
-        """Creating a log entry with future date should fail validation."""
         self.client.login(username="staffuser", password="testpass123")
 
         future_date = timezone.now() + timedelta(days=5)
@@ -145,15 +133,12 @@ class MachineLogCreateViewWorkDateTests(TestDataMixin, TestCase):
 
 @tag("views", "ajax")
 class LogEntryDetailViewWorkDateTests(TestDataMixin, TestCase):
-    """Tests for LogEntryDetailView work_date AJAX update."""
-
     def setUp(self):
         super().setUp()
         self.log_entry = create_log_entry(machine=self.machine, text="Test entry")
         self.detail_url = reverse("log-detail", kwargs={"pk": self.log_entry.pk})
 
     def test_update_work_date_ajax(self):
-        """AJAX update_work_date action should update the work_date."""
         self.client.login(username="staffuser", password="testpass123")
 
         new_date = timezone.now() - timedelta(days=7)
@@ -176,7 +161,6 @@ class LogEntryDetailViewWorkDateTests(TestDataMixin, TestCase):
         )
 
     def test_update_work_date_rejects_future(self):
-        """AJAX update_work_date should reject future dates."""
         self.client.login(username="staffuser", password="testpass123")
 
         future_date = timezone.now() + timedelta(days=5)
@@ -194,7 +178,6 @@ class LogEntryDetailViewWorkDateTests(TestDataMixin, TestCase):
         self.assertIn("future", result["error"].lower())
 
     def test_update_work_date_rejects_invalid_format(self):
-        """AJAX update_work_date should reject invalid date formats."""
         self.client.login(username="staffuser", password="testpass123")
 
         response = self.client.post(
@@ -208,7 +191,6 @@ class LogEntryDetailViewWorkDateTests(TestDataMixin, TestCase):
         self.assertIn("Invalid date format", result["error"])
 
     def test_update_work_date_rejects_empty(self):
-        """AJAX update_work_date should reject empty date."""
         self.client.login(username="staffuser", password="testpass123")
 
         response = self.client.post(
@@ -248,10 +230,7 @@ class LogEntryCreatedByTests(TestDataMixin, TestCase):
         self.assertEqual(log_entry.created_by, self.staff_user)
 
     def test_created_by_can_differ_from_maintainer(self):
-        """created_by (who entered data) can be different from maintainer (who did work)."""
-        work_doer = create_staff_user(
-            username="workdoer", first_name="Work", last_name="Doer"
-        )
+        work_doer = create_staff_user(username="workdoer", first_name="Work", last_name="Doer")
 
         self.client.login(username="staffuser", password="testpass123")
 

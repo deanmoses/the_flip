@@ -73,9 +73,7 @@ class LogEntryQuickFormMediaValidationTests(TestCase):
 
     def test_accepts_valid_video(self):
         """Form should accept video files."""
-        video_file = SimpleUploadedFile(
-            "clip.mp4", b"fake video content", content_type="video/mp4"
-        )
+        video_file = SimpleUploadedFile("clip.mp4", b"fake video content", content_type="video/mp4")
         data, files = self._form_data(video_file)
         form = LogEntryQuickForm(data=data, files=files)
 
@@ -84,9 +82,7 @@ class LogEntryQuickFormMediaValidationTests(TestCase):
     def test_rejects_oversized_file(self):
         """Form should reject files over 200MB."""
         # Create a file that claims to be over 200MB
-        large_file = SimpleUploadedFile(
-            "huge.mp4", b"x", content_type="video/mp4"
-        )
+        large_file = SimpleUploadedFile("huge.mp4", b"x", content_type="video/mp4")
         large_file.size = 201 * 1024 * 1024  # 201MB
 
         data, files = self._form_data(large_file)

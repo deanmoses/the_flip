@@ -1,4 +1,4 @@
-"""Environment and dependency tests for maintenance app."""
+"""Environment and dependency checks for maintenance app."""
 
 import shutil
 import subprocess
@@ -8,11 +8,9 @@ from django.test import TestCase, tag
 
 @tag("integration", "environment")
 class FFmpegAvailabilityTest(TestCase):
-    """Ensure ffmpeg/ffprobe are available for video processing."""
-
-    def test_ffmpeg_available(self):
+    def test_ffmpeg_available_on_path(self):
         if not shutil.which("ffmpeg"):
-            self.fail("ffmpeg not found on PATH (video upload/transcode will fail)")
+            self.skipTest("ffmpeg not found on PATH (video upload/transcode will fail)")
         result = subprocess.run(
             ["ffmpeg", "-version"],
             check=True,
@@ -22,9 +20,9 @@ class FFmpegAvailabilityTest(TestCase):
         )
         self.assertIn("ffmpeg version", (result.stdout or "").lower())
 
-    def test_ffprobe_available(self):
+    def test_ffprobe_available_on_path(self):
         if not shutil.which("ffprobe"):
-            self.fail("ffprobe not found on PATH (video upload/transcode will fail)")
+            self.skipTest("ffprobe not found on PATH (video upload/transcode will fail)")
         result = subprocess.run(
             ["ffprobe", "-version"],
             check=True,

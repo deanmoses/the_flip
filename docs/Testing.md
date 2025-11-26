@@ -8,6 +8,11 @@ make test-fast         # Run fast tests only (exclude integration)
 make test-models       # Run model tests only
 ```
 
+### In CI
+
+- GitHub Actions installs ffmpeg/ffprobe and runs the full suite (`python manage.py test`) with `DJANGO_SETTINGS_MODULE=the_flip.settings.test`, so `integration` tests are expected to pass there.
+- Keep `integration` tests runnable locally, but prefer `make test-fast` for quick iteration if you don't have ffmpeg installed; env-dependent checks will be skipped when the binaries are missing. Unit tests mock ffmpeg/probe/upload to stay fast and quiet.
+
 ### Running Tests by Tag
 
 ```bash
@@ -54,5 +59,6 @@ class MyTestCase(TestDataMixin, TestCase):
 2. Add `@tag` decorators for selective execution
 3. Use factory functions instead of manual object creation
 4. Keep tests independent — each test sets up its own data
+5. Prefer descriptive test names over docstrings; add a short comment only when intent isn't obvious
 
 For mocking patterns (subprocess, HTTP, settings, time), see `maintenance/tests/test_tasks.py`.
