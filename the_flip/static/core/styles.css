@@ -97,22 +97,6 @@ header nav span {
   font-weight: 400;
 }
 
-.nav-logout-btn {
-  background: none;
-  border: none;
-  color: #ffffff;
-  font-weight: 700;
-  font-family: inherit;
-  font-size: inherit;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: none;
-}
-
-.nav-logout-btn:hover {
-  text-decoration: underline;
-}
-
 /* ==========================================================================
    User Menu (avatar dropdown in header)
    Base: .user-menu
@@ -226,8 +210,7 @@ main {
 
 /* ==========================================================================
    Cards
-   Base: .card
-   BEM Elements: .card__header, .card__body, .card__footer
+   Base: .card (no BEM elements currently defined)
    ========================================================================== */
 .card {
   background: var(--color-surface);
