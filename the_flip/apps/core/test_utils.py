@@ -12,11 +12,18 @@ Usage:
             # self.machine, self.staff_user, etc. are now available
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.contrib.auth import get_user_model
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import MachineInstance, MachineModel
 from the_flip.apps.maintenance.models import LogEntry, ProblemReport
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import AbstractUser
 
 User = get_user_model()
 
@@ -45,7 +52,7 @@ def create_user(
     last_name: str = "",
     email: str | None = None,
     **kwargs,
-) -> User:
+) -> AbstractUser:
     """Create a test user with sensible defaults.
 
     Args:
@@ -86,7 +93,7 @@ def create_user(
     )
 
 
-def create_staff_user(username: str | None = None, **kwargs) -> User:
+def create_staff_user(username: str | None = None, **kwargs) -> AbstractUser:
     """Create a staff user (maintainer).
 
     Convenience wrapper around create_user with is_staff=True.
@@ -94,7 +101,7 @@ def create_staff_user(username: str | None = None, **kwargs) -> User:
     return create_user(username=username, is_staff=True, **kwargs)
 
 
-def create_superuser(username: str | None = None, **kwargs) -> User:
+def create_superuser(username: str | None = None, **kwargs) -> AbstractUser:
     """Create a superuser (admin).
 
     Convenience wrapper around create_user with is_superuser=True.
@@ -196,7 +203,7 @@ def create_problem_report(
 def create_log_entry(
     machine: MachineInstance | None = None,
     text: str | None = None,
-    created_by: User | None = None,
+    created_by: AbstractUser | None = None,
     **kwargs,
 ) -> LogEntry:
     """Create a test LogEntry.
