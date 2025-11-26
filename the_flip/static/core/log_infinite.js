@@ -44,7 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (data.items) {
           const fragment = document.createElement("div");
           fragment.innerHTML = data.items;
-          fragment.childNodes.forEach((node) => {
+          Array.from(fragment.children).forEach((node) => {
             list.appendChild(node);
           });
           if (typeof applySmartDates === "function") {
