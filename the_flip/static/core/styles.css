@@ -613,7 +613,7 @@ input[type="radio"] {
 /* ==========================================================================
    Autocomplete
    Base: .autocomplete
-   BEM Elements: .autocomplete__input, .autocomplete__dropdown, .autocomplete__item
+   BEM Elements: .autocomplete__dropdown, .autocomplete__item
    ========================================================================== */
 .autocomplete {
   position: relative;
@@ -659,17 +659,6 @@ input[type="radio"] {
 .error {
   color: var(--color-danger);
   font-size: 0.9rem;
-}
-
-.form-field--inline {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.form-label {
-  font-weight: 600;
-  min-width: 120px;
 }
 
 /* ==========================================================================
