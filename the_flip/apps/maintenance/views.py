@@ -18,7 +18,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from django.views.generic import DetailView, FormView, ListView, TemplateView, View
-from PIL import Image
+from PIL import Image, ImageOps
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import MachineInstance
@@ -561,20 +561,25 @@ class MachineQRView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         # Add logo to center of QR code
         logo_path = (
-            Path(__file__).resolve().parent.parent.parent / "static/core/images/the_flip_logo.png"
+            Path(__file__).resolve().parent.parent.parent / "static/core/images/logo_white.png"
         )
         if logo_path.exists():
-            logo = Image.open(logo_path)
+            # Invert white logo to black for visibility on white QR background
+            logo = Image.open(logo_path).convert("RGBA")
+            r, g, b, a = logo.split()
+            rgb = Image.merge("RGB", (r, g, b))
+            inverted = ImageOps.invert(rgb)
+            logo = Image.merge("RGBA", (*inverted.split(), a))
 
-            # Calculate logo size (20% of QR code size for safe scanning)
+            # Calculate logo size (28% of QR code size, within 30% error correction capacity)
             qr_width, qr_height = qr_img.size
-            logo_size = int(qr_width * 0.20)
+            logo_size = int(qr_width * 0.28)
 
             # Resize logo maintaining aspect ratio
             logo.thumbnail((logo_size, logo_size), Image.LANCZOS)
 
             # Add white background/padding to logo for better contrast
-            padding = 10
+            padding = 4
             logo_with_bg = Image.new(
                 "RGB", (logo.size[0] + padding * 2, logo.size[1] + padding * 2), "white"
             )
