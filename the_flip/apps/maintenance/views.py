@@ -31,6 +31,44 @@ from the_flip.apps.maintenance.models import LogEntry, LogEntryMedia, ProblemRep
 from the_flip.apps.maintenance.tasks import enqueue_transcode
 
 
+class MaintainerAutocompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
+    """JSON endpoint for maintainer name autocomplete."""
+
+    def test_func(self):
+        return self.request.user.is_staff
+
+    def get(self, request, *args, **kwargs):
+        query = request.GET.get("q", "").strip().lower()
+        maintainers = Maintainer.objects.filter(is_shared_account=False).select_related("user")
+
+        results = []
+        for m in maintainers:
+            display_name = m.display_name
+            username = m.user.username
+            first_name = (m.user.first_name or "").lower()
+            last_name = (m.user.last_name or "").lower()
+            # Filter by query (match start of first name, last name, or username)
+            if query and not (
+                first_name.startswith(query)
+                or last_name.startswith(query)
+                or username.lower().startswith(query)
+            ):
+                continue
+            results.append(
+                {
+                    "id": m.id,
+                    "display_name": display_name,
+                    "username": username,
+                    "first_name": m.user.first_name or "",
+                    "last_name": m.user.last_name or "",
+                }
+            )
+
+        # Sort alphabetically by display name
+        results.sort(key=lambda x: x["display_name"].lower())
+        return JsonResponse({"maintainers": results})
+
+
 class ProblemReportListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     """Global list of all problem reports across all machines. Maintainer-only access."""
 
@@ -206,16 +244,27 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def get_initial(self):
         initial = super().get_initial()
+        # Pre-fill maintainer name only for individual accounts (not shared accounts)
         if self.request.user.is_authenticated:
-            initial["submitter_name"] = (
-                self.request.user.get_full_name() or self.request.user.get_username()
+            is_shared = (
+                hasattr(self.request.user, "maintainer")
+                and self.request.user.maintainer.is_shared_account
             )
+            if not is_shared:
+                initial["submitter_name"] = (
+                    self.request.user.get_full_name() or self.request.user.get_username()
+                )
         # work_date default is set by JavaScript to use browser's local timezone
         return initial
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["machine"] = self.machine
+        # Check if current user is a shared account (show autocomplete for maintainer selection)
+        is_shared_account = False
+        if hasattr(self.request.user, "maintainer"):
+            is_shared_account = self.request.user.maintainer.is_shared_account
+        context["is_shared_account"] = is_shared_account
         return context
 
     def form_valid(self, form):
@@ -239,7 +288,10 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 pass  # Keep original work_date if conversion fails
 
         log_entry = LogEntry.objects.create(
-            machine=self.machine, text=description, work_date=work_date
+            machine=self.machine,
+            text=description,
+            work_date=work_date,
+            created_by=self.request.user,
         )
 
         maintainer = self.match_maintainer(submitter_name)

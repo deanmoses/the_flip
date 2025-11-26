@@ -1,14 +1,21 @@
 {% extends "base.html" %}
 {% block title %}Home · {{ block.super }}{% endblock %}
 {% block content %}
-  <div class="card">
-    <p>Welcome to The Flip's pinball machine maintenance system.</p>
-  </div>
-  <div class="card">
-    <h3>👤  Register</h3>
-    <p>During beta, you can register yourself.</p>
-    <a href="{% url 'self-register' %}" class="btn btn-primary">Register</a>
-  </div>
+  {% if is_shared_account %}
+    <div class="card">
+      <h3>{{ user.maintainer.display_name }} (Shared)</h3>
+      <p>This is a shared account. You'll need to select your username when logging work.</p>
+    </div>
+  {% else %}
+    <div class="card">
+      <p>Welcome to The Flip's pinball machine maintenance system.</p>
+    </div>
+    <div class="card">
+      <h3>👤  Register</h3>
+      <p>During beta, you can register yourself.</p>
+      <a href="{% url 'self-register' %}" class="btn btn-primary">Register</a>
+    </div>
+  {% endif %}
   <div class="card">
     <h3>🪲 Bugs &amp; 💡 Feature Requests</h3>
     <p>Found a bug?  Have an idea?</p>

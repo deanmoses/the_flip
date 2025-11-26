@@ -50,13 +50,15 @@ class InvitationRegistrationForm(forms.Form):
 class ProfileForm(forms.ModelForm):
     """Form for users to update their profile information."""
 
+    email = forms.EmailField(required=False)
+
     class Meta:
         model = User
         fields = ["email", "first_name", "last_name"]
 
     def clean_email(self):
         email = self.cleaned_data["email"]
-        if User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
+        if email and User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError("This email is already registered.")
         return email
 

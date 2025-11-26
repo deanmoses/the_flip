@@ -20,8 +20,15 @@
         {% for error in form.work_date.errors %}<div class="error">{{ error }}</div>{% endfor %}
       </div>
       <div class="form-field">
-        <label for="{{ form.submitter_name.id_for_label }}">Your name</label>
-        {{ form.submitter_name }}
+        <label for="{{ form.submitter_name.id_for_label }}">Maintainer name</label>
+        {% if is_shared_account %}
+          <div class="autocomplete" id="submitter-autocomplete">
+            {{ form.submitter_name }}
+            <div class="autocomplete__dropdown hidden" id="submitter-dropdown"></div>
+          </div>
+        {% else %}
+          {{ form.submitter_name }}
+        {% endif %}
         {% for error in form.submitter_name.errors %}<div class="error">{{ error }}</div>{% endfor %}
       </div>
       <div class="form-field">
@@ -58,5 +65,103 @@
       if (workDateInput) {
           workDateInput.value = toDateTimeLocalValue(new Date());
       }
+
+      {% if is_shared_account %}
+      // Maintainer autocomplete (only for shared accounts)
+      (function() {
+          const input = document.getElementById('{{ form.submitter_name.id_for_label }}');
+          const dropdown = document.getElementById('submitter-dropdown');
+          let maintainers = [];
+          let activeIndex = -1;
+
+          // Fetch maintainers on page load
+          fetch('{% url "api-maintainer-autocomplete" %}')
+              .then(response => response.json())
+              .then(data => { maintainers = data.maintainers || []; })
+              .catch(() => { maintainers = []; });
+
+          function formatMaintainer(m) {
+              // If display_name equals username, just show username once
+              if (m.display_name === m.username) {
+                  return m.username;
+              }
+              return `${m.display_name} (${m.username})`;
+          }
+
+          function showDropdown(filtered) {
+              if (filtered.length === 0) {
+                  dropdown.classList.add('hidden');
+                  return;
+              }
+              dropdown.innerHTML = filtered.map((m, i) =>
+                  `<div class="autocomplete__item${i === activeIndex ? ' autocomplete__item-active' : ''}" data-index="${i}" data-username="${m.username}">${formatMaintainer(m)}</div>`
+              ).join('');
+              dropdown.classList.remove('hidden');
+          }
+
+          function hideDropdown() {
+              dropdown.classList.add('hidden');
+              activeIndex = -1;
+          }
+
+          function filterMaintainers(query) {
+              const q = query.toLowerCase().trim();
+              if (!q) return maintainers;
+              // Match start of first name, last name, or username
+              return maintainers.filter(m =>
+                  m.first_name.toLowerCase().startsWith(q) ||
+                  m.last_name.toLowerCase().startsWith(q) ||
+                  m.username.toLowerCase().startsWith(q)
+              );
+          }
+
+          input.addEventListener('focus', () => {
+              const filtered = filterMaintainers(input.value);
+              showDropdown(filtered);
+          });
+
+          input.addEventListener('input', () => {
+              activeIndex = -1;
+              const filtered = filterMaintainers(input.value);
+              showDropdown(filtered);
+          });
+
+          input.addEventListener('keydown', (e) => {
+              const filtered = filterMaintainers(input.value);
+              if (dropdown.classList.contains('hidden') || filtered.length === 0) return;
+
+              if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  activeIndex = Math.min(activeIndex + 1, filtered.length - 1);
+                  showDropdown(filtered);
+              } else if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  activeIndex = Math.max(activeIndex - 1, 0);
+                  showDropdown(filtered);
+              } else if (e.key === 'Enter' && activeIndex >= 0) {
+                  e.preventDefault();
+                  input.value = filtered[activeIndex].username;
+                  hideDropdown();
+              } else if (e.key === 'Escape') {
+                  hideDropdown();
+              }
+          });
+
+          dropdown.addEventListener('click', (e) => {
+              const item = e.target.closest('.autocomplete__item');
+              if (item) {
+                  input.value = item.dataset.username;
+                  hideDropdown();
+              }
+          });
+
+          // Hide dropdown when clicking outside
+          document.addEventListener('click', (e) => {
+              if (!e.target.closest('#submitter-autocomplete')) {
+                  hideDropdown();
+              }
+          });
+      })();
+      {% endif %}
   </script>
 {% endblock %}
