@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings, tag
 
-from the_flip.apps.core.test_utils import create_machine, create_staff_user
+from the_flip.apps.core.test_utils import create_machine
 from the_flip.apps.maintenance.models import LogEntry, LogEntryMedia
 
 
@@ -121,6 +121,7 @@ class TranscodeVideoErrorHandlingTests(TestCase):
     def test_transcode_handles_missing_file(self):
         """Transcode should fail gracefully when source file is missing."""
         import os
+        import subprocess
 
         from the_flip.apps.maintenance.tasks import transcode_video_job
 
@@ -128,7 +129,8 @@ class TranscodeVideoErrorHandlingTests(TestCase):
         if os.path.exists(self.media.file.path):
             os.remove(self.media.file.path)
 
-        with self.assertRaises(Exception):
+        # ffmpeg fails with CalledProcessError when input file doesn't exist
+        with self.assertRaises(subprocess.CalledProcessError):
             transcode_video_job(self.media.id)
 
         self.media.refresh_from_db()
@@ -174,7 +176,7 @@ class SubprocessMockingExample(TestCase):
         # For example:
         import subprocess
 
-        result = subprocess.run(
+        subprocess.run(
             ["ffmpeg", "-i", "input.mp4", "-c:v", "libx264", "output.mp4"],
             capture_output=True,
             text=True,
@@ -234,6 +236,7 @@ class HTTPRequestMockingExample(TestCase):
             "https://example.com/upload",
             files={"video": ("test.mp4", b"content")},
             headers={"Authorization": "Bearer token"},
+            timeout=30,
         )
 
         self.assertEqual(response.status_code, 200)
@@ -249,7 +252,7 @@ class HTTPRequestMockingExample(TestCase):
         mock_post.side_effect = requests.exceptions.ConnectionError("Network unreachable")
 
         with self.assertRaises(requests.exceptions.ConnectionError):
-            requests.post("https://example.com/upload", data={})
+            requests.post("https://example.com/upload", data={}, timeout=30)
 
     @patch("requests.post")
     def test_upload_timeout(self, mock_post):
@@ -290,12 +293,12 @@ class TimeMockingExample(TestCase):
     @patch("django.utils.timezone.now")
     def test_with_frozen_time(self, mock_now):
         """Example: test with a specific frozen time."""
-        from datetime import datetime, timezone as dt_tz
+        from datetime import UTC, datetime
 
         from django.utils import timezone
 
         # Set a specific time
-        frozen_time = datetime(2024, 6, 15, 12, 0, 0, tzinfo=dt_tz.utc)
+        frozen_time = datetime(2024, 6, 15, 12, 0, 0, tzinfo=UTC)
         mock_now.return_value = frozen_time
 
         # Your time-dependent code would go here

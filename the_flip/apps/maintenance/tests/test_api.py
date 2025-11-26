@@ -5,7 +5,6 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, tag
 from django.urls import reverse
 
-from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.core.test_utils import (
     TestDataMixin,
     create_log_entry,

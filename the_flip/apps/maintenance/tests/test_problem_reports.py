@@ -11,7 +11,6 @@ from the_flip.apps.core.test_utils import (
     TestDataMixin,
     create_problem_report,
     create_staff_user,
-    create_user,
 )
 from the_flip.apps.maintenance.models import ProblemReport
 
