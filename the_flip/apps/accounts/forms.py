@@ -50,6 +50,8 @@ class InvitationRegistrationForm(forms.Form):
 class ProfileForm(forms.ModelForm):
     """Form for users to update their profile information."""
 
+    email = forms.EmailField(required=False)
+
     class Meta:
         model = User
         fields = ["email", "first_name", "last_name"]
