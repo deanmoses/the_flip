@@ -1017,6 +1017,10 @@ input[type="radio"] {
   margin: var(--space-3) 0 var(--space-5) 0;
 }
 
+.inline-edit-group:last-child {
+  margin-bottom: 0;
+}
+
 .inline-edit-field {
   display: inline-flex;
   align-items: center;
