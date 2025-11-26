@@ -58,7 +58,7 @@ class ProfileForm(forms.ModelForm):
 
     def clean_email(self):
         email = self.cleaned_data["email"]
-        if User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
+        if email and User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError("This email is already registered.")
         return email
 
