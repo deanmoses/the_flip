@@ -4,6 +4,8 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase, tag
 from django.urls import reverse
 
+from the_flip.apps.core.test_utils import create_user
+
 User = get_user_model()
 
 
@@ -13,10 +15,9 @@ class ProfileViewTests(TestCase):
 
     def setUp(self):
         """Set up test data."""
-        self.user = User.objects.create_user(
+        self.user = create_user(
             username="testuser",
             email="test@example.com",
-            password="testpass123",
             first_name="Test",
             last_name="User",
         )
@@ -74,9 +75,7 @@ class ProfileViewTests(TestCase):
 
     def test_profile_email_uniqueness_validation(self):
         """Profile should reject email already used by another user."""
-        User.objects.create_user(
-            username="otheruser", email="taken@example.com", password="pass123"
-        )
+        create_user(username="otheruser", email="taken@example.com")
         self.client.login(username="testuser", password="testpass123")
         data = {
             "email": "taken@example.com",
@@ -105,7 +104,7 @@ class PasswordChangeViewTests(TestCase):
 
     def setUp(self):
         """Set up test data."""
-        self.user = User.objects.create_user(
+        self.user = create_user(
             username="testuser", email="test@example.com", password="oldpass123"
         )
         self.password_change_url = reverse("password_change")

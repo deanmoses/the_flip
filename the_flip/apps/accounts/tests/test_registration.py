@@ -5,6 +5,7 @@ from django.test import TestCase, tag
 from django.urls import reverse
 
 from the_flip.apps.accounts.models import Invitation, Maintainer
+from the_flip.apps.core.test_utils import create_staff_user, create_superuser, create_user
 
 User = get_user_model()
 
@@ -108,7 +109,7 @@ class InvitationRegistrationViewTests(TestCase):
 
     def test_registration_validates_username_uniqueness(self):
         """Registration should fail if username is taken."""
-        User.objects.create_user(username="existinguser", password="test123")
+        create_user(username="existinguser")
 
         data = {
             "username": "existinguser",
@@ -123,9 +124,7 @@ class InvitationRegistrationViewTests(TestCase):
 
     def test_registration_validates_email_uniqueness(self):
         """Registration should fail if email is already registered."""
-        User.objects.create_user(
-            username="existing", email="newuser@example.com", password="test123"
-        )
+        create_user(username="existing", email="newuser@example.com")
 
         data = {
             "username": "newmaintainer",
@@ -163,29 +162,21 @@ class SelfRegistrationViewTests(TestCase):
         self.check_username_url = reverse("check-username")
 
         # Create an unclaimed user (has @example.com email, not admin)
-        self.unclaimed_user = User.objects.create_user(
+        self.unclaimed_user = create_staff_user(
             username="unclaimed",
             email="unclaimed@example.com",
-            password="test123",
             first_name="Old",
             last_name="Name",
-            is_staff=True,
         )
         Maintainer.objects.get_or_create(user=self.unclaimed_user)
 
         # Create an admin user (cannot be claimed)
-        self.admin_user = User.objects.create_superuser(
-            username="admin",
-            email="admin@example.com",
-            password="adminpass",
-        )
+        self.admin_user = create_superuser(username="admin")
 
         # Create a claimed user (has real email, not @example.com)
-        self.claimed_user = User.objects.create_user(
+        self.claimed_user = create_staff_user(
             username="claimed",
             email="claimed@realemail.com",
-            password="SecurePass123!",
-            is_staff=True,
         )
         Maintainer.objects.get_or_create(user=self.claimed_user)
 
@@ -331,27 +322,13 @@ class CheckUsernameViewTests(TestCase):
         self.check_url = reverse("check-username")
 
         # Unclaimed user
-        User.objects.create_user(
-            username="unclaimed",
-            email="unclaimed@example.com",
-            password="test123",
-            is_staff=True,
-        )
+        create_staff_user(username="unclaimed", email="unclaimed@example.com")
 
         # Admin user
-        User.objects.create_superuser(
-            username="admin",
-            email="admin@example.com",
-            password="adminpass",
-        )
+        create_superuser(username="admin")
 
         # Claimed user
-        User.objects.create_user(
-            username="claimed",
-            email="claimed@realemail.com",
-            password="pass123",
-            is_staff=True,
-        )
+        create_staff_user(username="claimed", email="claimed@realemail.com")
 
     def test_unclaimed_username_is_available(self):
         """Unclaimed usernames should be available."""

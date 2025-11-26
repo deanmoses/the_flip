@@ -2,44 +2,28 @@
 
 from datetime import timedelta
 
-from django.contrib.auth import get_user_model
 from django.test import TestCase, tag
 from django.urls import reverse
 from django.utils import timezone
 
 from the_flip.apps.accounts.models import Maintainer
-from the_flip.apps.catalog.models import MachineInstance, MachineModel
+from the_flip.apps.core.test_utils import (
+    TestDataMixin,
+    create_log_entry,
+    create_staff_user,
+)
 from the_flip.apps.maintenance.forms import LogEntryQuickForm
 from the_flip.apps.maintenance.models import LogEntry
 
-User = get_user_model()
-
 
 @tag("models")
-class LogEntryWorkDateTests(TestCase):
+class LogEntryWorkDateTests(TestDataMixin, TestCase):
     """Tests for LogEntry work_date field."""
-
-    def setUp(self):
-        """Set up test data."""
-        self.machine_model = MachineModel.objects.create(
-            name="Test Machine",
-            manufacturer="Test Mfg",
-            year=2020,
-            era=MachineModel.ERA_SS,
-        )
-        self.machine = MachineInstance.objects.create(
-            model=self.machine_model,
-            slug="test-machine",
-            operational_status=MachineInstance.STATUS_GOOD,
-        )
 
     def test_work_date_defaults_to_now(self):
         """LogEntry work_date should default to current time."""
         before = timezone.now()
-        log_entry = LogEntry.objects.create(
-            machine=self.machine,
-            text="Test entry",
-        )
+        log_entry = create_log_entry(machine=self.machine, text="Test entry")
         after = timezone.now()
 
         self.assertIsNotNone(log_entry.work_date)
@@ -49,25 +33,20 @@ class LogEntryWorkDateTests(TestCase):
     def test_work_date_can_be_set_explicitly(self):
         """LogEntry work_date can be set to a specific datetime."""
         specific_date = timezone.now() - timedelta(days=5)
-        log_entry = LogEntry.objects.create(
-            machine=self.machine,
-            text="Historical entry",
-            work_date=specific_date,
+        log_entry = create_log_entry(
+            machine=self.machine, text="Historical entry", work_date=specific_date
         )
-
         self.assertEqual(log_entry.work_date, specific_date)
 
     def test_log_entries_ordered_by_work_date_descending(self):
         """LogEntry queryset should be ordered by work_date descending."""
-        old_entry = LogEntry.objects.create(
+        old_entry = create_log_entry(
             machine=self.machine,
             text="Old entry",
             work_date=timezone.now() - timedelta(days=10),
         )
-        new_entry = LogEntry.objects.create(
-            machine=self.machine,
-            text="New entry",
-            work_date=timezone.now(),
+        new_entry = create_log_entry(
+            machine=self.machine, text="New entry", work_date=timezone.now()
         )
 
         entries = list(LogEntry.objects.all())
@@ -116,27 +95,11 @@ class LogEntryQuickFormWorkDateTests(TestCase):
 
 
 @tag("views")
-class MachineLogCreateViewWorkDateTests(TestCase):
+class MachineLogCreateViewWorkDateTests(TestDataMixin, TestCase):
     """Tests for MachineLogCreateView work_date handling."""
 
     def setUp(self):
-        """Set up test data."""
-        self.machine_model = MachineModel.objects.create(
-            name="Test Machine",
-            manufacturer="Test Mfg",
-            year=2020,
-            era=MachineModel.ERA_SS,
-        )
-        self.machine = MachineInstance.objects.create(
-            model=self.machine_model,
-            slug="test-machine",
-            operational_status=MachineInstance.STATUS_GOOD,
-        )
-        self.staff_user = User.objects.create_user(
-            username="staffuser",
-            password="testpass123",
-            is_staff=True,
-        )
+        super().setUp()
         self.create_url = reverse("log-create-machine", kwargs={"slug": self.machine.slug})
 
     def test_create_log_entry_with_work_date(self):
@@ -157,7 +120,6 @@ class MachineLogCreateViewWorkDateTests(TestCase):
         self.assertEqual(LogEntry.objects.count(), 1)
 
         log_entry = LogEntry.objects.first()
-        # Compare dates (ignoring seconds since form doesn't capture them)
         self.assertEqual(
             log_entry.work_date.strftime("%Y-%m-%d %H:%M"),
             work_date.strftime("%Y-%m-%d %H:%M"),
@@ -177,37 +139,17 @@ class MachineLogCreateViewWorkDateTests(TestCase):
             },
         )
 
-        # Should re-render form with errors (200), not redirect
         self.assertEqual(response.status_code, 200)
         self.assertEqual(LogEntry.objects.count(), 0)
 
 
 @tag("views", "ajax")
-class LogEntryDetailViewWorkDateTests(TestCase):
+class LogEntryDetailViewWorkDateTests(TestDataMixin, TestCase):
     """Tests for LogEntryDetailView work_date AJAX update."""
 
     def setUp(self):
-        """Set up test data."""
-        self.machine_model = MachineModel.objects.create(
-            name="Test Machine",
-            manufacturer="Test Mfg",
-            year=2020,
-            era=MachineModel.ERA_SS,
-        )
-        self.machine = MachineInstance.objects.create(
-            model=self.machine_model,
-            slug="test-machine",
-            operational_status=MachineInstance.STATUS_GOOD,
-        )
-        self.log_entry = LogEntry.objects.create(
-            machine=self.machine,
-            text="Test entry",
-        )
-        self.staff_user = User.objects.create_user(
-            username="staffuser",
-            password="testpass123",
-            is_staff=True,
-        )
+        super().setUp()
+        self.log_entry = create_log_entry(machine=self.machine, text="Test entry")
         self.detail_url = reverse("log-detail", kwargs={"pk": self.log_entry.pk})
 
     def test_update_work_date_ajax(self):
@@ -257,10 +199,7 @@ class LogEntryDetailViewWorkDateTests(TestCase):
 
         response = self.client.post(
             self.detail_url,
-            {
-                "action": "update_work_date",
-                "work_date": "not-a-valid-date",
-            },
+            {"action": "update_work_date", "work_date": "not-a-valid-date"},
         )
 
         self.assertEqual(response.status_code, 400)
@@ -273,11 +212,7 @@ class LogEntryDetailViewWorkDateTests(TestCase):
         self.client.login(username="staffuser", password="testpass123")
 
         response = self.client.post(
-            self.detail_url,
-            {
-                "action": "update_work_date",
-                "work_date": "",
-            },
+            self.detail_url, {"action": "update_work_date", "work_date": ""}
         )
 
         self.assertEqual(response.status_code, 400)
@@ -286,27 +221,11 @@ class LogEntryDetailViewWorkDateTests(TestCase):
 
 
 @tag("models")
-class LogEntryCreatedByTests(TestCase):
+class LogEntryCreatedByTests(TestDataMixin, TestCase):
     """Tests for LogEntry created_by field."""
 
     def setUp(self):
-        """Set up test data."""
-        self.machine_model = MachineModel.objects.create(
-            name="Test Machine",
-            manufacturer="Test Mfg",
-            year=2020,
-            era=MachineModel.ERA_SS,
-        )
-        self.machine = MachineInstance.objects.create(
-            model=self.machine_model,
-            slug="test-machine",
-            operational_status=MachineInstance.STATUS_GOOD,
-        )
-        self.staff_user = User.objects.create_user(
-            username="staffuser",
-            password="testpass123",
-            is_staff=True,
-        )
+        super().setUp()
         self.create_url = reverse("log-create-machine", kwargs={"slug": self.machine.slug})
 
     def test_created_by_set_when_creating_log_entry(self):
@@ -330,13 +249,8 @@ class LogEntryCreatedByTests(TestCase):
 
     def test_created_by_can_differ_from_maintainer(self):
         """created_by (who entered data) can be different from maintainer (who did work)."""
-        # Create another maintainer who did the work
-        work_doer = User.objects.create_user(
-            username="workdoer",
-            first_name="Work",
-            last_name="Doer",
-            password="testpass123",
-            is_staff=True,
+        work_doer = create_staff_user(
+            username="workdoer", first_name="Work", last_name="Doer"
         )
 
         self.client.login(username="staffuser", password="testpass123")
@@ -345,7 +259,7 @@ class LogEntryCreatedByTests(TestCase):
             self.create_url,
             {
                 "work_date": timezone.now().strftime("%Y-%m-%dT%H:%M"),
-                "submitter_name": "Work Doer",  # Name of who did the work
+                "submitter_name": "Work Doer",
                 "text": "Work performed by someone else",
             },
         )
@@ -353,8 +267,5 @@ class LogEntryCreatedByTests(TestCase):
         self.assertEqual(response.status_code, 302)
         log_entry = LogEntry.objects.first()
 
-        # created_by is the logged-in user (who entered the data)
         self.assertEqual(log_entry.created_by, self.staff_user)
-
-        # maintainers is who did the actual work
         self.assertIn(Maintainer.objects.get(user=work_doer), log_entry.maintainers.all())
