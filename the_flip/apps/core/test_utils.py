@@ -283,21 +283,3 @@ class TestDataMixin:
         self.staff_user = create_staff_user(username="staffuser")
         self.regular_user = create_user(username="regularuser")
         self.superuser = create_superuser(username="admin")
-
-
-class AuthenticatedTestMixin:
-    """Mixin that logs in as staff user before each test.
-
-    Requires TestDataMixin to be included first (for self.staff_user).
-
-    Usage:
-        class MyTestCase(AuthenticatedTestMixin, TestDataMixin, TestCase):
-            def test_something(self):
-                # Already logged in as staff
-                response = self.client.get('/some-url/')
-    """
-
-    def setUp(self):
-        """Set up and log in as staff user."""
-        super().setUp()
-        self.client.login(username="staffuser", password="testpass123")
