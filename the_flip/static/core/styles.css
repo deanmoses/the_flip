@@ -1088,6 +1088,9 @@ input[type="radio"] {
 
   .breadcrumb {
     white-space: normal;
+  }
+
+  .page-header__left {
     flex-wrap: wrap;
   }
 }
