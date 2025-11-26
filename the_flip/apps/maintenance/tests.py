@@ -1133,11 +1133,12 @@ class MaintainerAutocompleteViewTests(TestCase):
         response = self.client.get(self.autocomplete_url)
 
         data = response.json()
-        names = [m["name"] for m in data["maintainers"]]
+        display_names = [m["display_name"] for m in data["maintainers"]]
+        usernames = [m["username"] for m in data["maintainers"]]
 
-        self.assertIn("Alice Smith", names)
-        self.assertIn("Bob Jones", names)
-        self.assertNotIn("workshop-terminal", names)
+        self.assertIn("Alice Smith", display_names)
+        self.assertIn("Bob Jones", display_names)
+        self.assertNotIn("workshop-terminal", usernames)
 
     def test_filters_by_query(self):
         """Should filter results by query parameter."""
@@ -1145,10 +1146,10 @@ class MaintainerAutocompleteViewTests(TestCase):
         response = self.client.get(self.autocomplete_url + "?q=alice")
 
         data = response.json()
-        names = [m["name"] for m in data["maintainers"]]
+        display_names = [m["display_name"] for m in data["maintainers"]]
 
-        self.assertIn("Alice Smith", names)
-        self.assertNotIn("Bob Jones", names)
+        self.assertIn("Alice Smith", display_names)
+        self.assertNotIn("Bob Jones", display_names)
 
     def test_case_insensitive_filter(self):
         """Query filtering should be case-insensitive."""
@@ -1156,16 +1157,16 @@ class MaintainerAutocompleteViewTests(TestCase):
         response = self.client.get(self.autocomplete_url + "?q=ALICE")
 
         data = response.json()
-        names = [m["name"] for m in data["maintainers"]]
+        display_names = [m["display_name"] for m in data["maintainers"]]
 
-        self.assertIn("Alice Smith", names)
+        self.assertIn("Alice Smith", display_names)
 
     def test_returns_sorted_results(self):
-        """Results should be sorted alphabetically."""
+        """Results should be sorted alphabetically by display name."""
         self.client.login(username="alice", password="testpass123")
         response = self.client.get(self.autocomplete_url)
 
         data = response.json()
-        names = [m["name"] for m in data["maintainers"]]
+        display_names = [m["display_name"] for m in data["maintainers"]]
 
-        self.assertEqual(names, sorted(names, key=str.lower))
+        self.assertEqual(display_names, sorted(display_names, key=str.lower))

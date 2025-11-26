@@ -44,13 +44,20 @@ class MaintainerAutocompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
         results = []
         for m in maintainers:
             display_name = m.display_name
-            # Filter by query if provided
-            if query and query not in display_name.lower():
+            username = m.user.username
+            # Filter by query (match against display name or username)
+            if query and query not in display_name.lower() and query not in username.lower():
                 continue
-            results.append({"id": m.id, "name": display_name})
+            results.append(
+                {
+                    "id": m.id,
+                    "display_name": display_name,
+                    "username": username,
+                }
+            )
 
-        # Sort alphabetically by name
-        results.sort(key=lambda x: x["name"].lower())
+        # Sort alphabetically by display name
+        results.sort(key=lambda x: x["display_name"].lower())
         return JsonResponse({"maintainers": results})
 
 

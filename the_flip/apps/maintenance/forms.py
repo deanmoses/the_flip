@@ -50,6 +50,7 @@ class LogEntryQuickForm(forms.Form):
                 "autocomplete": "off",
                 "data-1p-ignore": "true",
                 "data-lpignore": "true",
+                "placeholder": "Who did the work?",
             }
         ),
     )

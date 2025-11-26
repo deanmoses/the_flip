@@ -86,7 +86,7 @@
                   return;
               }
               dropdown.innerHTML = filtered.map((m, i) =>
-                  `<div class="autocomplete__item${i === activeIndex ? ' autocomplete__item-active' : ''}" data-index="${i}" data-name="${m.name}">${m.name}</div>`
+                  `<div class="autocomplete__item${i === activeIndex ? ' autocomplete__item-active' : ''}" data-index="${i}" data-username="${m.username}">${m.display_name} (${m.username})</div>`
               ).join('');
               dropdown.classList.remove('hidden');
           }
@@ -99,7 +99,10 @@
           function filterMaintainers(query) {
               const q = query.toLowerCase().trim();
               if (!q) return maintainers;
-              return maintainers.filter(m => m.name.toLowerCase().includes(q));
+              return maintainers.filter(m =>
+                  m.display_name.toLowerCase().includes(q) ||
+                  m.username.toLowerCase().includes(q)
+              );
           }
 
           input.addEventListener('focus', () => {
@@ -127,7 +130,7 @@
                   showDropdown(filtered);
               } else if (e.key === 'Enter' && activeIndex >= 0) {
                   e.preventDefault();
-                  input.value = filtered[activeIndex].name;
+                  input.value = filtered[activeIndex].username;
                   hideDropdown();
               } else if (e.key === 'Escape') {
                   hideDropdown();
@@ -137,7 +140,7 @@
           dropdown.addEventListener('click', (e) => {
               const item = e.target.closest('.autocomplete__item');
               if (item) {
-                  input.value = item.dataset.name;
+                  input.value = item.dataset.username;
                   hideDropdown();
               }
           });
