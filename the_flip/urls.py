@@ -102,6 +102,11 @@ urlpatterns = [
         name="problem-report-list-entries",
     ),
     path(
+        "problem-reports/new/",
+        maintenance_views.ProblemReportCreateView.as_view(),
+        name="problem-report-create-global",
+    ),
+    path(
         "problem-reports/<int:pk>/",
         maintenance_views.ProblemReportDetailView.as_view(),
         name="problem-report-detail",
@@ -140,9 +145,15 @@ urlpatterns = [
         maintenance_views.MaintainerAutocompleteView.as_view(),
         name="api-maintainer-autocomplete",
     ),
+    path(
+        "api/machines/",
+        maintenance_views.MachineAutocompleteView.as_view(),
+        name="api-machine-autocomplete",
+    ),
     # Log views
     path("logs/", maintenance_views.LogListView.as_view(), name="log-list"),
     path("logs/entries/", maintenance_views.LogListPartialView.as_view(), name="log-list-entries"),
+    path("logs/new/", maintenance_views.MachineLogCreateView.as_view(), name="log-create-global"),
     path("logs/<int:pk>/", maintenance_views.LogEntryDetailView.as_view(), name="log-detail"),
     path(
         "logs/new/<slug:slug>/",

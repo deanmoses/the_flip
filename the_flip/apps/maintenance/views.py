@@ -10,6 +10,8 @@ import qrcode
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.views import redirect_to_login
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Prefetch, Q
 from django.http import JsonResponse
@@ -68,6 +70,43 @@ class MaintainerAutocompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
         # Sort alphabetically by display name
         results.sort(key=lambda x: x["display_name"].lower())
         return JsonResponse({"maintainers": results})
+
+
+class MachineAutocompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
+    """JSON endpoint for machine autocomplete (staff only)."""
+
+    def test_func(self):
+        return self.request.user.is_staff
+
+    def get(self, request, *args, **kwargs):
+        query = request.GET.get("q", "").strip()
+        machines = MachineInstance.objects.select_related("model", "location")
+
+        if query:
+            machines = machines.filter(
+                Q(name_override__icontains=query)
+                | Q(model__name__icontains=query)
+                | Q(model__manufacturer__icontains=query)
+                | Q(location__name__icontains=query)
+                | Q(slug__icontains=query)
+            )
+
+        machines = machines.order_by("model__name")[:20]
+
+        results = []
+        for machine in machines:
+            results.append(
+                {
+                    "id": machine.id,
+                    "slug": machine.slug,
+                    "display_name": machine.display_name,
+                    "model": machine.model.name,
+                    "manufacturer": machine.model.manufacturer,
+                    "location": machine.location.name if machine.location else "",
+                }
+            )
+
+        return JsonResponse({"machines": results})
 
 
 class ProblemReportListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -250,21 +289,42 @@ class ProblemReportCreateView(FormView):
     form_class = ProblemReportForm
 
     def dispatch(self, request, *args, **kwargs):
-        self.machine = get_object_or_404(MachineInstance, slug=kwargs["slug"])
+        self.machine = None
+        if "slug" in kwargs:
+            # Public/machine-scoped path
+            self.machine = get_object_or_404(MachineInstance, slug=kwargs["slug"])
+            self.template_name = "maintenance/problem_report_form.html"
+        else:
+            # Staff-only global creation
+            if not request.user.is_authenticated:
+                return redirect_to_login(request.get_full_path())
+            if not request.user.is_staff:
+                raise PermissionDenied
+            self.template_name = "maintenance/problem_report_new.html"
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["machine"] = self.machine
+        selected_slug = (
+            self.request.POST.get("machine_slug") if self.request.method == "POST" else ""
+        )
+        if selected_slug and not self.machine:
+            context["selected_machine"] = MachineInstance.objects.filter(slug=selected_slug).first()
+        elif self.machine:
+            context["selected_machine"] = self.machine
         return context
 
     def post(self, request, *args, **kwargs):
         """Override post to check rate limiting before processing form."""
-        # Check rate limiting
-        ip_address = request.META.get("REMOTE_ADDR")
-        if ip_address and not self._check_rate_limit(ip_address):
-            messages.error(request, "Too many reports submitted recently. Please try again later.")
-            return redirect(self.machine.get_absolute_url())
+        # Check rate limiting for public submissions only
+        if self.machine and not request.user.is_staff:
+            ip_address = request.META.get("REMOTE_ADDR")
+            if ip_address and not self._check_rate_limit(ip_address):
+                messages.error(
+                    request, "Too many reports submitted recently. Please try again later."
+                )
+                return redirect(self.machine.get_absolute_url())
 
         return super().post(request, *args, **kwargs)
 
@@ -277,8 +337,16 @@ class ProblemReportCreateView(FormView):
         return recent_reports < settings.RATE_LIMIT_REPORTS_PER_IP
 
     def form_valid(self, form):
+        machine = self.machine
+        if not machine:
+            slug = (form.cleaned_data.get("machine_slug") or "").strip()
+            machine = MachineInstance.objects.filter(slug=slug).first()
+            if not machine:
+                form.add_error("machine_slug", "Select a machine from the list.")
+                return self.form_invalid(form)
+
         report = form.save(commit=False)
-        report.machine = self.machine
+        report.machine = machine
         report.ip_address = self.request.META.get("REMOTE_ADDR")
         report.device_info = self.request.META.get("HTTP_USER_AGENT", "")[
             :200
@@ -287,7 +355,7 @@ class ProblemReportCreateView(FormView):
             report.reported_by_user = self.request.user
         report.save()
         messages.success(self.request, "Thanks! The maintenance team has been notified.")
-        return redirect(self.machine.get_absolute_url())
+        return redirect(report.machine.get_absolute_url())
 
 
 class ProblemReportDetailView(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -413,15 +481,24 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def dispatch(self, request, *args, **kwargs):
         # Two modes: either a machine slug OR a problem report pk
         self.problem_report = None
+        self.is_global = False
         if "pk" in kwargs:
             # Creating log entry for a problem report - inherit machine from it
             self.problem_report = get_object_or_404(
                 ProblemReport.objects.select_related("machine"), pk=kwargs["pk"]
             )
             self.machine = self.problem_report.machine
-        else:
+        elif "slug" in kwargs:
             # Creating log entry for a machine directly
             self.machine = get_object_or_404(MachineInstance, slug=kwargs["slug"])
+        else:
+            # Global log creation - pick machine in form
+            self.machine = None
+            self.is_global = True
+            if not request.user.is_authenticated:
+                return redirect_to_login(request.get_full_path())
+            if not request.user.is_staff:
+                raise PermissionDenied
         return super().dispatch(request, *args, **kwargs)
 
     def get_initial(self):
@@ -436,6 +513,8 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 initial["submitter_name"] = (
                     self.request.user.get_full_name() or self.request.user.get_username()
                 )
+        if self.machine:
+            initial["machine_slug"] = self.machine.slug
         # work_date default is set by JavaScript to use browser's local timezone
         return initial
 
@@ -443,11 +522,19 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context = super().get_context_data(**kwargs)
         context["machine"] = self.machine
         context["problem_report"] = self.problem_report
+        context["is_global"] = self.is_global
         # Check if current user is a shared account (show autocomplete for maintainer selection)
         is_shared_account = False
         if hasattr(self.request.user, "maintainer"):
             is_shared_account = self.request.user.maintainer.is_shared_account
         context["is_shared_account"] = is_shared_account
+        selected_slug = (
+            self.request.POST.get("machine_slug") if self.request.method == "POST" else ""
+        )
+        if selected_slug and not self.machine:
+            context["selected_machine"] = MachineInstance.objects.filter(slug=selected_slug).first()
+        elif self.machine:
+            context["selected_machine"] = self.machine
         return context
 
     def form_valid(self, form):
@@ -455,6 +542,7 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         description = form.cleaned_data["text"].strip()
         media_file = form.cleaned_data["media_file"]
         work_date = form.cleaned_data["work_date"]
+        machine = self.machine
 
         # Convert work_date to browser's timezone if offset provided
         tz_offset_str = self.request.POST.get("tz_offset", "")
@@ -470,13 +558,21 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             except (ValueError, TypeError):
                 pass  # Keep original work_date if conversion fails
 
+        if not machine:
+            slug = (form.cleaned_data.get("machine_slug") or "").strip()
+            machine = MachineInstance.objects.filter(slug=slug).first()
+            if not machine:
+                form.add_error("machine_slug", "Select a machine from the list.")
+                return self.form_invalid(form)
+
         log_entry = LogEntry.objects.create(
-            machine=self.machine,
+            machine=machine,
             problem_report=self.problem_report,
             text=description,
             work_date=work_date,
             created_by=self.request.user,
         )
+        self.machine = machine
 
         maintainer = self.match_maintainer(submitter_name)
         if maintainer:
