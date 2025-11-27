@@ -10,6 +10,41 @@ from the_flip.apps.catalog.models import MachineInstance
 from the_flip.apps.maintenance.models import ProblemReport
 
 
+class MultiFileInput(forms.ClearableFileInput):
+    """Clearable file input that allows selecting multiple files."""
+
+    allow_multiple_selected = True
+
+
+class MultiFileField(forms.FileField):
+    """FileField that returns a list of uploaded files when multiple are provided."""
+
+    widget = MultiFileInput
+
+    def to_python(self, data):
+        if not data:
+            return []
+        if isinstance(data, list | tuple):
+            return list(data)
+        # Single file falls back to base implementation
+        single = super().to_python(data)
+        return [single] if single else []
+
+    def validate(self, data):
+        # Skip base class validation; validate each file individually
+        if not data:
+            return
+        errors = []
+        for f in data:
+            try:
+                super().validate(f)
+                self.run_validators(f)
+            except forms.ValidationError as exc:
+                errors.extend(exc.error_list)
+        if errors:
+            raise forms.ValidationError(errors)
+
+
 class ProblemReportForm(forms.ModelForm):
     machine_slug = forms.CharField(required=False, widget=forms.HiddenInput())
 
@@ -83,11 +118,14 @@ class LogEntryQuickForm(forms.Form):
         widget=forms.Textarea(attrs={"rows": 4, "placeholder": "What work was done?"}),
         max_length=1000,
     )
-    media_file = forms.FileField(
+    media_file = MultiFileField(
         label="Photo",
         required=False,
-        widget=forms.ClearableFileInput(
-            attrs={"accept": "image/*,video/*,.heic,.heif,image/heic,image/heif"}
+        widget=MultiFileInput(
+            attrs={
+                "accept": "image/*,video/*,.heic,.heif,image/heic,image/heif",
+                "multiple": True,
+            }
         ),
     )
 
@@ -102,41 +140,61 @@ class LogEntryQuickForm(forms.Form):
         return work_date
 
     def clean_media_file(self):
-        """Validate uploaded media (photo or video)."""
-        media = self.cleaned_data.get("media_file")
-        if not media:
-            return media
+        """Validate uploaded media (photo or video). Supports multiple files."""
+        files = []
+        if hasattr(self.files, "getlist"):
+            files = list(self.files.getlist("media_file"))
+        # Fallback for single-file contexts (e.g., tests passing a simple dict)
+        if not files:
+            single = self.cleaned_data.get("media_file")
+            if single:
+                if isinstance(single, list | tuple):
+                    files = list(single)
+                else:
+                    files = [single]
+        if not files:
+            return []
 
         max_size_bytes = 200 * 1024 * 1024
-        if media.size and media.size > max_size_bytes:
-            raise forms.ValidationError("File too large. Maximum size is 200MB.")
-
-        content_type = (getattr(media, "content_type", "") or "").lower()
-        ext = Path(getattr(media, "name", "")).suffix.lower()
         allowed_video_exts = {".mp4", ".mov", ".m4v", ".hevc"}
+        cleaned_files = []
 
-        if content_type.startswith("video/") or ext in allowed_video_exts:
-            return media
+        for media in files:
+            if media.size and media.size > max_size_bytes:
+                raise forms.ValidationError("File too large. Maximum size is 200MB.")
 
-        if content_type and not content_type.startswith("image/") and ext not in {".heic", ".heif"}:
-            raise forms.ValidationError("Upload a valid image or video.")
+            content_type = (getattr(media, "content_type", "") or "").lower()
+            ext = Path(getattr(media, "name", "")).suffix.lower()
 
-        try:
-            media.seek(0)
-        except Exception:
-            pass
+            if content_type.startswith("video/") or ext in allowed_video_exts:
+                cleaned_files.append(media)
+                continue
 
-        try:
-            Image.open(media).verify()
-        except (UnidentifiedImageError, OSError):
-            raise forms.ValidationError("Upload a valid image or video.")
-        finally:
+            if (
+                content_type
+                and not content_type.startswith("image/")
+                and ext not in {".heic", ".heif"}
+            ):
+                raise forms.ValidationError("Upload a valid image or video.")
+
             try:
                 media.seek(0)
             except Exception:
                 pass
 
-        return media
+            try:
+                Image.open(media).verify()
+            except (UnidentifiedImageError, OSError):
+                raise forms.ValidationError("Upload a valid image or video.")
+            finally:
+                try:
+                    media.seek(0)
+                except Exception:
+                    pass
+
+            cleaned_files.append(media)
+
+        return cleaned_files
 
     def clean_machine_slug(self):
         slug = (self.cleaned_data.get("machine_slug") or "").strip()

@@ -120,8 +120,9 @@
               <input type="file"
                      id="media-upload"
                      accept="image/*,video/*,.heic,.heif,image/heic,image/heif"
+                     multiple
                      class="hidden">
-              <button type="button" id="upload-button" class="btn btn-secondary">Upload Photo</button>
+              <button type="button" id="upload-button" class="btn btn-secondary">Upload Photos</button>
             </div>
           </div>
         </div>
@@ -270,73 +271,75 @@
       // Upload media
       const uploadButton = document.getElementById('upload-button');
       const mediaInput = document.getElementById('media-upload');
+      const uploadButton = document.getElementById('upload-button');
       const maintainerInput = document.getElementById('maintainer-names');
       const maintainerStatus = document.getElementById('maintainer-save-indicator');
       const maintainerDropdown = document.getElementById('maintainer-dropdown');
       let maintainers = [];
       let activeMaintainerIndex = -1;
 
-      uploadButton.addEventListener('click', () => {
-          mediaInput.click();
-      });
-
       mediaInput.addEventListener('change', async (e) => {
-          if (!e.target.files || !e.target.files[0]) return;
+          if (!e.target.files || !e.target.files.length) return;
 
-          const formData = new FormData();
-          formData.append('action', 'upload_media');
-          formData.append('file', e.target.files[0]);
-          formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
+          const files = Array.from(e.target.files);
 
-          try {
-              const response = await fetch(window.location.href, {
-                  method: 'POST',
-                  body: formData
-              });
+          for (const file of files) {
+              const formData = new FormData();
+              formData.append('action', 'upload_media');
+              formData.append('file', file);
+              formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
 
-              const data = await response.json();
-              if (data.success) {
-                  // Add new media to the grid
-                  const mediaContainer = document.getElementById('media-container');
-                  const mediaItem = document.createElement('div');
-                  mediaItem.className = 'media-item';
-                  mediaItem.dataset.mediaId = data.media_id;
-                  let content = '';
-                  if (data.media_type === 'video') {
-                      if (data.transcode_status === 'ready' && data.media_url) {
-                          const posterAttr = data.poster_url ? ` poster="${data.poster_url}"` : '';
-                          content = `
+              try {
+                  const response = await fetch(window.location.href, {
+                      method: 'POST',
+                      body: formData
+                  });
+
+                  const data = await response.json();
+                  if (data.success) {
+                      // Add new media to the grid
+                      const mediaContainer = document.getElementById('media-container');
+                      const mediaItem = document.createElement('div');
+                      mediaItem.className = 'media-item';
+                      mediaItem.dataset.mediaId = data.media_id;
+                      let content = '';
+                      if (data.media_type === 'video') {
+                          if (data.transcode_status === 'ready' && data.media_url) {
+                              const posterAttr = data.poster_url ? ` poster="${data.poster_url}"` : '';
+                              content = `
                 <video controls${posterAttr} class="media-video">
                   <source src="${data.media_url}" type="video/mp4">
                   Your browser doesn't support video playback.
                 </video>
               `;
-                      } else if (data.transcode_status === 'failed') {
-                          content = `<div class="media-status error">Video processing failed.</div>`;
+                          } else if (data.transcode_status === 'failed') {
+                              content = `<div class="media-status error">Video processing failed.</div>`;
+                          } else {
+                              content = `<div class="media-status">Processing video…</div>`;
+                          }
                       } else {
-                          content = `<div class="media-status">Processing video…</div>`;
-                      }
-                  } else {
-                      content = `
+                          content = `
               <a href="${data.media_url}" target="_blank" class="media-link">
                 <img src="${data.media_url}" alt="Log entry photo">
               </a>
             `;
-                  }
-                  mediaItem.innerHTML = `
+                      }
+                      mediaItem.innerHTML = `
             ${content}
             <button type="button" class="btn-delete-media" data-media-id="${data.media_id}" aria-label="Delete media">×</button>
           `;
-                  mediaContainer.appendChild(mediaItem);
+                      mediaContainer.appendChild(mediaItem);
 
-                  // Attach delete handler to new button
-                  attachDeleteHandler(mediaItem.querySelector('.btn-delete-media'));
-              } else {
-                  alert('Failed to upload media: ' + (data.error || 'Unknown error'));
+                      // Attach delete handler to new button
+                      attachDeleteHandler(mediaItem.querySelector('.btn-delete-media'));
+                      uploadButton.textContent = 'Upload More Photos';
+                  } else {
+                      alert('Failed to upload media: ' + (data.error || 'Unknown error'));
+                  }
+              } catch (error) {
+                  console.error('Upload error:', error);
+                  alert('Failed to upload media');
               }
-          } catch (error) {
-              console.error('Upload error:', error);
-              alert('Failed to upload media');
           }
 
           // Reset input

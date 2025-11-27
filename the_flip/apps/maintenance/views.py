@@ -592,7 +592,7 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def form_valid(self, form):
         submitter_name = form.cleaned_data["submitter_name"].strip()
         description = form.cleaned_data["text"].strip()
-        media_file = form.cleaned_data["media_file"]
+        media_files = form.cleaned_data["media_file"]
         work_date = form.cleaned_data["work_date"]
         machine = self.machine
 
@@ -633,20 +633,26 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             log_entry.maintainer_names = submitter_name
             log_entry.save(update_fields=["maintainer_names"])
 
-        if media_file:
-            content_type = (getattr(media_file, "content_type", "") or "").lower()
-            ext = Path(getattr(media_file, "name", "")).suffix.lower()
-            is_video = content_type.startswith("video/") or ext in {".mp4", ".mov", ".m4v", ".hevc"}
+        if media_files:
+            for media_file in media_files:
+                content_type = (getattr(media_file, "content_type", "") or "").lower()
+                ext = Path(getattr(media_file, "name", "")).suffix.lower()
+                is_video = content_type.startswith("video/") or ext in {
+                    ".mp4",
+                    ".mov",
+                    ".m4v",
+                    ".hevc",
+                }
 
-            media = LogEntryMedia.objects.create(
-                log_entry=log_entry,
-                media_type=LogEntryMedia.TYPE_VIDEO if is_video else LogEntryMedia.TYPE_PHOTO,
-                file=media_file,
-                transcode_status=LogEntryMedia.STATUS_PENDING if is_video else "",
-            )
+                media = LogEntryMedia.objects.create(
+                    log_entry=log_entry,
+                    media_type=LogEntryMedia.TYPE_VIDEO if is_video else LogEntryMedia.TYPE_PHOTO,
+                    file=media_file,
+                    transcode_status=LogEntryMedia.STATUS_PENDING if is_video else "",
+                )
 
-            if is_video:
-                enqueue_transcode(media.id)
+                if is_video:
+                    enqueue_transcode(media.id)
 
         messages.success(
             self.request,
