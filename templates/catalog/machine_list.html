@@ -17,38 +17,48 @@
     </div>
   </div>
   {% if machines %}
-    <ul class="list machine-list" id="machine-list">
+    <ul class="flip-card-list" id="machine-list">
       {% for machine in machines %}
-        <li class="machine-card js-clickable-card"
+        <li class="js-clickable-card"
             data-url="{% url 'maintainer-machine-detail' machine.slug %}"
             data-search-text="{{ machine.display_name }} {{ machine.model.year }} {{ machine.model.manufacturer }} {{ machine.get_operational_status_display }}{% if machine.location %} {{ machine.location.name }}{% endif %}"
             tabindex="0"
             role="button"
             aria-label="View {{ machine.display_name }}">
-          <div class="machine-card__row">
-            <div class="machine-card__row-left">
-              <span class="machine-card__name">{{ machine.display_name }}</span>
-              <span class="machine-card__meta">・{{ machine.model.year }} {{ machine.model.manufacturer }}</span>
-            </div>
-            <span class="badge badge-status badge-{{ machine.operational_status }}">
-              {{ machine.get_operational_status_display }}
-            </span>
-          </div>
-          {% with loc=machine.location %}
-            {% if machine.latest_open_report or loc and loc.slug != "floor" %}
-              <div class="machine-card__row">
-                <div class="machine-card__row-left">
-                  {% if machine.latest_open_report %}
-                    <span class="machine-card__problem">
-                      <span class="machine-card__problem-label">❗Problem report:</span>
-                      {{ machine.latest_open_report.0.description }}
-                    </span>
-                  {% endif %}
-                </div>
-                {% if loc and loc.slug != "floor" %}<div class="machine-card__location">Location: {{ loc.name }}</div>{% endif %}
+          <article class="flip-card flip-card--clickable">
+            <div class="flip-card__top">
+              <div class="flip-card__top-left">
+                <span class="flip-card__title">
+                  {{ machine.display_name }}
+                  <span class="text-muted">・{{ machine.model.year }} {{ machine.model.manufacturer }}</span>
+                </span>
               </div>
-            {% endif %}
-          {% endwith %}
+              <div class="flip-card__top-right">
+                <span class="badge badge-status badge-{{ machine.operational_status }}">
+                  {{ machine.get_operational_status_display }}
+                </span>
+              </div>
+            </div>
+            <div class="flip-card__main">
+              <!-- Main content intentionally empty to keep meta in top/bottom rows -->
+            </div>
+            {% with loc=machine.location %}
+              {% if machine.latest_open_report or loc and loc.slug != "floor" %}
+                <div class="flip-card__bottom">
+                  <div class="flip-card__bottom-left">
+                    {% if machine.latest_open_report %}
+                      <span class="flip-card__summary">
+                        <span aria-hidden="true">❗</span><strong>Problem report:</strong> {{ machine.latest_open_report.0.description }}
+                      </span>
+                    {% endif %}
+                  </div>
+                  <div class="flip-card__bottom-right text-muted">
+                    {% if loc and loc.slug != "floor" %}Location: {{ loc.name }}{% endif %}
+                  </div>
+                </div>
+              {% endif %}
+            {% endwith %}
+          </article>
         </li>
       {% endfor %}
     </ul>
