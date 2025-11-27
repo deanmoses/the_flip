@@ -37,10 +37,17 @@
                 <span class="media-status error">Video failed</span>
               {% endif %}
             {% else %}
-              <img src="{{ media.file.url }}"
-                   alt="Photo"
-                   width="200"
-                   class="media-thumbnail">
+              {% if media.thumbnail_file %}
+                <img src="{{ media.thumbnail_file.url }}"
+                     alt="Photo"
+                     width="200"
+                     class="media-thumbnail">
+              {% else %}
+                <img src="{{ media.file.url }}"
+                     alt="Photo"
+                     width="200"
+                     class="media-thumbnail">
+              {% endif %}
             {% endif %}
           {% endfor %}
         </div>

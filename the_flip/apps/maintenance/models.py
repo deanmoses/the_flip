@@ -192,7 +192,12 @@ class LogEntryMedia(TimeStampedModel):
     def save(self, *args, **kwargs):
         if self.media_type == self.TYPE_PHOTO and self.file:
             try:
-                self.file = resize_image_file(self.file)
+                # Convert to browser-friendly format without shrinking
+                converted = resize_image_file(self.file, max_dimension=None)
+                self.file = converted
+                # Generate a resized thumbnail for grid display if missing
+                if not self.thumbnail_file:
+                    self.thumbnail_file = resize_image_file(converted)
             except Exception:  # pragma: no cover - fallback if Pillow fails unexpectedly
                 import logging
 

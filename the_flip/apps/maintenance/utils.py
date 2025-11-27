@@ -20,7 +20,7 @@ def _with_extension(name: str, ext: str) -> str:
 
 def resize_image_file(
     uploaded_file: UploadedFile,
-    max_dimension: int = MAX_IMAGE_DIMENSION,
+    max_dimension: int | None = MAX_IMAGE_DIMENSION,
 ) -> UploadedFile:
     """
     Resize the image so its longest side is max_dimension.
@@ -62,7 +62,7 @@ def resize_image_file(
     image = transposed
     original_format = (image.format or "").upper()
     is_heif = original_format in {"HEIC", "HEIF"}
-    needs_resize = max(image.size) > max_dimension
+    needs_resize = max_dimension is not None and max(image.size) > max_dimension
 
     if not needs_resize and not is_heif:
         try:
@@ -80,7 +80,7 @@ def resize_image_file(
     if target_format == "JPEG" and image.mode not in {"RGB", "L"}:
         image = image.convert("RGB")
 
-    if needs_resize:
+    if needs_resize and max_dimension:
         image = ImageOps.contain(image, (max_dimension, max_dimension), Image.Resampling.LANCZOS)
 
     logger.warning(
