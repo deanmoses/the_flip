@@ -15,6 +15,7 @@
       <strong>Model</strong>
     </div>
   </nav>
+  <h2>Edit Model: {{ object.name }}</h2>
   <form method="post" class="form-container">
     {% csrf_token %}
     {{ form.non_field_errors }}
