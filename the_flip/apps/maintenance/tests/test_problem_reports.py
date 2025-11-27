@@ -407,13 +407,13 @@ class ProblemReportCreateViewTests(TestDataMixin, TestCase):
 
     def setUp(self):
         super().setUp()
-        self.url = reverse("problem-report-create", kwargs={"slug": self.machine.slug})
+        self.url = reverse("public-problem-report-create", kwargs={"slug": self.machine.slug})
 
     def test_create_view_accessible_without_login(self):
         """Problem report form should be accessible to anonymous users."""
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "maintenance/problem_report_form.html")
+        self.assertTemplateUsed(response, "maintenance/problem_report_form_public.html")
 
     def test_create_view_shows_correct_machine_name(self):
         """Problem report form should show the machine's display name."""

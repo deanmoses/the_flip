@@ -87,8 +87,8 @@ urlpatterns = [
     # Problem report submission
     path(
         "p/<slug:slug>/",
-        maintenance_views.ProblemReportCreateView.as_view(),
-        name="problem-report-create",
+        maintenance_views.PublicProblemReportCreateView.as_view(),
+        name="public-problem-report-create",
     ),
     # Maintainer problem report views
     path(
@@ -104,7 +104,12 @@ urlpatterns = [
     path(
         "problem-reports/new/",
         maintenance_views.ProblemReportCreateView.as_view(),
-        name="problem-report-create-global",
+        name="problem-report-create",
+    ),
+    path(
+        "machines/<slug:slug>/problem-reports/new/",
+        maintenance_views.ProblemReportCreateView.as_view(),
+        name="problem-report-create-machine",
     ),
     path(
         "problem-reports/<int:pk>/",

@@ -315,24 +315,68 @@ class MachineProblemReportListView(LoginRequiredMixin, UserPassesTestMixin, List
         return context
 
 
-class ProblemReportCreateView(FormView):
-    template_name = "maintenance/problem_report_form.html"
+class PublicProblemReportCreateView(FormView):
+    """Public-facing problem report submission (minimal shell)."""
+
+    template_name = "maintenance/problem_report_form_public.html"
     form_class = ProblemReportForm
+
+    def dispatch(self, request, *args, **kwargs):
+        self.machine = get_object_or_404(MachineInstance, slug=kwargs["slug"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["machine"] = self.machine
+        return context
+
+    def post(self, request, *args, **kwargs):
+        # Check rate limiting
+        ip_address = request.META.get("REMOTE_ADDR")
+        if ip_address and not self._check_rate_limit(ip_address):
+            messages.error(request, "Too many reports submitted recently. Please try again later.")
+            return redirect(self.machine.get_absolute_url())
+        return super().post(request, *args, **kwargs)
+
+    def _check_rate_limit(self, ip_address: str) -> bool:
+        time_window = timezone.now() - timedelta(minutes=settings.RATE_LIMIT_WINDOW_MINUTES)
+        recent_reports = ProblemReport.objects.filter(
+            ip_address=ip_address, created_at__gte=time_window
+        ).count()
+        return recent_reports < settings.RATE_LIMIT_REPORTS_PER_IP
+
+    def form_valid(self, form):
+        report = form.save(commit=False)
+        report.machine = self.machine
+        report.ip_address = self.request.META.get("REMOTE_ADDR")
+        report.device_info = self.request.META.get("HTTP_USER_AGENT", "")[:200]
+        if self.request.user.is_authenticated:
+            report.reported_by_user = self.request.user
+        report.save()
+        messages.success(self.request, "Thanks! The maintenance team has been notified.")
+        return redirect(self.machine.get_absolute_url())
+
+
+class ProblemReportCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    """Maintainer-facing problem report creation (global or machine-scoped)."""
+
+    template_name = "maintenance/problem_report_new.html"
+    form_class = ProblemReportForm
+
+    def test_func(self):
+        return self.request.user.is_staff
 
     def dispatch(self, request, *args, **kwargs):
         self.machine = None
         if "slug" in kwargs:
-            # Public/machine-scoped path
             self.machine = get_object_or_404(MachineInstance, slug=kwargs["slug"])
-            self.template_name = "maintenance/problem_report_form.html"
-        else:
-            # Staff-only global creation
-            if not request.user.is_authenticated:
-                return redirect_to_login(request.get_full_path())
-            if not request.user.is_staff:
-                raise PermissionDenied
-            self.template_name = "maintenance/problem_report_new.html"
         return super().dispatch(request, *args, **kwargs)
+
+    def get_initial(self):
+        initial = super().get_initial()
+        if self.machine:
+            initial["machine_slug"] = self.machine.slug
+        return initial
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -346,27 +390,6 @@ class ProblemReportCreateView(FormView):
             context["selected_machine"] = self.machine
         return context
 
-    def post(self, request, *args, **kwargs):
-        """Override post to check rate limiting before processing form."""
-        # Check rate limiting for public submissions only
-        if self.machine and not request.user.is_staff:
-            ip_address = request.META.get("REMOTE_ADDR")
-            if ip_address and not self._check_rate_limit(ip_address):
-                messages.error(
-                    request, "Too many reports submitted recently. Please try again later."
-                )
-                return redirect(self.machine.get_absolute_url())
-
-        return super().post(request, *args, **kwargs)
-
-    def _check_rate_limit(self, ip_address: str) -> bool:
-        """Check if IP address has exceeded rate limit. Returns True if OK to proceed."""
-        time_window = timezone.now() - timedelta(minutes=settings.RATE_LIMIT_WINDOW_MINUTES)
-        recent_reports = ProblemReport.objects.filter(
-            ip_address=ip_address, created_at__gte=time_window
-        ).count()
-        return recent_reports < settings.RATE_LIMIT_REPORTS_PER_IP
-
     def form_valid(self, form):
         machine = self.machine
         if not machine:
@@ -379,14 +402,13 @@ class ProblemReportCreateView(FormView):
         report = form.save(commit=False)
         report.machine = machine
         report.ip_address = self.request.META.get("REMOTE_ADDR")
-        report.device_info = self.request.META.get("HTTP_USER_AGENT", "")[
-            :200
-        ]  # Truncate to field max length
+        report.device_info = self.request.META.get("HTTP_USER_AGENT", "")[:200]
         if self.request.user.is_authenticated:
             report.reported_by_user = self.request.user
         report.save()
-        messages.success(self.request, "Thanks! The maintenance team has been notified.")
-        return redirect(report.machine.get_absolute_url())
+        if machine:
+            return redirect("machine-problem-reports", slug=machine.slug)
+        return redirect("problem-report-list")
 
 
 class ProblemReportDetailView(LoginRequiredMixin, UserPassesTestMixin, View):
