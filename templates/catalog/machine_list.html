@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static core_extras %}
 {% block title %}Machines · {{ block.super }}{% endblock %}
 {% block content %}
   <h2>Machines</h2>
@@ -48,7 +48,7 @@
                   <div class="flip-card__bottom-left">
                     {% if machine.latest_open_report %}
                       <span class="flip-card__summary">
-                        <span aria-hidden="true">❗</span><strong>Problem report:</strong> {{ machine.latest_open_report.0.description }}
+                        <span aria-hidden="true">❗</span><strong>Problem report:</strong> {{ machine.latest_open_report.0|problem_report_summary }}
                       </span>
                     {% endif %}
                   </div>
