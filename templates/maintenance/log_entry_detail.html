@@ -206,6 +206,13 @@
 
       let originalText = textarea.value;
 
+      function setTextareaHeight() {
+          if (!textarea) return;
+          textarea.style.height = 'auto';
+          textarea.style.height = `${textarea.scrollHeight}px`;
+          textarea.style.overflowY = 'hidden';
+      }
+
       editButton.addEventListener('click', () => {
           originalText = textarea.value;
           textViewMode.classList.add('hidden');
@@ -213,7 +220,13 @@
           textarea.focus();
           editButton.classList.add('hidden');
           headerActions.classList.remove('hidden');
+          // Grow the textarea to fit existing content on first show
+          setTextareaHeight();
+          // If styles need a tick to apply, adjust once more
+          requestAnimationFrame(setTextareaHeight);
       });
+
+      textarea.addEventListener('input', setTextareaHeight);
 
       cancelButton.addEventListener('click', () => {
           textarea.value = originalText;
