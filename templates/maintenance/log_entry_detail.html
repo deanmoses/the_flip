@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static core_extras %}
-{% block title %}Log Entry · {{ entry.machine.display_name }} · {{ block.super }}{% endblock %}
+{% block title %}Edit Log Entry · {{ block.super }}{% endblock %}
 {% block content %}
   <section>
     <nav class="page-header">
@@ -21,6 +21,7 @@
         <strong>Edit Log Entry</strong>
       </div>
     </nav>
+    <h3>Edit Log Entry</h3>
     {% if entry.problem_report %}
       <section class="flip-card">
         <div class="flip-card__top log-entry-meta">
