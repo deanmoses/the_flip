@@ -428,6 +428,14 @@ class ProblemReportDetailView(LoginRequiredMixin, UserPassesTestMixin, View):
         report = get_object_or_404(
             ProblemReport.objects.select_related("machine", "reported_by_user"), pk=kwargs["pk"]
         )
+        action = request.POST.get("action")
+
+        # Handle AJAX description update
+        if action == "update_description":
+            report.description = request.POST.get("description", "")
+            report.save(update_fields=["description", "updated_at"])
+            return JsonResponse({"success": True})
+
         # Toggle status
         if report.status == ProblemReport.STATUS_OPEN:
             report.status = ProblemReport.STATUS_CLOSED
