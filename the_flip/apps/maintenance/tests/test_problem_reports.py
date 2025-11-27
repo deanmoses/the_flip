@@ -487,7 +487,7 @@ class ProblemReportCreateViewTests(TestDataMixin, TestCase):
         for i in range(settings.RATE_LIMIT_REPORTS_PER_IP):
             data = {
                 "problem_type": ProblemReport.PROBLEM_OTHER,
-                "description": f"Report {i+1}",
+                "description": f"Report {i + 1}",
             }
             response = self.client.post(self.url, data, REMOTE_ADDR="192.168.1.100")
             self.assertEqual(response.status_code, 302)
@@ -505,7 +505,7 @@ class ProblemReportCreateViewTests(TestDataMixin, TestCase):
         for i in range(settings.RATE_LIMIT_REPORTS_PER_IP):
             data = {
                 "problem_type": ProblemReport.PROBLEM_OTHER,
-                "description": f"Report from IP1 - {i+1}",
+                "description": f"Report from IP1 - {i + 1}",
             }
             self.client.post(self.url, data, REMOTE_ADDR="192.168.1.100")
 
@@ -522,7 +522,7 @@ class ProblemReportCreateViewTests(TestDataMixin, TestCase):
         for i in range(settings.RATE_LIMIT_REPORTS_PER_IP):
             data = {
                 "problem_type": ProblemReport.PROBLEM_OTHER,
-                "description": f"Report {i+1}",
+                "description": f"Report {i + 1}",
             }
             self.client.post(self.url, data, REMOTE_ADDR="192.168.1.100")
 
