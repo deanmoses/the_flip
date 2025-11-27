@@ -369,3 +369,30 @@ class LogEntryProblemReportTests(TestDataMixin, TestCase):
         self.assertEqual(response.status_code, 302)
         log_entry = LogEntry.objects.first()
         self.assertIsNone(log_entry.problem_report)
+
+
+@tag("views")
+class LogListSearchTests(TestDataMixin, TestCase):
+    """Tests for global log list search."""
+
+    def setUp(self):
+        super().setUp()
+        self.list_url = reverse("log-list")
+
+    def test_search_includes_problem_report_description(self):
+        """Search should match attached problem report description."""
+        report = create_problem_report(machine=self.machine, description="Coil stop broken")
+        log_with_report = create_log_entry(
+            machine=self.machine,
+            text="Investigated noisy coil",
+            problem_report=report,
+        )
+        create_log_entry(machine=self.machine, text="Adjusted flipper alignment")
+
+        self.client.login(username="staffuser", password="testpass123")
+        response = self.client.get(self.list_url, {"q": "coil stop"})
+
+        self.assertContains(response, log_with_report.text)
+        self.assertContains(response, "Problem report:")
+        self.assertContains(response, "Coil stop broken")
+        self.assertNotContains(response, "Adjusted flipper alignment")

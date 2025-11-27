@@ -576,6 +576,7 @@ class LogListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 | Q(maintainers__user__username__icontains=search_query)
                 | Q(maintainers__user__first_name__icontains=search_query)
                 | Q(maintainers__user__last_name__icontains=search_query)
+                | Q(problem_report__description__icontains=search_query)
             ).distinct()
 
         paginator = Paginator(logs, 10)
@@ -615,6 +616,7 @@ class LogListPartialView(LoginRequiredMixin, UserPassesTestMixin, View):
                 | Q(maintainers__user__username__icontains=search_query)
                 | Q(maintainers__user__first_name__icontains=search_query)
                 | Q(maintainers__user__last_name__icontains=search_query)
+                | Q(problem_report__description__icontains=search_query)
             ).distinct()
 
         paginator = Paginator(logs, 10)
