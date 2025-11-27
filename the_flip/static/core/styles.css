@@ -1121,32 +1121,6 @@ input[type="radio"] {
   color: var(--color-danger);
 }
 
-/* ==========================================================================
-   Entry Edit (for log entry detail page editing)
-   ========================================================================== */
-.work-date-container {
-  margin-bottom: var(--space-4);
-}
-
-.work-date-container label {
-  display: block;
-  font-weight: var(--weight-semibold);
-  margin-bottom: var(--space-2);
-}
-
-.work-date-edit {
-  padding: var(--space-2);
-  font-size: 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-base);
-}
-
-.work-date-edit:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(31, 122, 234, 0.25);
-  border-color: var(--color-primary);
-}
-
 .entry-text-container {
   margin-bottom: var(--space-5);
 }
