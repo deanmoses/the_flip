@@ -10,11 +10,14 @@
       <span>›</span>
       <strong>Edit</strong>
     </div>
-    <div class="page-header__right">
+  </nav>
+  <div class="section-header">
+    <h2>Edit {{ object.display_name }}</h2>
+    <div class="section-header__actions">
       <a class="btn btn-secondary"
          href="{% url 'machine-model-edit' object.model.slug %}">Edit Model Info</a>
     </div>
-  </nav>
+  </div>
   <form method="post" class="form-container">
     {% csrf_token %}
     {{ form.non_field_errors }}
