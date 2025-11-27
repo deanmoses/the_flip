@@ -59,10 +59,11 @@
       aria-label="View problem report">
     <div class="machine-card__row">
       <div class="machine-card__row-left">
-        <strong class="log-entry-meta">{{ entry.created_at|smart_date }}</strong>
-      </div>
-      <div class="log-entry-meta">
         <span class="badge badge-status badge-{{ entry.status }}">{{ entry.get_status_display }}</span>
+        <span class="text-muted">Problem Report</span>
+      </div>
+      <div class="log-entry-meta machine-card__top-right">
+        <strong>{{ entry.created_at|smart_date }}</strong>
       </div>
     </div>
     <div class="machine-card__problem">
@@ -71,5 +72,15 @@
       {% endif %}
       {{ entry.description|default:"Problem reported (no description)" }}
     </div>
+    {% if entry.prefetched_log_entries %}
+      {% with latest_log=entry.prefetched_log_entries.0 %}
+        <div class="machine-card__row">
+          <div class="machine-card__row-left"></div>
+          <div class="machine-card__location machine-card__problem-report-snippet">
+            <strong>Latest log:</strong> {{ latest_log.text }}
+          </div>
+        </div>
+      {% endwith %}
+    {% endif %}
   </li>
 {% endif %}

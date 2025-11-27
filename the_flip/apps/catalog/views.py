@@ -26,8 +26,17 @@ def get_activity_entries(machine, search_query=None):
 
     Returns all entries (unsliced) for pagination by the caller.
     """
+    latest_log_prefetch = Prefetch(
+        "log_entries",
+        queryset=LogEntry.objects.order_by("-created_at"),
+        to_attr="prefetched_log_entries",
+    )
     logs = LogEntry.objects.filter(machine=machine).prefetch_related("maintainers", "media")
-    reports = ProblemReport.objects.filter(machine=machine).select_related("reported_by_user")
+    reports = (
+        ProblemReport.objects.filter(machine=machine)
+        .select_related("reported_by_user")
+        .prefetch_related(latest_log_prefetch)
+    )
 
     if search_query:
         logs = logs.filter(
@@ -66,6 +75,14 @@ def get_activity_page(machine, page_num, page_size=10, search_query=None):
     combined = sorted(logs_list + reports_list, key=lambda x: x.created_at, reverse=True)
     page_items = combined[offset : offset + page_size]
     has_next = len(combined) > offset + page_size
+
+    # Prefetch latest log for problem report entries (for snippets)
+    for entry in page_items:
+        if getattr(entry, "entry_type", "") == "problem_report":
+            latest = (
+                entry.log_entries.select_related("problem_report").order_by("-created_at").first()
+            )
+            entry.prefetched_log_entries = [latest] if latest else []
 
     return page_items, has_next
 
