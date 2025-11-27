@@ -11,15 +11,18 @@
       <strong>Problem Reports</strong>
     </div>
   </nav>
+  <div class="section-header">
+    <h2>Problem Reports for {{ machine.display_name }}</h2>
+    <div class="section-header__actions">
+      <a class="btn btn-primary"
+         href="{% url 'problem-report-create-machine' machine.slug %}">Submit Problem Report</a>
+    </div>
+  </div>
   <div class="list-header">
     <div class="list-header__left">
       <form method="get" action="">
         <div class="form-field">{{ search_form.q }}</div>
       </form>
-    </div>
-    <div class="list-header__right">
-      <a class="btn btn-primary"
-         href="{% url 'problem-report-create-machine' machine.slug %}">Submit Problem Report</a>
     </div>
   </div>
   {% if reports %}
