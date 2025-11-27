@@ -31,6 +31,33 @@ Run a single test:
 DJANGO_SETTINGS_MODULE=the_flip.settings.test .venv/bin/python manage.py test the_flip.apps.maintenance.tests.TestClassName.test_method_name
 ```
 
+## Claude Code for the Web
+
+When running on Claude Code for the web (no .venv), use these commands instead:
+
+```bash
+# Testing
+DJANGO_SETTINGS_MODULE=the_flip.settings.test python3 manage.py test --keepdb
+
+# Code Quality (run all three before committing)
+ruff format .                    # Format code
+ruff check .                     # Lint code
+djlint templates/ --check        # Lint templates
+/usr/local/bin/mypy the_flip     # Type check (MUST use full path - see note below)
+
+# Database
+DJANGO_SETTINGS_MODULE=the_flip.settings.dev python3 manage.py migrate
+DJANGO_SETTINGS_MODULE=the_flip.settings.dev python3 manage.py makemigrations
+
+# Django commands
+DJANGO_SETTINGS_MODULE=the_flip.settings.dev python3 manage.py shell
+DJANGO_SETTINGS_MODULE=the_flip.settings.dev python3 manage.py check
+```
+
+The SessionStart hook in `.claude/settings.json` automatically installs dependencies (ffmpeg, Python packages) and runs migrations.
+
+**Important: mypy path issue** - An older mypy exists at `/root/.local/bin/mypy` which shadows the pip-installed version. This older version lacks access to django-stubs, causing "No module named 'mypy_django_plugin'" errors. Always use `/usr/local/bin/mypy` or `python3 -m mypy`.
+
 ## Architecture
 
 - **Web App**: Django serving public and admin interfaces
