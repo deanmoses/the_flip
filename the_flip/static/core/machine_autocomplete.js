@@ -39,17 +39,21 @@ function initMachineAutocomplete(container) {
       item.dataset.index = index;
       item.dataset.slug = machine.slug;
 
-      const title = document.createElement("div");
-      title.textContent = machine.display_name;
-      item.appendChild(title);
+      const line = document.createElement("div");
+      const nameSpan = document.createElement("span");
+      nameSpan.textContent = machine.display_name;
+      line.appendChild(nameSpan);
 
-      const metaParts = [machine.manufacturer, machine.location].filter(Boolean);
-      if (metaParts.length) {
-        const meta = document.createElement("div");
-        meta.className = "text-muted";
-        meta.textContent = metaParts.join(" • ");
-        item.appendChild(meta);
+      if (machine.location) {
+        const separator = document.createTextNode(" · ");
+        const locSpan = document.createElement("span");
+        locSpan.className = "text-muted";
+        locSpan.textContent = machine.location;
+        line.appendChild(separator);
+        line.appendChild(locSpan);
       }
+
+      item.appendChild(line);
 
       item.addEventListener("mousedown", (event) => {
         event.preventDefault();

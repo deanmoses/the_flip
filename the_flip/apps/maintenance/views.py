@@ -13,7 +13,18 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.db.models import Prefetch, Q
+from django.db.models import (
+    Case,
+    CharField,
+    Count,
+    F,
+    Max,
+    Prefetch,
+    Q,
+    Value,
+    When,
+)
+from django.db.models.functions import Lower
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
@@ -80,18 +91,40 @@ class MachineAutocompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
 
     def get(self, request, *args, **kwargs):
         query = request.GET.get("q", "").strip()
-        machines = MachineInstance.objects.select_related("model", "location")
+        machines = (
+            MachineInstance.objects.select_related("model", "location")
+            .annotate(
+                open_report_count=Count(
+                    "problem_reports", filter=Q(problem_reports__status=ProblemReport.STATUS_OPEN)
+                ),
+                latest_open_report_date=Max(
+                    "problem_reports__created_at",
+                    filter=Q(problem_reports__status=ProblemReport.STATUS_OPEN),
+                ),
+            )
+            .order_by(
+                Case(
+                    When(operational_status=MachineInstance.STATUS_FIXING, then=Value(1)),
+                    When(operational_status=MachineInstance.STATUS_BROKEN, then=Value(2)),
+                    When(operational_status=MachineInstance.STATUS_UNKNOWN, then=Value(3)),
+                    When(operational_status=MachineInstance.STATUS_GOOD, then=Value(4)),
+                    default=Value(5),
+                    output_field=CharField(),
+                ),
+                F("latest_open_report_date").desc(nulls_last=True),
+                Lower("model__name"),
+            )
+        )
 
         if query:
             machines = machines.filter(
                 Q(name_override__icontains=query)
                 | Q(model__name__icontains=query)
-                | Q(model__manufacturer__icontains=query)
                 | Q(location__name__icontains=query)
                 | Q(slug__icontains=query)
             )
 
-        machines = machines.order_by("model__name")[:20]
+        machines = machines[:50]
 
         results = []
         for machine in machines:
@@ -100,8 +133,6 @@ class MachineAutocompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
                     "id": machine.id,
                     "slug": machine.slug,
                     "display_name": machine.display_name,
-                    "model": machine.model.name,
-                    "manufacturer": machine.model.manufacturer,
                     "location": machine.location.name if machine.location else "",
                 }
             )
