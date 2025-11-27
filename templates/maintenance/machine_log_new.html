@@ -59,13 +59,14 @@
     </section>
   {% endif %}
   <section class="card">
-    <form method="post" enctype="multipart/form-data">
+    <form method="post" enctype="multipart/form-data" class="form-container">
       {% csrf_token %}
+      {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
       <input type="hidden" name="tz_offset" id="tz-offset">
       <div class="form-field">
         <label for="{{ form.work_date.id_for_label }}">Date of work</label>
         {{ form.work_date }}
-        {% for error in form.work_date.errors %}<div class="error">{{ error }}</div>{% endfor %}
+        {% for error in form.work_date.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
       </div>
       <div class="form-field">
         <label for="{{ form.submitter_name.id_for_label }}">Maintainer name</label>
@@ -77,7 +78,7 @@
         {% else %}
           {{ form.submitter_name }}
         {% endif %}
-        {% for error in form.submitter_name.errors %}<div class="error">{{ error }}</div>{% endfor %}
+        {% for error in form.submitter_name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
       </div>
       {% if is_global %}
         <div class="form-field">
@@ -99,18 +100,18 @@
                    data-machine-slug-input>
             <div class="autocomplete__dropdown hidden"></div>
           </div>
-          {% for error in form.machine_slug.errors %}<div class="error">{{ error }}</div>{% endfor %}
+          {% for error in form.machine_slug.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
         </div>
       {% endif %}
       <div class="form-field">
         <label for="{{ form.text.id_for_label }}">Description</label>
         {{ form.text }}
-        {% for error in form.text.errors %}<div class="error">{{ error }}</div>{% endfor %}
+        {% for error in form.text.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
       </div>
       <div class="form-field">
         <label for="{{ form.media_file.id_for_label }}">Photo (optional)</label>
         {{ form.media_file }}
-        {% for error in form.media_file.errors %}<div class="error">{{ error }}</div>{% endfor %}
+        {% for error in form.media_file.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
       </div>
       <div class="form-actions">
         <button type="submit" class="btn btn-primary">Create Log Entry</button>
