@@ -10,11 +10,12 @@
       <span>›</span>
       <a href="{% url 'machine-problem-reports' machine.slug %}">Problem Reports</a>
       <span>›</span>
-      <strong>{{ report.created_at|smart_date }} <span class="badge badge-status badge-{{ report.status }}">{{ report.get_status_display }}</span></strong>
+      <strong>{{ report.created_at|smart_date }}</strong>
     </div>
   </nav>
   <div class="section-header">
     <h2>
+      <span class="badge badge-status badge-{{ report.status }}">{{ report.get_status_display }}</span>
       Problem Report
       {% if report.problem_type != report.PROBLEM_OTHER %}: {{ report.get_problem_type_display }}{% endif %}
     </h2>
