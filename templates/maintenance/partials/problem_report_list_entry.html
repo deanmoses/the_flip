@@ -7,7 +7,7 @@
            aria-label="View problem report for {{ report.machine.display_name }}">
     <div class="flip-card__top">
       <div class="flip-card__top-left">
-        <span class="machine-card__name">{{ report.machine.display_name }}</span>
+        <span class="flip-card__title">{{ report.machine.display_name }}</span>
       </div>
       <div class="flip-card__top-right log-entry-meta">
         {{ report|problem_report_meta }}
@@ -15,13 +15,13 @@
       </div>
     </div>
     <div class="flip-card__main">
-      <p class="machine-card__problem">{{ report|problem_report_summary }}</p>
+      <p class="flip-card__summary">{{ report|problem_report_summary }}</p>
     </div>
     {% if report.prefetched_log_entries %}
       {% with latest_log=report.prefetched_log_entries.0 %}
         <div class="flip-card__bottom">
           <div class="flip-card__bottom-left"></div>
-          <div class="flip-card__bottom-right text-muted machine-card__problem-report-snippet">
+          <div class="flip-card__bottom-right text-muted flip-card__snippet">
             <strong>Latest log:</strong> {{ latest_log.text }}
           </div>
         </div>

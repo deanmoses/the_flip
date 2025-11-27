@@ -9,6 +9,7 @@
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
   --color-surface: #ffffff;
+  --color-card: var(--color-surface);
   --color-surface-muted: #f5f7fb;
   --color-surface-text-muted: rgba(255, 255, 255, 0.7);
   --color-border: #e3e8ef;
@@ -243,7 +244,7 @@ main {
 }
 
 .flip-card {
-  background: var(--color-surface);
+  background: var(--color-card);
   border-radius: var(--radius-card);
   padding: var(--space-3) var(--space-5) var(--space-3);
   box-shadow: var(--shadow-card);
@@ -304,6 +305,33 @@ main {
 .flip-card__bottom-right {
   margin-left: auto;
   text-align: right;
+}
+
+/* Flip card text helpers */
+.flip-card__title {
+  font-weight: 600;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+.flip-card__summary {
+  font-size: 0.95rem;
+  color: var(--color-text);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+.flip-card__snippet {
+  max-width: clamp(38ch, 80vw, 64ch);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ==========================================================================
@@ -1326,6 +1354,7 @@ input[type="radio"] {
     --color-text: #e6e8ec;
     --color-text-muted: #a0a7b6;
     --color-secondary: #1b2738;
+    --color-card: #1d2733;
     --shadow-card: 0 8px 20px rgba(0, 0, 0, 0.6);
   }
 
@@ -1363,14 +1392,16 @@ input[type="radio"] {
    - Desktop: 960px
    ========================================================================== */
 @media (min-width: 769px) {
-  .machine-card__problem {
+  .machine-card__problem,
+  .flip-card__summary {
     -webkit-line-clamp: 2;
     line-clamp: 2;
   }
 }
 
 @media (min-width: 960px) {
-  .machine-card__problem {
+  .machine-card__problem,
+  .flip-card__summary {
     -webkit-line-clamp: 3;
     line-clamp: 3;
   }
