@@ -19,7 +19,14 @@ class LogEntryQuickFormMediaValidationTests(TestCase):
             "submitter_name": "Test User",
             "text": "Test description",
         }
-        files = {"media_file": media_file} if media_file else {}
+        # Accept either a single file or a list of files
+        if media_file:
+            if isinstance(media_file, list | tuple):
+                files = {"media_file": media_file}
+            else:
+                files = {"media_file": [media_file]}
+        else:
+            files = {}
         return data, files
 
     def test_rejects_executable_file(self):
@@ -78,6 +85,24 @@ class LogEntryQuickFormMediaValidationTests(TestCase):
         form = LogEntryQuickForm(data=data, files=files)
 
         self.assertTrue(form.is_valid(), form.errors)
+
+    def test_accepts_multiple_files(self):
+        """Form should accept multiple files at once."""
+        png_data = (
+            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"
+            b"\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89"
+            b"\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01"
+            b"\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
+        )
+        png_file = SimpleUploadedFile("photo.png", png_data, content_type="image/png")
+        video_file = SimpleUploadedFile("clip.mp4", b"fake video content", content_type="video/mp4")
+
+        data, files = self._form_data([png_file, video_file])
+        form = LogEntryQuickForm(data=data, files=files)
+
+        self.assertTrue(form.is_valid(), form.errors)
+        media_list = form.cleaned_data["media_file"]
+        self.assertEqual(len(media_list), 2)
 
     def test_rejects_oversized_file(self):
         """Form should reject files over 200MB."""

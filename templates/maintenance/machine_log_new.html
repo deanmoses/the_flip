@@ -36,6 +36,7 @@
       {% endif %}
     </div>
   </nav>
+  <h2>New Log Entry</h2>
   {% if problem_report %}
     <section>
       <h3>New Log Entry</h3>
@@ -58,25 +59,22 @@
     </section>
   {% endif %}
   <section class="card">
-    <form method="post" enctype="multipart/form-data">
+    <form method="post" enctype="multipart/form-data" class="form-container">
       {% csrf_token %}
+      {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
       <input type="hidden" name="tz_offset" id="tz-offset">
       <div class="form-field">
         <label for="{{ form.work_date.id_for_label }}">Date of work</label>
         {{ form.work_date }}
-        {% for error in form.work_date.errors %}<div class="error">{{ error }}</div>{% endfor %}
+        {% for error in form.work_date.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
       </div>
       <div class="form-field">
-        <label for="{{ form.submitter_name.id_for_label }}">Maintainer name</label>
-        {% if is_shared_account %}
-          <div class="autocomplete" id="submitter-autocomplete">
-            {{ form.submitter_name }}
-            <div class="autocomplete__dropdown hidden" id="submitter-dropdown"></div>
-          </div>
-        {% else %}
+        <label for="{{ form.submitter_name.id_for_label }}">Maintainer name(s)</label>
+        <div class="autocomplete" id="submitter-autocomplete">
           {{ form.submitter_name }}
-        {% endif %}
-        {% for error in form.submitter_name.errors %}<div class="error">{{ error }}</div>{% endfor %}
+          <div class="autocomplete__dropdown hidden" id="submitter-dropdown"></div>
+        </div>
+        {% for error in form.submitter_name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
       </div>
       {% if is_global %}
         <div class="form-field">
@@ -98,18 +96,18 @@
                    data-machine-slug-input>
             <div class="autocomplete__dropdown hidden"></div>
           </div>
-          {% for error in form.machine_slug.errors %}<div class="error">{{ error }}</div>{% endfor %}
+          {% for error in form.machine_slug.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
         </div>
       {% endif %}
       <div class="form-field">
         <label for="{{ form.text.id_for_label }}">Description</label>
         {{ form.text }}
-        {% for error in form.text.errors %}<div class="error">{{ error }}</div>{% endfor %}
+        {% for error in form.text.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
       </div>
       <div class="form-field">
-        <label for="{{ form.media_file.id_for_label }}">Photo (optional)</label>
+        <label for="{{ form.media_file.id_for_label }}">Photos (optional)</label>
         {{ form.media_file }}
-        {% for error in form.media_file.errors %}<div class="error">{{ error }}</div>{% endfor %}
+        {% for error in form.media_file.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
       </div>
       <div class="form-actions">
         <button type="submit" class="btn btn-primary">Create Log Entry</button>
@@ -144,13 +142,27 @@
           workDateInput.value = toDateTimeLocalValue(new Date());
       }
 
-      {% if is_shared_account %}
-      // Maintainer autocomplete (only for shared accounts)
+      // Auto-resize description textarea to fit content
+      (function() {
+          const descriptionInput = document.getElementById('{{ form.text.id_for_label }}');
+          if (!descriptionInput) return;
+          const resize = () => {
+              descriptionInput.style.height = 'auto';
+              descriptionInput.style.height = `${descriptionInput.scrollHeight}px`;
+              descriptionInput.style.overflowY = 'hidden';
+          };
+          resize();
+          descriptionInput.addEventListener('input', resize);
+      })();
+
+      // Maintainer autocomplete
       (function() {
           const input = document.getElementById('{{ form.submitter_name.id_for_label }}');
           const dropdown = document.getElementById('submitter-dropdown');
           let maintainers = [];
           let activeIndex = -1;
+
+          if (!input || !dropdown) return;
 
           // Fetch maintainers on page load
           fetch('{% url "api-maintainer-autocomplete" %}')
@@ -159,7 +171,6 @@
               .catch(() => { maintainers = []; });
 
           function formatMaintainer(m) {
-              // If display_name equals username, just show username once
               if (m.display_name === m.username) {
                   return m.username;
               }
@@ -185,7 +196,6 @@
           function filterMaintainers(query) {
               const q = query.toLowerCase().trim();
               if (!q) return maintainers;
-              // Match start of first name, last name, or username
               return maintainers.filter(m =>
                   m.first_name.toLowerCase().startsWith(q) ||
                   m.last_name.toLowerCase().startsWith(q) ||
@@ -233,13 +243,11 @@
               }
           });
 
-          // Hide dropdown when clicking outside
           document.addEventListener('click', (e) => {
               if (!e.target.closest('#submitter-autocomplete')) {
                   hideDropdown();
               }
           });
       })();
-      {% endif %}
   </script>
 {% endblock %}

@@ -10,6 +10,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile, UploadedFile
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 MAX_IMAGE_DIMENSION = 2400
+THUMB_IMAGE_DIMENSION = 800
 logger = logging.getLogger(__name__)
 
 
@@ -20,7 +21,7 @@ def _with_extension(name: str, ext: str) -> str:
 
 def resize_image_file(
     uploaded_file: UploadedFile,
-    max_dimension: int = MAX_IMAGE_DIMENSION,
+    max_dimension: int | None = MAX_IMAGE_DIMENSION,
 ) -> UploadedFile:
     """
     Resize the image so its longest side is max_dimension.
@@ -31,7 +32,7 @@ def resize_image_file(
     content_type = (getattr(uploaded_file, "content_type", "") or "").lower()
     ext = Path(getattr(uploaded_file, "name", "")).suffix.lower()
     if content_type and not content_type.startswith("image/") and ext not in {".heic", ".heif"}:
-        logger.warning(
+        logger.debug(
             "resize_image_file: skipping non-image content_type=%s name=%s",
             content_type,
             uploaded_file,
@@ -51,7 +52,7 @@ def resize_image_file(
             uploaded_file.seek(0)
         except Exception:
             pass
-        logger.warning(
+        logger.debug(
             "resize_image_file: not an image or unreadable (%s)", getattr(uploaded_file, "name", "")
         )
         return uploaded_file
@@ -62,14 +63,7 @@ def resize_image_file(
     image = transposed
     original_format = (image.format or "").upper()
     is_heif = original_format in {"HEIC", "HEIF"}
-    needs_resize = max(image.size) > max_dimension
-
-    if not needs_resize and not is_heif:
-        try:
-            uploaded_file.seek(0)
-        except Exception:
-            pass
-        return uploaded_file
+    needs_resize = max_dimension is not None and max(image.size) > max_dimension
 
     target_format = "PNG" if original_format == "PNG" and image.mode in {"RGBA", "LA"} else "JPEG"
     content_type_out = "image/png" if target_format == "PNG" else "image/jpeg"
@@ -80,10 +74,10 @@ def resize_image_file(
     if target_format == "JPEG" and image.mode not in {"RGB", "L"}:
         image = image.convert("RGB")
 
-    if needs_resize:
+    if needs_resize and max_dimension:
         image = ImageOps.contain(image, (max_dimension, max_dimension), Image.Resampling.LANCZOS)
 
-    logger.warning(
+    logger.debug(
         "resize_image_file: name=%s format=%s heif=%s resized=%s size=%s target_format=%s",
         getattr(uploaded_file, "name", ""),
         original_format,

@@ -66,7 +66,7 @@
     <div id="log-container"
          data-fetch-url="{% url 'machine-activity-entries' object.slug %}">
       {% if activity_entries %}
-        <ul class="list machine-list" id="log-list">
+        <ul class="flip-card-list" id="log-list">
           {% for entry in activity_entries %}
             {% include "maintenance/partials/activity_entry.html" with entry=entry %}
           {% endfor %}

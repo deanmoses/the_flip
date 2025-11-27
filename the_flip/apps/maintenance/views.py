@@ -592,7 +592,7 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def form_valid(self, form):
         submitter_name = form.cleaned_data["submitter_name"].strip()
         description = form.cleaned_data["text"].strip()
-        media_file = form.cleaned_data["media_file"]
+        media_files = form.cleaned_data["media_file"]
         work_date = form.cleaned_data["work_date"]
         machine = self.machine
 
@@ -633,20 +633,26 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             log_entry.maintainer_names = submitter_name
             log_entry.save(update_fields=["maintainer_names"])
 
-        if media_file:
-            content_type = (getattr(media_file, "content_type", "") or "").lower()
-            ext = Path(getattr(media_file, "name", "")).suffix.lower()
-            is_video = content_type.startswith("video/") or ext in {".mp4", ".mov", ".m4v", ".hevc"}
+        if media_files:
+            for media_file in media_files:
+                content_type = (getattr(media_file, "content_type", "") or "").lower()
+                ext = Path(getattr(media_file, "name", "")).suffix.lower()
+                is_video = content_type.startswith("video/") or ext in {
+                    ".mp4",
+                    ".mov",
+                    ".m4v",
+                    ".hevc",
+                }
 
-            media = LogEntryMedia.objects.create(
-                log_entry=log_entry,
-                media_type=LogEntryMedia.TYPE_VIDEO if is_video else LogEntryMedia.TYPE_PHOTO,
-                file=media_file,
-                transcode_status=LogEntryMedia.STATUS_PENDING if is_video else "",
-            )
+                media = LogEntryMedia.objects.create(
+                    log_entry=log_entry,
+                    media_type=LogEntryMedia.TYPE_VIDEO if is_video else LogEntryMedia.TYPE_PHOTO,
+                    file=media_file,
+                    transcode_status=LogEntryMedia.STATUS_PENDING if is_video else "",
+                )
 
-            if is_video:
-                enqueue_transcode(media.id)
+                if is_video:
+                    enqueue_transcode(media.id)
 
         messages.success(
             self.request,
@@ -889,13 +895,44 @@ class LogEntryDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                     media.transcoded_file.delete(save=False)
                 if media.poster_file:
                     media.poster_file.delete(save=False)
+                if media.thumbnail_file:
+                    media.thumbnail_file.delete(save=False)
                 media.file.delete()
                 media.delete()
                 return JsonResponse({"success": True})
             except LogEntryMedia.DoesNotExist:
                 return JsonResponse({"success": False, "error": "Media not found"}, status=404)
 
+        elif action == "update_maintainers":
+            names_raw = request.POST.get("maintainers", "")
+            names = [name.strip() for name in names_raw.split(",") if name.strip()]
+
+            matched = []
+            unmatched = []
+            for name in names:
+                maintainer = self.match_maintainer(name)
+                if maintainer:
+                    matched.append(maintainer)
+                else:
+                    unmatched.append(name)
+
+            self.object.maintainers.set(matched)
+            self.object.maintainer_names = ", ".join(unmatched)
+            self.object.save(update_fields=["maintainer_names", "updated_at"])
+            return JsonResponse({"success": True})
+
         return JsonResponse({"success": False, "error": "Invalid action"}, status=400)
+
+    def match_maintainer(self, name: str):
+        normalized = name.lower().strip()
+        if not normalized:
+            return None
+        for maintainer in Maintainer.objects.select_related("user"):
+            username = maintainer.user.username.lower()
+            full_name = (maintainer.user.get_full_name() or "").lower()
+            if normalized in {username, full_name}:
+                return maintainer
+        return None
 
 
 class MachineQRView(LoginRequiredMixin, UserPassesTestMixin, DetailView):

@@ -9,11 +9,16 @@
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
   --color-surface: #ffffff;
+  --color-card: var(--color-surface);
   --color-surface-muted: #f5f7fb;
   --color-surface-text-muted: rgba(255, 255, 255, 0.7);
   --color-border: #e3e8ef;
   --color-text: #1f2933;
   --color-text-muted: #52606d;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -84,7 +89,7 @@ header nav {
 
 header a {
   color: #ffffff;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   text-decoration: none;
 }
 
@@ -94,7 +99,7 @@ header a:hover {
 
 header nav span {
   color: rgba(255, 255, 255, 0.7);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
 }
 
 /* ==========================================================================
@@ -115,7 +120,7 @@ header nav span {
   border-radius: 50%;
   background: var(--color-primary);
   color: var(--color-surface);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   font-size: 0.75rem;
   text-transform: uppercase;
   border: none;
@@ -164,7 +169,7 @@ header nav span {
   color: var(--color-text);
   text-decoration: none;
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   text-align: left;
   background: none;
   border: none;
@@ -231,6 +236,8 @@ main {
              .flip-card__top-left, .flip-card__top-right,
              .flip-card__bottom-left, .flip-card__bottom-right
    Modifiers / helpers: .flip-card--clickable, .flip-card-list
+   Usage: use .flip-card (and .flip-card-list) for list-style or interactive cards with
+          top/main/bottom regions; keep .card for simple, static content containers.
    ========================================================================== */
 .flip-card-list {
   list-style: none;
@@ -243,7 +250,7 @@ main {
 }
 
 .flip-card {
-  background: var(--color-surface);
+  background: var(--color-card);
   border-radius: var(--radius-card);
   padding: var(--space-3) var(--space-5) var(--space-3);
   box-shadow: var(--shadow-card);
@@ -306,6 +313,33 @@ main {
   text-align: right;
 }
 
+/* Flip card text helpers */
+.flip-card__title {
+  font-weight: var(--weight-semibold);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+.flip-card__summary {
+  font-size: 0.95rem;
+  color: var(--color-text);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+.flip-card__snippet {
+  max-width: clamp(38ch, 80vw, 64ch);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ==========================================================================
    Buttons
    Base: .btn
@@ -319,7 +353,7 @@ main {
   padding: var(--space-2) var(--space-4);
   font-family: inherit;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   line-height: 1.2;
   border: 2px solid transparent;
   cursor: pointer;
@@ -357,8 +391,45 @@ main {
 
 .form-field label {
   display: block;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   margin-bottom: var(--space-2);
+}
+
+/* Form layout helpers */
+.form-container {
+  max-width: clamp(320px, 90vw, 640px);
+  margin: 0 auto var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.form-section {
+  margin: 0 0 var(--space-5) 0;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  margin-top: var(--space-3);
+}
+
+.form-errors {
+  margin: 0 0 var(--space-3) 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-base);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  color: var(--color-danger);
+}
+
+.help-text {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
 }
 
 fieldset {
@@ -371,7 +442,7 @@ fieldset {
 legend {
   padding: 0 var(--space-3);
   font-size: 1.1rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   color: var(--color-text);
 }
 
@@ -379,6 +450,8 @@ input[type="text"],
 input[type="email"],
 input[type="password"],
 input[type="search"],
+input[type="date"],
+input[type="datetime-local"],
 textarea,
 select {
   width: 100%;
@@ -399,6 +472,46 @@ select:focus {
   outline: none;
   box-shadow: 0 0 0 3px rgba(31, 122, 234, 0.25);
   border-color: var(--color-primary);
+}
+
+input[type="file"] {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+input[type="file"]::file-selector-button {
+  background: var(--color-primary);
+  color: var(--color-surface);
+  border: none;
+  border-radius: var(--radius-base);
+  padding: var(--space-2) var(--space-3);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  margin-right: var(--space-3);
+}
+
+input[type="file"]::file-selector-button:hover {
+  background: #1a66c0;
+}
+
+/* Safari/older WebKit fallback */
+input[type="file"]::-webkit-file-upload-button {
+  background: var(--color-primary);
+  color: var(--color-surface);
+  border: none;
+  border-radius: var(--radius-base);
+  padding: var(--space-2) var(--space-3);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  margin-right: var(--space-3);
+}
+
+input[type="file"]::-webkit-file-upload-button:hover {
+  background: #1a66c0;
+}
+
+textarea {
+  resize: vertical;
 }
 
 /* Radio buttons */
@@ -425,7 +538,7 @@ input[type="radio"] {
 
 .form-field ul li label {
   margin: 0;
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   cursor: pointer;
 }
 
@@ -442,7 +555,7 @@ input[type="radio"] {
   height: 22px;
   border-radius: 999px;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   background: var(--color-border);
   color: var(--color-text);
 }
@@ -500,122 +613,6 @@ input[type="radio"] {
   margin-bottom: var(--space-4);
 }
 
-.machine-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.machine-list > li {
-  margin: 0;
-}
-
-/* ==========================================================================
-   Machine Cards
-   Base: .machine-card
-   BEM Elements: .machine-card__row, .machine-card__name, .machine-card__meta, etc.
-   ========================================================================== */
-.machine-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  cursor: pointer;
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
-}
-
-.machine-card:hover,
-.machine-card:focus-visible {
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
-  transform: translateY(-1px);
-  outline: none;
-}
-
-.machine-card:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.machine-card__row {
-  display: flex;
-  gap: var(--space-3);
-  align-items: flex-start;
-}
-
-.machine-card__row-left {
-  flex: 1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  font-size: 1rem;
-  line-height: 1.4;
-  color: var(--color-text);
-}
-
-.machine-card__name {
-  font-weight: 600;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
-}
-
-.machine-card__meta {
-  font-weight: 500;
-  color: var(--color-text-muted);
-}
-
-.machine-card__location {
-  color: var(--color-text-muted);
-  font-size: 0.95rem;
-  text-align: right;
-}
-
-.machine-card__problem-report-snippet {
-  max-width: clamp(38ch, 80vw, 64ch);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.machine-card__meta-group {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  text-align: right;
-}
-
-.machine-card__problem {
-  font-size: 0.95rem;
-  color: var(--color-text);
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
-}
-
-.machine-card__problem-label {
-  font-weight: 600;
-  margin-right: var(--space-1);
-}
-
-.machine-card__timestamp {
-  color: var(--color-text-muted);
-  font-size: 0.9rem;
-}
-
-/* Badge positioning utility - aligns badge to right */
-.badge-right {
-  margin-left: auto;
-  white-space: nowrap;
-}
-
-.machine-card__meta-group .badge-right {
-  margin-left: 0;
-}
-
 /* ==========================================================================
    Terminal Cards (for shared terminal management)
    Base: .terminal-card
@@ -636,7 +633,7 @@ input[type="radio"] {
 }
 
 .terminal-card__name {
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 .terminal-card__actions {
@@ -768,7 +765,7 @@ input[type="radio"] {
 
 .pagination a {
   color: var(--color-primary);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 /* ==========================================================================
@@ -946,14 +943,6 @@ input[type="radio"] {
   margin-bottom: 0;
 }
 
-.machine-card__problem.markdown-content {
-  display: block;
-  -webkit-box-orient: unset;
-  -webkit-line-clamp: unset;
-  line-clamp: unset;
-  overflow: visible;
-}
-
 /* ==========================================================================
    Messages & Alerts
    Base: .message
@@ -980,7 +969,7 @@ input[type="radio"] {
 .message::before {
   content: '';
   font-size: 1.25rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   display: inline-block;
   margin-right: var(--space-3);
 }
@@ -1050,7 +1039,7 @@ input[type="radio"] {
   margin: 0;
   font-size: 1.25rem;
   color: var(--color-surface-text-muted);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 .footer-minimal {
@@ -1097,7 +1086,7 @@ input[type="radio"] {
 
 .inline-edit-field label {
   display: inline-block;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   margin: 0;
   white-space: nowrap;
 }
@@ -1132,32 +1121,6 @@ input[type="radio"] {
   color: var(--color-danger);
 }
 
-/* ==========================================================================
-   Entry Edit (for log entry detail page editing)
-   ========================================================================== */
-.work-date-container {
-  margin-bottom: var(--space-4);
-}
-
-.work-date-container label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: var(--space-2);
-}
-
-.work-date-edit {
-  padding: var(--space-2);
-  font-size: 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-base);
-}
-
-.work-date-edit:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(31, 122, 234, 0.25);
-  border-color: var(--color-primary);
-}
-
 .entry-text-container {
   margin-bottom: var(--space-5);
 }
@@ -1185,6 +1148,28 @@ input[type="radio"] {
   align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-2);
+}
+
+.entry-panel {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  padding: var(--space-4);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+
+.entry-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.entry-panel__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: var(--weight-semibold);
 }
 
 /* ==========================================================================
@@ -1285,12 +1270,12 @@ input[type="radio"] {
 }
 
 .registering-as {
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   margin-bottom: var(--space-4);
 }
 
 .optional {
-  font-weight: normal;
+  font-weight: var(--weight-regular);
   color: var(--color-text-muted);
 }
 
@@ -1298,7 +1283,7 @@ input[type="radio"] {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-weight: normal;
+  font-weight: var(--weight-regular);
   margin-top: var(--space-2);
 }
 
@@ -1326,6 +1311,7 @@ input[type="radio"] {
     --color-text: #e6e8ec;
     --color-text-muted: #a0a7b6;
     --color-secondary: #1b2738;
+    --color-card: #1d2733;
     --shadow-card: 0 8px 20px rgba(0, 0, 0, 0.6);
   }
 
@@ -1363,14 +1349,14 @@ input[type="radio"] {
    - Desktop: 960px
    ========================================================================== */
 @media (min-width: 769px) {
-  .machine-card__problem {
+  .flip-card__summary {
     -webkit-line-clamp: 2;
     line-clamp: 2;
   }
 }
 
 @media (min-width: 960px) {
-  .machine-card__problem {
+  .flip-card__summary {
     -webkit-line-clamp: 3;
     line-clamp: 3;
   }
