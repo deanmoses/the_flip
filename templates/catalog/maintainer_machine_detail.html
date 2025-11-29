@@ -111,9 +111,6 @@
                class="btn btn--report btn--full">
               <i class="fa-solid fa-bug meta"></i>
               Report Problem
-              {% if open_problem_reports.count > 0 %}
-                <span class="badge badge--warning">{{ open_problem_reports.count }}</span>
-              {% endif %}
             </a>
             <a href="{% url 'log-create-machine' object.slug %}"
                class="btn btn--log btn--full">

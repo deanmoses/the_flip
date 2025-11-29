@@ -158,12 +158,6 @@ class MachineDetailView(PublicMachineDetailView):
         context = super().get_context_data(**kwargs)
         machine = self.object
 
-        context["open_problem_reports"] = (
-            ProblemReport.objects.filter(machine=machine, status=ProblemReport.STATUS_OPEN)
-            .select_related("reported_by_user")
-            .order_by("-created_at")
-        )
-
         # Provide locations for the dropdown (ordered by sort_order)
         context["locations"] = Location.objects.all()
 
