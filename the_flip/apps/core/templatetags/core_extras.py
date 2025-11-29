@@ -26,11 +26,26 @@ ALLOWED_TAGS = {
     "h4",
     "h5",
     "h6",
+    "img",
+    "hr",
+    "table",
+    "thead",
+    "tbody",
+    "tr",
+    "th",
+    "td",
+    "figure",
+    "figcaption",
 }
 
 # Allowed attributes per tag
 ALLOWED_ATTRIBUTES = {
     "a": {"href", "title"},
+    "img": {"src", "alt", "title"},
+    "code": {"class"},
+    "pre": {"class"},
+    "th": {"align"},
+    "td": {"align"},
 }
 
 

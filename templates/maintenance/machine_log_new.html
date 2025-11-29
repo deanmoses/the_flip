@@ -1,253 +1,34 @@
-{% extends "base.html" %}
-{% load static core_extras %}
-{% block title %}
-  {% if problem_report %}
-    Log Entry for Problem Report
+{% extends "maintenance/log_form_base.html" %}
+{% block form_title %}New Log Entry{% endblock %}
+{% block breadcrumb_current %}Log Work{% endblock %}
+{% block breadcrumbs %}
+  {% if is_global %}
+    <a href="{% url 'log-list' %}" class="breadcrumbs__link">Logs</a>
+    <span>/</span>
+    <span class="breadcrumbs__current">New Log Entry</span>
   {% else %}
-    New Log Entry
+    {{ block.super }}
   {% endif %}
-  · {{ block.super }}
 {% endblock %}
-{% block content %}
-  <nav class="page-header">
-    <div class="page-header__left breadcrumb">
-      {% if is_global %}
-        <a href="{% url 'log-list' %}">Logs</a>
-        <span>›</span>
-        <strong>New Log Entry</strong>
-      {% elif problem_report %}
-        <a href="{% url 'maintainer-machine-list' %}">Machines</a>
-        <span>›</span>
-        <a href="{% url 'maintainer-machine-detail' machine.slug %}">{{ machine.display_name }}</a>
-        <span>›</span>
-        <a href="{% url 'machine-problem-reports' machine.slug %}">Problem Reports</a>
-        <span>›</span>
-        <a href="{% url 'problem-report-detail' problem_report.pk %}">{{ problem_report.created_at|smart_date }}</a>
-        <span>›</span>
-        <strong>New Log Entry</strong>
-      {% else %}
-        <a href="{% url 'maintainer-machine-list' %}">Machines</a>
-        <span>›</span>
-        <a href="{% url 'maintainer-machine-detail' machine.slug %}">{{ machine.display_name }}</a>
-        <span>›</span>
-        <a href="{% url 'log-machine' machine.slug %}">Logs</a>
-        <span>›</span>
-        <strong>New Log Entry</strong>
-      {% endif %}
-    </div>
-  </nav>
-  <h2>New Log Entry</h2>
+{% block cancel_url %}
+  {% if is_global %}
+    {% url 'log-list' %}
+  {% elif problem_report %}
+    {% url 'problem-report-detail' problem_report.pk %}
+  {% else %}
+    {% url 'log-machine' machine.slug %}
+  {% endif %}
+{% endblock %}
+{% block form_actions_extra %}
   {% if problem_report %}
-    <section>
-      <h3>New Log Entry</h3>
-      <div class="flip-card">
-        <div class="flip-card__top log-entry-meta">
-          <div>Problem Report</div>
-          {% if problem_report.reporter_display %}
-            <div class="flip-card__top-right">
-              <strong>{{ problem_report.created_at|smart_date }}</strong> by {{ problem_report.reporter_display }}
-            </div>
-          {% endif %}
-        </div>
-        <div class="flip-card__main">
-          {% if problem_report.problem_type != problem_report.PROBLEM_OTHER %}
-            <p>{{ problem_report.get_problem_type_display }}</p>
-          {% endif %}
-          {% if problem_report.description %}<p>{{ problem_report.description }}</p>{% endif %}
-        </div>
-      </div>
-    </section>
+    <!-- Close problem checkbox -->
+    <label class="checkbox-label">
+      <input type="checkbox"
+             id="close_problem"
+             name="close_problem"
+             class="checkbox">
+      <span>Close the problem report</span>
+    </label>
   {% endif %}
-  <section class="card">
-    <form method="post" enctype="multipart/form-data" class="form-container">
-      {% csrf_token %}
-      {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
-      <input type="hidden" name="tz_offset" id="tz-offset">
-      <div class="form-field">
-        <label for="{{ form.work_date.id_for_label }}">Date of work</label>
-        {{ form.work_date }}
-        {% for error in form.work_date.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-      </div>
-      <div class="form-field">
-        <label for="{{ form.submitter_name.id_for_label }}">Maintainer name(s)</label>
-        <div class="autocomplete" id="submitter-autocomplete">
-          {{ form.submitter_name }}
-          <div class="autocomplete__dropdown hidden" id="submitter-dropdown"></div>
-        </div>
-        {% for error in form.submitter_name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-      </div>
-      {% if is_global %}
-        <div class="form-field">
-          <label for="machine-log-search">Machine</label>
-          <div class="autocomplete"
-               data-machine-autocomplete
-               data-autocomplete-url="{% url 'api-machine-autocomplete' %}">
-            <input type="search"
-                   id="machine-log-search"
-                   placeholder="Search machines..."
-                   class="search-input"
-                   autocomplete="off"
-                   data-machine-search
-                   value="{% if selected_machine %}{{ selected_machine.display_name }}{% endif %}">
-            <input type="hidden"
-                   name="{{ form.machine_slug.html_name }}"
-                   id="{{ form.machine_slug.id_for_label }}"
-                   value="{{ form.machine_slug.value|default_if_none:'' }}"
-                   data-machine-slug-input>
-            <div class="autocomplete__dropdown hidden"></div>
-          </div>
-          {% for error in form.machine_slug.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-        </div>
-      {% endif %}
-      <div class="form-field">
-        <label for="{{ form.text.id_for_label }}">Description</label>
-        {{ form.text }}
-        {% for error in form.text.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-      </div>
-      <div class="form-field">
-        <label for="{{ form.media_file.id_for_label }}">Photos (optional)</label>
-        {{ form.media_file }}
-        {% for error in form.media_file.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-      </div>
-      <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Create Log Entry</button>
-        {% if is_global %}
-          <a class="btn btn-secondary" href="{% url 'log-list' %}">Cancel</a>
-        {% else %}
-          <a class="btn btn-secondary" href="{% url 'log-machine' machine.slug %}">Cancel</a>
-        {% endif %}
-      </div>
-    </form>
-  </section>
 {% endblock %}
-{% block extra_scripts %}
-  <script src="{% static 'core/machine_autocomplete.js' %}" defer></script>
-  <script>
-      // Helper: format Date as datetime-local value (YYYY-MM-DDTHH:MM)
-      function toDateTimeLocalValue(date) {
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const day = String(date.getDate()).padStart(2, '0');
-          const hours = String(date.getHours()).padStart(2, '0');
-          const minutes = String(date.getMinutes()).padStart(2, '0');
-          return `${year}-${month}-${day}T${hours}:${minutes}`;
-      }
-
-      // Set timezone offset for form submission
-      document.getElementById('tz-offset').value = new Date().getTimezoneOffset();
-
-      // Set default work_date to current time in browser's local timezone
-      const workDateInput = document.getElementById('{{ form.work_date.id_for_label }}');
-      if (workDateInput) {
-          workDateInput.value = toDateTimeLocalValue(new Date());
-      }
-
-      // Auto-resize description textarea to fit content
-      (function() {
-          const descriptionInput = document.getElementById('{{ form.text.id_for_label }}');
-          if (!descriptionInput) return;
-          const resize = () => {
-              descriptionInput.style.height = 'auto';
-              descriptionInput.style.height = `${descriptionInput.scrollHeight}px`;
-              descriptionInput.style.overflowY = 'hidden';
-          };
-          resize();
-          descriptionInput.addEventListener('input', resize);
-      })();
-
-      // Maintainer autocomplete
-      (function() {
-          const input = document.getElementById('{{ form.submitter_name.id_for_label }}');
-          const dropdown = document.getElementById('submitter-dropdown');
-          let maintainers = [];
-          let activeIndex = -1;
-
-          if (!input || !dropdown) return;
-
-          // Fetch maintainers on page load
-          fetch('{% url "api-maintainer-autocomplete" %}')
-              .then(response => response.json())
-              .then(data => { maintainers = data.maintainers || []; })
-              .catch(() => { maintainers = []; });
-
-          function formatMaintainer(m) {
-              if (m.display_name === m.username) {
-                  return m.username;
-              }
-              return `${m.display_name} (${m.username})`;
-          }
-
-          function showDropdown(filtered) {
-              if (filtered.length === 0) {
-                  dropdown.classList.add('hidden');
-                  return;
-              }
-              dropdown.innerHTML = filtered.map((m, i) =>
-                  `<div class="autocomplete__item${i === activeIndex ? ' autocomplete__item-active' : ''}" data-index="${i}" data-username="${m.username}">${formatMaintainer(m)}</div>`
-              ).join('');
-              dropdown.classList.remove('hidden');
-          }
-
-          function hideDropdown() {
-              dropdown.classList.add('hidden');
-              activeIndex = -1;
-          }
-
-          function filterMaintainers(query) {
-              const q = query.toLowerCase().trim();
-              if (!q) return maintainers;
-              return maintainers.filter(m =>
-                  m.first_name.toLowerCase().startsWith(q) ||
-                  m.last_name.toLowerCase().startsWith(q) ||
-                  m.username.toLowerCase().startsWith(q)
-              );
-          }
-
-          input.addEventListener('focus', () => {
-              const filtered = filterMaintainers(input.value);
-              showDropdown(filtered);
-          });
-
-          input.addEventListener('input', () => {
-              activeIndex = -1;
-              const filtered = filterMaintainers(input.value);
-              showDropdown(filtered);
-          });
-
-          input.addEventListener('keydown', (e) => {
-              const filtered = filterMaintainers(input.value);
-              if (dropdown.classList.contains('hidden') || filtered.length === 0) return;
-
-              if (e.key === 'ArrowDown') {
-                  e.preventDefault();
-                  activeIndex = Math.min(activeIndex + 1, filtered.length - 1);
-                  showDropdown(filtered);
-              } else if (e.key === 'ArrowUp') {
-                  e.preventDefault();
-                  activeIndex = Math.max(activeIndex - 1, 0);
-                  showDropdown(filtered);
-              } else if (e.key === 'Enter' && activeIndex >= 0) {
-                  e.preventDefault();
-                  input.value = filtered[activeIndex].username;
-                  hideDropdown();
-              } else if (e.key === 'Escape') {
-                  hideDropdown();
-              }
-          });
-
-          dropdown.addEventListener('click', (e) => {
-              const item = e.target.closest('.autocomplete__item');
-              if (item) {
-                  input.value = item.dataset.username;
-                  hideDropdown();
-              }
-          });
-
-          document.addEventListener('click', (e) => {
-              if (!e.target.closest('#submitter-autocomplete')) {
-                  hideDropdown();
-              }
-          });
-      })();
-  </script>
-{% endblock %}
+{% block submit_label %}Log It{% endblock %}

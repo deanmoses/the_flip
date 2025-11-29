@@ -1,43 +1,54 @@
-{% extends "base.html" %}
+{% extends "maintenance/global_list_base.html" %}
 {% load static core_extras %}
-{% block title %}Problem Reports · {{ block.super }}{% endblock %}
-{% block content %}
-  <h2>Problem Reports</h2>
-  <div class="list-header">
-    <div class="list-header__left">
-      <form method="get" action="">
-        <div class="form-field">{{ search_form.q }}</div>
-      </form>
+{% block list_title %}Problem Reports{% endblock %}
+{% block mobile_actions %}
+  <a href="{% url 'problem-report-create' %}" class="btn btn--report">
+    <i class="fa-solid fa-plus meta"></i>
+    New Report
+  </a>
+{% endblock %}
+{% block sidebar_stats %}
+  <div class="sidebar__label">Problem Reports</div>
+  <div class="stat-grid">
+    <div class="stat">
+      <span class="stat__value">{{ open_count }}</span>
+      <span class="stat__label">Open</span>
     </div>
-    <div class="list-header__right">
-      <a href="{% url 'problem-report-create' %}" class="btn btn-primary">+ New Problem Report</a>
+    <div class="stat">
+      <span class="stat__value">{{ closed_count }}</span>
+      <span class="stat__label">Closed</span>
     </div>
   </div>
-  <section>
-    <div id="log-container"
-         data-fetch-url="{% url 'problem-report-list-entries' %}">
-      {% if reports %}
-        <ul class="flip-card-list" id="log-list">
-          {% for report in reports %}
-            {% include "maintenance/partials/problem_report_list_entry.html" with report=report %}
-          {% endfor %}
-        </ul>
-        <div id="log-pagination"
-             data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}0{% endif %}"></div>
-      {% else %}
-        <p>
-          {% if search_form.q.value %}
-            No problem reports match your search.
-          {% else %}
-            No problem reports yet.
-          {% endif %}
-        </p>
-      {% endif %}
-    </div>
-    <div id="log-loading" class="hidden">Loading…</div>
-    <div id="log-sentinel"></div>
-  </section>
 {% endblock %}
-{% block extra_scripts %}
-  <script src="{% static 'core/infinite_scroll.js' %}" defer></script>
+{% block sidebar_actions %}
+  <a href="{% url 'problem-report-create' %}"
+     class="btn btn--report btn--full">
+    <i class="fa-solid fa-plus meta"></i>
+    New Problem Report
+  </a>
+{% endblock %}
+{% block infinite_scroll_url %}
+  {% url 'problem-report-list-entries' %}
+{% endblock %}
+{% block list_content %}
+  {% if reports %}
+    <div class="timeline">
+      <div class="timeline__line"></div>
+      <div id="log-list">
+        {% for entry in reports %}
+          {% include "maintenance/partials/global_problem_report_entry.html" with entry=entry %}
+        {% endfor %}
+      </div>
+    </div>
+    <div id="log-pagination"
+         data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}0{% endif %}"></div>
+  {% else %}
+    <p class="text-muted">
+      {% if search_form.q.value %}
+        No problem reports match your search.
+      {% else %}
+        No problem reports yet.
+      {% endif %}
+    </p>
+  {% endif %}
 {% endblock %}

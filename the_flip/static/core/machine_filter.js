@@ -8,7 +8,7 @@
 
   if (!searchInput || !machineList) return;
 
-  const items = machineList.querySelectorAll("li[data-search-text]");
+  const items = machineList.querySelectorAll("[data-search-text]");
 
   searchInput.addEventListener("input", function () {
     const query = this.value.toLowerCase().trim();

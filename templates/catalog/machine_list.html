@@ -2,69 +2,70 @@
 {% load static core_extras %}
 {% block title %}Machines · {{ block.super }}{% endblock %}
 {% block content %}
-  <h2>Machines</h2>
-  <div class="list-header">
-    <div class="list-header__left">
-      <div class="form-field">
-        <input type="search"
-               id="machine-search"
-               placeholder="Search..."
-               class="search-input">
-      </div>
+  <!-- TWO COLUMN LAYOUT: Main Content + Sidebar -->
+  <div class="two-column">
+    <!-- MOBILE ACTION BUTTONS (visible on mobile only) -->
+    <div class="mobile-actions">
+      {% if user.is_superuser %}
+        <a href="{% url 'machine-quick-create' %}" class="btn btn--secondary">
+          <i class="fa-solid fa-plus meta"></i>
+          New Machine
+        </a>
+      {% endif %}
     </div>
-    <div class="list-header__right">
-      <a href="{% url 'machine-quick-create' %}" class="btn btn-primary">+ New Machine</a>
+    <!-- SIDEBAR (desktop only) -->
+    <aside class="two-column__sidebar">
+      <div class="card card--padded sidebar--sticky">
+        <!-- STATS -->
+        <div class="sidebar__section">
+          <div class="sidebar__label">Machines</div>
+          <div class="stat-grid">
+            <div class="stat">
+              <span class="stat__value">{{ needs_attention_count }}</span>
+              <span class="stat__label">Need Attention</span>
+            </div>
+            <div class="stat">
+              <span class="stat__value">{{ total_count }}</span>
+              <span class="stat__label">Total</span>
+            </div>
+          </div>
+        </div>
+        <!-- ACTIONS -->
+        <div class="sidebar__section">
+          {% if user.is_superuser %}
+            <a href="{% url 'machine-quick-create' %}"
+               class="btn btn--secondary btn--full">
+              <i class="fa-solid fa-plus meta"></i>
+              New Machine
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </aside>
+    <!-- MAIN COLUMN -->
+    <div class="two-column__main">
+      <!-- SEARCH BAR -->
+      <div class="filter-bar">
+        <div class="filter-bar__search filter-bar__search--full">
+          <input type="search"
+                 id="machine-search"
+                 placeholder="Search machines..."
+                 class="filter-bar__search-input">
+          <i class="fa-solid fa-magnifying-glass filter-bar__search-icon"></i>
+        </div>
+      </div>
+      <!-- MACHINE LIST -->
+      {% if machines %}
+        <div class="machine-list" id="machine-list">
+          {% for machine in machines %}
+            {% include "catalog/partials/machine_list_card.html" with machine=machine %}
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-muted">No machines yet.</p>
+      {% endif %}
     </div>
   </div>
-  {% if machines %}
-    <ul class="flip-card-list" id="machine-list">
-      {% for machine in machines %}
-        <li class="js-clickable-card"
-            data-url="{% url 'maintainer-machine-detail' machine.slug %}"
-            data-search-text="{{ machine.display_name }} {{ machine.model.year }} {{ machine.model.manufacturer }} {{ machine.get_operational_status_display }}{% if machine.location %} {{ machine.location.name }}{% endif %}{% if machine.latest_open_report %} {{ machine.latest_open_report.0.description }}{% endif %}"
-            tabindex="0"
-            role="button"
-            aria-label="View {{ machine.display_name }}">
-          <article class="flip-card flip-card--clickable">
-            <div class="flip-card__top">
-              <div class="flip-card__top-left">
-                <span class="flip-card__title">
-                  {{ machine.display_name }}
-                  <span class="text-muted">・{{ machine.model.year }} {{ machine.model.manufacturer }}</span>
-                </span>
-              </div>
-              <div class="flip-card__top-right">
-                <span class="badge badge-status badge-{{ machine.operational_status }}">
-                  {{ machine.get_operational_status_display }}
-                </span>
-              </div>
-            </div>
-            <div class="flip-card__main">
-              <!-- Main content intentionally empty to keep meta in top/bottom rows -->
-            </div>
-            {% with loc=machine.location %}
-              {% if machine.latest_open_report or loc and loc.slug != "floor" %}
-                <div class="flip-card__bottom">
-                  <div class="flip-card__bottom-left">
-                    {% if machine.latest_open_report %}
-                      <span class="flip-card__summary">
-                        <span aria-hidden="true">❗</span><strong>Problem report:</strong> {{ machine.latest_open_report.0|problem_report_summary }}
-                      </span>
-                    {% endif %}
-                  </div>
-                  <div class="flip-card__bottom-right text-muted">
-                    {% if loc and loc.slug != "floor" %}Location: {{ loc.name }}{% endif %}
-                  </div>
-                </div>
-              {% endif %}
-            {% endwith %}
-          </article>
-        </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p>No machines yet.</p>
-  {% endif %}
 {% endblock %}
 {% block extra_scripts %}
   <script src="{% static 'core/machine_filter.js' %}" defer></script>

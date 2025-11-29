@@ -2,192 +2,252 @@
 {% load static core_extras %}
 {% block title %}Problem Report #{{ report.pk }} · {{ block.super }}{% endblock %}
 {% block content %}
-  <nav class="page-header">
-    <div class="page-header__left breadcrumb">
-      <a href="{% url 'maintainer-machine-list' %}">Machines</a>
-      <span>›</span>
-      <a href="{% url 'maintainer-machine-detail' machine.slug %}">{{ machine.display_name }}</a>
-      <span>›</span>
-      <a href="{% url 'machine-problem-reports' machine.slug %}">Problem Reports</a>
-      <span>›</span>
-      <strong>{{ report.created_at|smart_date }}</strong>
-    </div>
+  <!-- BREADCRUMBS -->
+  <nav class="breadcrumbs breadcrumbs--responsive">
+    <a href="{% url 'maintainer-machine-list' %}" class="breadcrumbs__link">Machines</a>
+    <span>/</span>
+    <a href="{% url 'maintainer-machine-detail' machine.slug %}"
+       class="breadcrumbs__link">{{ machine.display_name }}</a>
+    <span>/</span>
+    <a href="{% url 'machine-problem-reports' machine.slug %}"
+       class="breadcrumbs__link">Problems</a>
+    <span>/</span>
+    <span class="breadcrumbs__current">#{{ report.pk }}</span>
   </nav>
-  <div class="section-header">
-    <h2>
-      <span class="badge badge-status badge-{{ report.status }}">{{ report.get_status_display }}</span>
-      Problem Report
-      {% if report.problem_type != report.PROBLEM_OTHER %}: {{ report.get_problem_type_display }}{% endif %}
-    </h2>
-    <div class="section-header__actions">
+  <!-- TWO COLUMN LAYOUT -->
+  <div class="two-column">
+    <!-- MOBILE ACTIONS -->
+    <div class="mobile-actions">
       {% if report.status == report.STATUS_OPEN %}
-        <form method="post" class="form-inline">
+        <form method="post">
           {% csrf_token %}
-          <button type="submit" class="btn btn-primary">Close Problem Report</button>
+          <button type="submit" class="btn btn--log btn--full">
+            <i class="fa-solid fa-check meta"></i>
+            Close Problem
+          </button>
         </form>
       {% else %}
-        <form method="post" class="form-inline">
+        <form method="post">
           {% csrf_token %}
-          <button type="submit" class="btn">Re-Open Problem Report</button>
+          <button type="submit" class="btn btn--report btn--full">
+            <i class="fa-solid fa-rotate-left meta"></i>
+            Re-Open Problem
+          </button>
         </form>
       {% endif %}
+    </div>
+    <!-- SIDEBAR -->
+    <aside class="two-column__sidebar">
+      <div class="card card--padded sidebar--sticky">
+        <!-- PROBLEM REPORT -->
+        <div class="sidebar__section">
+          <div class="sidebar__label">Problem Report</div>
+          <div class="sidebar__title">#{{ report.pk }}</div>
+          <div class="flex flex-wrap stack-tight space-above-sm">
+            <span class="pill {% if report.status == report.STATUS_OPEN %}pill--status-broken{% else %}pill--status-good{% endif %}">
+              {% if report.status == report.STATUS_OPEN %}
+                <i class="fa-solid fa-circle-exclamation meta"></i>
+              {% else %}
+                <i class="fa-solid fa-check meta"></i>
+              {% endif %}
+              {{ report.get_status_display }}
+            </span>
+            {% if report.problem_type != report.PROBLEM_OTHER %}
+              <span class="pill pill--neutral">{{ report.get_problem_type_display }}</span>
+            {% endif %}
+          </div>
+          {% if report.reporter_display %}
+            <p class="text-muted text-sm space-above-sm">{{ report.created_at|smart_date }} by {{ report.reporter_display }}</p>
+          {% else %}
+            <p class="text-muted text-sm space-above-sm">{{ report.created_at|smart_date }}</p>
+          {% endif %}
+        </div>
+        <!-- MACHINE -->
+        <div class="sidebar__section">
+          <div class="sidebar__label">Machine</div>
+          <a href="{% url 'maintainer-machine-detail' machine.slug %}"
+             class="sidebar__title sidebar__link">{{ machine.display_name }}</a>
+          <div class="sidebar__subtitle">
+            {% if machine.model.manufacturer %}{{ machine.model.manufacturer }}{% endif %}
+            {% if machine.model.manufacturer and machine.model.year %}·{% endif %}
+            {% if machine.model.year %}{{ machine.model.year }}{% endif %}
+          </div>
+        </div>
+        <!-- ACTIONS -->
+        <div class="sidebar__section">
+          {% if report.status == report.STATUS_OPEN %}
+            <form method="post">
+              {% csrf_token %}
+              <button type="submit" class="btn btn--log btn--full">
+                <i class="fa-solid fa-check meta"></i>
+                Close Problem
+              </button>
+            </form>
+          {% else %}
+            <form method="post">
+              {% csrf_token %}
+              <button type="submit" class="btn btn--report btn--full">
+                <i class="fa-solid fa-rotate-left meta"></i>
+                Re-Open Problem
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    </aside>
+    <!-- MAIN COLUMN -->
+    <div class="two-column__main">
+      <!-- DESCRIPTION CARD -->
+      <div class="card card--padded">
+        <div class="card__header">
+          <div class="card__title">Description</div>
+          <div class="card__actions">
+            <button type="button" id="edit-button" class="btn btn--secondary btn--sm">Edit</button>
+            <div id="edit-actions-header" class="hidden">
+              <button type="button" id="save-button" class="btn btn--primary btn--sm">Save</button>
+              <button type="button" id="cancel-button" class="btn btn--secondary btn--sm">Cancel</button>
+            </div>
+            <span id="save-status" class="status-indicator"></span>
+          </div>
+        </div>
+        <div id="text-view-mode">
+          <div id="description-display" class="markdown-content">
+            {% if report.description %}
+              {{ report.description|render_markdown }}
+            {% else %}
+              <p class="text-muted">No description provided.</p>
+            {% endif %}
+          </div>
+        </div>
+        <div id="text-edit-mode" class="hidden">
+          <textarea id="description-text"
+                    class="form-input form-textarea"
+                    data-report-id="{{ report.pk }}">{{ report.description }}</textarea>
+        </div>
+      </div>
+      <!-- LOG ENTRIES SECTION -->
+      <div class="space-above-lg">
+        <div class="section-header">
+          <h3 class="section-header__title">Log Entries</h3>
+          <a href="{% url 'log-create-problem-report' report.pk %}"
+             class="btn btn--log btn--sm">
+            <i class="fa-solid fa-plus meta"></i>
+            Add Log
+          </a>
+        </div>
+        <div class="space-above-sm">
+          <form method="get" action="">
+            <input type="search"
+                   name="q"
+                   value="{{ search_form.q.value|default:'' }}"
+                   placeholder="Search logs..."
+                   class="form-input form-input--sm">
+          </form>
+        </div>
+        <div id="log-container"
+             class="space-above-sm"
+             data-fetch-url="{% url 'problem-report-log-entries' report.pk %}">
+          {% if log_entries %}
+            <div class="log-entry-list" id="log-list">
+              {% for entry in log_entries %}
+                {% include "maintenance/partials/problem_report_log_entry.html" with entry=entry %}
+              {% endfor %}
+            </div>
+            <div id="log-pagination"
+                 data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}0{% endif %}">
+            </div>
+          {% else %}
+            <p class="text-muted">
+              {% if search_form.q.value %}
+                No log entries match your search.
+              {% else %}
+                No log entries yet.
+              {% endif %}
+            </p>
+          {% endif %}
+        </div>
+        <div id="log-loading" class="hidden">Loading…</div>
+        <div id="log-sentinel"></div>
+      </div>
     </div>
   </div>
-  <section class="flip-card">
-    <div class="flip-card__top">
-      {% if report.reporter_display %}
-        <div class="flip-card__top-right log-entry-meta">
-          <strong>{{ report.created_at|smart_date }}</strong> by {{ report.reporter_display }}
-        </div>
-      {% endif %}
-    </div>
-    <div class="flip-card__main">
-      <div class="entry-content">
-        <div class="entry-text-container">
-          <div class="entry-panel__header">
-            <h3 class="entry-panel__title">Description</h3>
-            <div>
-              <button type="button" id="edit-button" class="btn btn-secondary">Edit</button>
-              <div id="edit-actions-header" class="hidden">
-                <button type="button" id="save-button" class="btn btn-primary">Save</button>
-                <button type="button" id="cancel-button" class="btn btn-secondary">Cancel</button>
-              </div>
-              <div id="save-status" class="status-indicator"></div>
-            </div>
-          </div>
-          <div class="entry-panel">
-            <div id="text-view-mode">
-              <div id="description-display" class="markdown-content">
-                {% if report.description %}
-                  {{ report.description|render_markdown }}
-                {% else %}
-                  <p class="text-muted">No description provided.</p>
-                {% endif %}
-              </div>
-            </div>
-            <div id="text-edit-mode" class="hidden">
-              <textarea id="description-text"
-                        class="entry-text-edit"
-                        data-report-id="{{ report.pk }}">{{ report.description }}</textarea>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-  <section>
-    <h2>Logs</h2>
-    <div class="list-header">
-      <div class="list-header__left">
-        <form method="get" action="">
-          <div class="form-field">{{ search_form.q }}</div>
-        </form>
-      </div>
-      <div class="list-header__right">
-        <a href="{% url 'log-create-problem-report' report.pk %}"
-           class="btn btn-primary">Add Log Entry</a>
-      </div>
-    </div>
-    <div id="log-container"
-         data-fetch-url="{% url 'problem-report-log-entries' report.pk %}">
-      {% if log_entries %}
-        <ul class="flip-card-list" id="log-list">
-          {% for entry in log_entries %}
-            {% include "maintenance/partials/problem_report_log_entry.html" with entry=entry %}
-          {% endfor %}
-        </ul>
-        <div id="log-pagination"
-             data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}0{% endif %}"></div>
-      {% else %}
-        <p>
-          {% if search_form.q.value %}
-            No log entries match your search.
-          {% else %}
-            No log entries yet.
-          {% endif %}
-        </p>
-      {% endif %}
-    </div>
-    <div id="log-loading" class="hidden">Loading…</div>
-    <div id="log-sentinel"></div>
-  </section>
 {% endblock %}
 {% block extra_scripts %}
   <script src="{% static 'core/infinite_scroll.js' %}" defer></script>
   <script>
-      const CSRF_TOKEN = '{{ csrf_token }}';
+    const CSRF_TOKEN = '{{ csrf_token }}';
 
-      // Text edit mode switching
-      const textarea = document.getElementById('description-text');
-      const saveStatus = document.getElementById('save-status');
-      const textViewMode = document.getElementById('text-view-mode');
-      const textEditMode = document.getElementById('text-edit-mode');
-      const editButton = document.getElementById('edit-button');
-      const headerActions = document.getElementById('edit-actions-header');
-      const saveButton = document.getElementById('save-button');
-      const cancelButton = document.getElementById('cancel-button');
+    // Text edit mode switching
+    const textarea = document.getElementById('description-text');
+    const saveStatus = document.getElementById('save-status');
+    const textViewMode = document.getElementById('text-view-mode');
+    const textEditMode = document.getElementById('text-edit-mode');
+    const editButton = document.getElementById('edit-button');
+    const headerActions = document.getElementById('edit-actions-header');
+    const saveButton = document.getElementById('save-button');
+    const cancelButton = document.getElementById('cancel-button');
 
-      let originalText = textarea.value;
+    let originalText = textarea.value;
 
-      function setTextareaHeight() {
-          if (!textarea) return;
-          textarea.style.height = 'auto';
-          textarea.style.height = `${textarea.scrollHeight}px`;
-          textarea.style.overflowY = 'hidden';
+    function setTextareaHeight() {
+      if (!textarea) return;
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+      textarea.style.overflowY = 'hidden';
+    }
+
+    editButton.addEventListener('click', () => {
+      originalText = textarea.value;
+      textViewMode.classList.add('hidden');
+      textEditMode.classList.remove('hidden');
+      textarea.focus();
+      editButton.classList.add('hidden');
+      headerActions.classList.remove('hidden');
+      // Grow the textarea to fit existing content on first show
+      setTextareaHeight();
+      // If styles need a tick to apply, adjust once more
+      requestAnimationFrame(setTextareaHeight);
+    });
+
+    textarea.addEventListener('input', setTextareaHeight);
+
+    cancelButton.addEventListener('click', () => {
+      textarea.value = originalText;
+      saveStatus.textContent = '';
+      saveStatus.className = 'status-indicator';
+      textEditMode.classList.add('hidden');
+      textViewMode.classList.remove('hidden');
+      headerActions.classList.add('hidden');
+      editButton.classList.remove('hidden');
+    });
+
+    saveButton.addEventListener('click', async () => {
+      saveStatus.textContent = 'Saving...';
+      saveStatus.className = 'status-indicator saving';
+
+      try {
+        const formData = new FormData();
+        formData.append('action', 'update_description');
+        formData.append('description', textarea.value);
+        formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
+
+        const response = await fetch(window.location.href, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (response.ok) {
+          // Reload page to get server-rendered markdown
+          window.location.reload();
+        } else {
+          saveStatus.textContent = 'Error saving';
+          saveStatus.className = 'status-indicator error';
+        }
+      } catch (error) {
+        console.error('Save error:', error);
+        saveStatus.textContent = 'Error saving';
+        saveStatus.className = 'status-indicator error';
       }
-
-      editButton.addEventListener('click', () => {
-          originalText = textarea.value;
-          textViewMode.classList.add('hidden');
-          textEditMode.classList.remove('hidden');
-          textarea.focus();
-          editButton.classList.add('hidden');
-          headerActions.classList.remove('hidden');
-          // Grow the textarea to fit existing content on first show
-          setTextareaHeight();
-          // If styles need a tick to apply, adjust once more
-          requestAnimationFrame(setTextareaHeight);
-      });
-
-      textarea.addEventListener('input', setTextareaHeight);
-
-      cancelButton.addEventListener('click', () => {
-          textarea.value = originalText;
-          saveStatus.textContent = '';
-          saveStatus.className = 'status-indicator';
-          textEditMode.classList.add('hidden');
-          textViewMode.classList.remove('hidden');
-          headerActions.classList.add('hidden');
-          editButton.classList.remove('hidden');
-      });
-
-      saveButton.addEventListener('click', async () => {
-          saveStatus.textContent = 'Saving...';
-          saveStatus.className = 'status-indicator saving';
-
-          try {
-              const formData = new FormData();
-              formData.append('action', 'update_description');
-              formData.append('description', textarea.value);
-              formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
-
-              const response = await fetch(window.location.href, {
-                  method: 'POST',
-                  body: formData
-              });
-
-              if (response.ok) {
-                  // Reload page to get server-rendered markdown
-                  window.location.reload();
-              } else {
-                  saveStatus.textContent = 'Error saving';
-                  saveStatus.className = 'status-indicator error';
-              }
-          } catch (error) {
-              console.error('Save error:', error);
-              saveStatus.textContent = 'Error saving';
-              saveStatus.className = 'status-indicator error';
-          }
-      });
+    });
   </script>
 {% endblock %}

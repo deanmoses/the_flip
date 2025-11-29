@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import base64
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from datetime import timezone as dt_timezone
 from io import BytesIO
 from pathlib import Path
@@ -174,11 +174,18 @@ class ProblemReportListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
         paginator = Paginator(reports, 10)
         page_obj = paginator.get_page(self.request.GET.get("page"))
+
+        # Stats for sidebar
+        open_count = ProblemReport.objects.filter(status="open").count()
+        closed_count = ProblemReport.objects.filter(status="closed").count()
+
         context.update(
             {
                 "page_obj": page_obj,
                 "reports": page_obj.object_list,
                 "search_form": SearchForm(initial={"q": search_query}),
+                "open_count": open_count,
+                "closed_count": closed_count,
             }
         )
         return context
@@ -187,7 +194,7 @@ class ProblemReportListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 class ProblemReportListPartialView(LoginRequiredMixin, UserPassesTestMixin, View):
     """AJAX endpoint for infinite scrolling in the global problem report list."""
 
-    template_name = "maintenance/partials/problem_report_list_entry.html"
+    template_name = "maintenance/partials/global_problem_report_entry.html"
 
     def test_func(self):
         return self.request.user.is_staff
@@ -218,7 +225,7 @@ class ProblemReportListPartialView(LoginRequiredMixin, UserPassesTestMixin, View
         paginator = Paginator(reports, 10)
         page_obj = paginator.get_page(request.GET.get("page"))
         items_html = "".join(
-            render_to_string(self.template_name, {"report": report})
+            render_to_string(self.template_name, {"entry": report})
             for report in page_obj.object_list
         )
         return JsonResponse(
@@ -310,6 +317,7 @@ class MachineProblemReportListView(LoginRequiredMixin, UserPassesTestMixin, List
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["machine"] = self.machine
+        context["active_filter"] = "problems"
         search_query = self.request.GET.get("q", "")
         context["search_form"] = SearchForm(initial={"q": search_query})
         return context
@@ -523,6 +531,7 @@ class MachineLogView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context.update(
             {
                 "machine": self.machine,
+                "active_filter": "logs",
                 "page_obj": page_obj,
                 "log_entries": page_obj.object_list,
                 "search_form": SearchForm(initial={"q": search_query}),
@@ -662,13 +671,25 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 if is_video:
                     enqueue_transcode(media.id)
 
-        messages.success(
-            self.request,
-            format_html(
-                'Log entry added. Edit it <a href="{}">here</a>.',
-                reverse("log-detail", kwargs={"pk": log_entry.pk}),
-            ),
-        )
+        # Close problem report if checkbox was checked
+        if self.problem_report and self.request.POST.get("close_problem"):
+            self.problem_report.status = ProblemReport.STATUS_CLOSED
+            self.problem_report.save(update_fields=["status"])
+            messages.success(
+                self.request,
+                format_html(
+                    'Log entry added and problem closed. Edit the log <a href="{}">here</a>.',
+                    reverse("log-detail", kwargs={"pk": log_entry.pk}),
+                ),
+            )
+        else:
+            messages.success(
+                self.request,
+                format_html(
+                    'Log entry added. Edit it <a href="{}">here</a>.',
+                    reverse("log-detail", kwargs={"pk": log_entry.pk}),
+                ),
+            )
 
         # Redirect back to problem report if created from there, otherwise to machine log
         if self.problem_report:
@@ -757,11 +778,20 @@ class LogListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         paginator = Paginator(logs, 10)
         page_obj = paginator.get_page(self.request.GET.get("page"))
+
+        # Stats for sidebar
+        today = datetime.now(UTC).date()
+        week_ago = today - timedelta(days=7)
+        this_week_count = LogEntry.objects.filter(work_date__gte=week_ago).count()
+        total_count = LogEntry.objects.count()
+
         context.update(
             {
                 "page_obj": page_obj,
                 "log_entries": page_obj.object_list,
                 "search_form": SearchForm(initial={"q": search_query}),
+                "this_week_count": this_week_count,
+                "total_count": total_count,
             }
         )
         return context
@@ -770,7 +800,7 @@ class LogListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 class LogListPartialView(LoginRequiredMixin, UserPassesTestMixin, View):
     """AJAX endpoint for infinite scrolling in the global log list."""
 
-    template_name = "maintenance/partials/log_list_entry.html"
+    template_name = "maintenance/partials/global_log_entry.html"
 
     def test_func(self):
         return self.request.user.is_staff
@@ -798,8 +828,7 @@ class LogListPartialView(LoginRequiredMixin, UserPassesTestMixin, View):
         paginator = Paginator(logs, 10)
         page_obj = paginator.get_page(request.GET.get("page"))
         items_html = "".join(
-            render_to_string(self.template_name, {"entry": entry, "machine": entry.machine})
-            for entry in page_obj.object_list
+            render_to_string(self.template_name, {"entry": entry}) for entry in page_obj.object_list
         )
         return JsonResponse(
             {

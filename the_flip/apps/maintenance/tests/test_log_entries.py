@@ -297,7 +297,8 @@ class LogEntryProblemReportTests(TestDataMixin, TestCase):
         self.client.login(username="staffuser", password="testpass123")
         response = self.client.get(self.create_url)
 
-        self.assertContains(response, "Problem Report")
+        # Sidebar shows "Problem" label with linked problem card
+        self.assertContains(response, "linked-problem-card")
         self.assertContains(response, self.machine.display_name)
 
     def test_create_log_entry_inherits_machine_from_problem_report(self):
@@ -370,6 +371,43 @@ class LogEntryProblemReportTests(TestDataMixin, TestCase):
         log_entry = LogEntry.objects.first()
         self.assertIsNone(log_entry.problem_report)
 
+    def test_close_problem_checkbox_closes_problem_report(self):
+        """Checking 'close the problem report' should close it when creating log entry."""
+        self.client.login(username="staffuser", password="testpass123")
+        self.assertEqual(self.problem_report.status, ProblemReport.STATUS_OPEN)
+
+        response = self.client.post(
+            self.create_url,
+            {
+                "work_date": timezone.now().strftime("%Y-%m-%dT%H:%M"),
+                "submitter_name": "Test User",
+                "text": "Fixed the stuck ball",
+                "close_problem": "on",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.problem_report.refresh_from_db()
+        self.assertEqual(self.problem_report.status, ProblemReport.STATUS_CLOSED)
+
+    def test_without_close_problem_checkbox_leaves_problem_open(self):
+        """Not checking 'close the problem report' should leave it open."""
+        self.client.login(username="staffuser", password="testpass123")
+        self.assertEqual(self.problem_report.status, ProblemReport.STATUS_OPEN)
+
+        response = self.client.post(
+            self.create_url,
+            {
+                "work_date": timezone.now().strftime("%Y-%m-%dT%H:%M"),
+                "submitter_name": "Test User",
+                "text": "Investigated the issue",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.problem_report.refresh_from_db()
+        self.assertEqual(self.problem_report.status, ProblemReport.STATUS_OPEN)
+
 
 @tag("views")
 class LogListSearchTests(TestDataMixin, TestCase):
@@ -393,6 +431,6 @@ class LogListSearchTests(TestDataMixin, TestCase):
         response = self.client.get(self.list_url, {"q": "coil stop"})
 
         self.assertContains(response, log_with_report.text)
-        self.assertContains(response, "Problem report:")
+        self.assertContains(response, "Problem:")
         self.assertContains(response, "Coil stop broken")
         self.assertNotContains(response, "Adjusted flipper alignment")
