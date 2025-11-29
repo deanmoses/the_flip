@@ -122,6 +122,28 @@
             border-bottom-color: var(--color-border-soft);
         }
 
+        /* Mobile Nav Icons */
+        .nav-icon {
+            color: var(--color-text-muted);
+        }
+
+        .nav-icon:hover {
+            color: var(--color-accent-amber);
+        }
+
+        .nav-icon-active {
+            color: var(--color-accent-amber);
+        }
+
+        /* Dropdown Menu */
+        .dropdown-menu {
+            background-color: var(--color-surface);
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--color-border-soft);
+        }
+
         /* Form Styles */
         .form-input {
             background-color: var(--color-input-bg);
@@ -308,60 +330,35 @@
     <header class="app-header fixed top-0 w-full border-b border-gray-200 z-30 p-3 shadow-sm flex justify-between items-center h-16">
       <a href="#" class="flex items-center gap-2 shrink-0">
         <img src="../../../the_flip/static/core/images/logo_blue.svg"
-             data-logo-default="../../../the_flip/static/core/images/logo_blue.svg"
-             data-logo-inverse="../../../the_flip/static/core/images/logo_white.svg"
              alt="The Flip"
              class="brand-logo">
       </a>
+      <!-- Desktop nav (md+) -->
       <nav class="hidden md:flex gap-4 text-base font-medium">
         <a href="#" class="px-3 py-1 font-bold nav-active">Machines</a>
         <a href="#" class="px-3 py-1 nav-link">Problem Reports</a>
         <a href="#" class="px-3 py-1 nav-link">Logs</a>
         <a href="#" class="px-3 py-1 nav-link">Admin</a>
       </nav>
-      <div class="flex items-center gap-4 relative">
+      <!-- Mobile nav (icon-only) -->
+      <nav class="flex md:hidden gap-3 text-xl">
+        <a href="#" class="p-2 nav-icon-active"><i class="fa-solid fa-list"></i></a>
+        <a href="#" class="p-2 nav-icon"><i class="fa-solid fa-triangle-exclamation"></i></a>
+        <a href="#" class="p-2 nav-icon"><i class="fa-solid fa-screwdriver-wrench"></i></a>
+      </nav>
+      <div class="flex items-center gap-2 md:gap-4 relative">
         <div id="account-dropdown-toggle"
-             class="hidden md:flex w-9 h-9 bg-amber-600 text-white rounded-full items-center justify-center font-bold text-sm cursor-pointer"
+             class="flex w-9 h-9 bg-amber-600 text-white rounded-full items-center justify-center font-bold text-sm cursor-pointer"
              onclick="toggleAccountMenu()">PW</div>
         <div id="account-menu"
-             class="hidden absolute right-0 top-10 w-48 bg-white card-style p-3 shadow-xl text-base z-50">
+             class="hidden absolute right-0 top-10 w-48 card-style p-3 shadow-xl text-base z-50 dropdown-menu">
           <p class="text-sm text-gray-500 mb-2">PinballWizard99</p>
-          <a href="#" class="block p-2 hover:bg-gray-50 rounded-lg"><i class="fa-solid fa-gear mr-2"></i> Account</a>
-          <a href="#" class="block p-2 hover:bg-gray-50 rounded-lg text-red-600"><i class="fa-solid fa-right-from-bracket mr-2"></i> Logout</a>
+          <a href="#" class="block p-2 dropdown-item rounded-lg"><i class="fa-solid fa-gear mr-2"></i> Account</a>
+          <a href="#" class="block p-2 dropdown-item rounded-lg md:hidden"><i class="fa-solid fa-users mr-2"></i> Admin</a>
+          <a href="#" class="block p-2 dropdown-item rounded-lg text-red-600"><i class="fa-solid fa-right-from-bracket mr-2"></i> Logout</a>
         </div>
-        <button class="md:hidden text-2xl text-gray-700" onclick="toggleMobileMenu()">
-          <i class="fa-solid fa-bars"></i>
-        </button>
       </div>
     </header>
-    <!-- === MOBILE MENU DRAWER === -->
-    <div id="mobile-menu-drawer"
-         class="fixed top-0 right-0 w-64 h-full bg-white shadow-xl pt-16 flex flex-col justify-between hidden md:hidden z-50">
-      <div class="px-4 space-y-1 text-base font-semibold overflow-y-auto pt-2">
-        <a href="#"
-           class="block p-2 hover:bg-amber-50 rounded-lg text-amber-700"><i class="fa-solid fa-list mr-2"></i> Machines</a>
-        <a href="#" class="block p-2 hover:bg-gray-50 rounded-lg text-gray-700"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Problems</a>
-        <a href="#" class="block p-2 hover:bg-gray-50 rounded-lg text-gray-700"><i class="fa-solid fa-screwdriver-wrench mr-2"></i> Global Logs</a>
-        <a href="#" class="block p-2 hover:bg-gray-50 rounded-lg text-gray-700"><i class="fa-solid fa-users mr-2"></i> Admin Panel</a>
-      </div>
-      <div class="px-4 py-3 border-t border-gray-200">
-        <div class="card-style p-3 bg-gray-50 text-sm mb-3">
-          <p class="font-bold">Logged in as:</p>
-          <p class="text-gray-600">PinballWizard99</p>
-        </div>
-        <a href="#" class="block p-2 hover:bg-gray-50 rounded-lg text-gray-700"><i class="fa-solid fa-gear mr-2"></i> Account Settings</a>
-        <a href="#"
-           class="block p-2 hover:bg-gray-50 rounded-lg text-red-600 font-semibold"><i class="fa-solid fa-right-from-bracket mr-2"></i> Logout</a>
-      </div>
-      <button onclick="toggleMobileMenu()"
-              class="text-gray-500 text-sm p-3 border-t hover:bg-gray-50">
-        Close Menu <i class="fa-solid fa-xmark ml-1"></i>
-      </button>
-    </div>
-    <!-- === OVERLAY === -->
-    <div id="overlay"
-         class="fixed inset-0 hidden md:hidden bg-black opacity-30 z-40"
-         onclick="toggleMobileMenu()"></div>
     <!-- === MAIN CONTENT === -->
     <main id="main-content" class="p-4 lg:p-8 max-w-6xl mx-auto relative">
       <!-- BREADCRUMBS -->
@@ -530,24 +527,12 @@
         menu.classList.toggle('hidden');
       }
 
-      // Mobile Menu Drawer
-      function toggleMobileMenu() {
-        const drawer = document.getElementById('mobile-menu-drawer');
-        const overlay = document.getElementById('overlay');
-        drawer.classList.toggle('hidden');
-        overlay.classList.toggle('hidden');
-        document.body.classList.toggle('drawer-open');
-        document.getElementById('account-menu').classList.add('hidden');
-      }
-
       // Close menu on outside click
       document.addEventListener('click', function(event) {
-        const desktopMenu = document.getElementById('account-menu');
+        const menu = document.getElementById('account-menu');
         const toggle = document.getElementById('account-dropdown-toggle');
-        if (desktopMenu && toggle && window.innerWidth >= 768) {
-          if (!desktopMenu.contains(event.target) && !toggle.contains(event.target)) {
-            desktopMenu.classList.add('hidden');
-          }
+        if (menu && toggle && !menu.contains(event.target) && !toggle.contains(event.target)) {
+          menu.classList.add('hidden');
         }
       });
 
@@ -560,20 +545,12 @@
       // Theme switching
       (function() {
         const buttons = document.querySelectorAll('.theme-switcher button');
-        const logo = document.querySelector('.brand-logo');
 
         function setTheme(theme) {
           document.body.setAttribute('data-theme', theme);
           buttons.forEach(btn => {
             btn.classList.toggle('is-active', btn.dataset.theme === theme);
           });
-          if (logo) {
-            if (theme === 'dark3') {
-              logo.src = logo.dataset.logoInverse || logo.src;
-            } else {
-              logo.src = logo.dataset.logoDefault || logo.src;
-            }
-          }
         }
 
         buttons.forEach(btn => {
