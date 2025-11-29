@@ -49,6 +49,17 @@
               Admin <i class="fa-solid fa-caret-down meta"></i>
             </button>
             <div class="dropdown__menu dropdown__menu--left hidden">
+              <a href="{% url 'terminal-list' %}" class="dropdown__item">
+                <i class="fa-solid fa-display space-right-sm"></i> Shared Terminals
+              </a>
+              <a href="{% url 'admin:catalog_location_changelist' %}"
+                 class="dropdown__item">
+                <i class="fa-solid fa-location-dot space-right-sm"></i> Locations
+              </a>
+              <a href="{% url 'admin:accounts_invitation_add' %}"
+                 class="dropdown__item">
+                <i class="fa-solid fa-user-plus space-right-sm"></i> Users
+              </a>
               <a href="{% url 'admin:index' %}" class="dropdown__item">
                 <i class="fa-solid fa-toolbox space-right-sm"></i> Django Admin
               </a>
@@ -80,6 +91,17 @@
               <i class="fa-solid fa-users"></i>
             </button>
             <div class="dropdown__menu hidden">
+              <a href="{% url 'terminal-list' %}" class="dropdown__item">
+                <i class="fa-solid fa-display space-right-sm"></i> Terminals
+              </a>
+              <a href="{% url 'admin:catalog_location_changelist' %}"
+                 class="dropdown__item">
+                <i class="fa-solid fa-location-dot space-right-sm"></i> Locations
+              </a>
+              <a href="{% url 'admin:accounts_invitation_add' %}"
+                 class="dropdown__item">
+                <i class="fa-solid fa-user-plus space-right-sm"></i> Users
+              </a>
               <a href="{% url 'admin:index' %}" class="dropdown__item">
                 <i class="fa-solid fa-toolbox space-right-sm"></i> Django Admin
               </a>
