@@ -56,6 +56,9 @@
             --color-input-border: #404040;
             --color-input-focus: #0078d4;
             --color-input-bg: #2b2b2b;
+            --color-secondary-bg: #3a3a3a;
+            --color-secondary-text: #e5e7eb;
+            --color-secondary-border: #4a4a4a;
         }
 
         body {
@@ -259,6 +262,19 @@
             color: #9ca3af !important;
         }
 
+        /* Dark mode: fix secondary buttons and pills */
+        body[data-theme="dark3"] .bg-gray-100 {
+            background-color: var(--color-secondary-bg) !important;
+        }
+
+        body[data-theme="dark3"] .text-gray-700 {
+            color: var(--color-secondary-text) !important;
+        }
+
+        body[data-theme="dark3"] .border-gray-300 {
+            border-color: var(--color-secondary-border) !important;
+        }
+
         /* Main content needs padding for the fixed header */
         #main-content {
             padding-top: 5rem;
@@ -382,7 +398,6 @@
           <div class="file-upload-area">
             <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
             <p class="text-gray-600 font-medium">Drop photos here or click to upload</p>
-            <p class="text-gray-400 text-sm mt-1">Up to 50MB each</p>
             <input type="file" class="hidden" multiple accept="image/*,video/*">
           </div>
           <!-- Uploaded files preview (example) -->
@@ -404,7 +419,8 @@
           <input type="datetime-local"
                  id="work_date"
                  name="work_date"
-                 class="form-input max-w-xs">
+                 class="form-input"
+                 style="width: 14rem">
         </div>
         <!-- ADDITIONAL MAINTAINERS -->
         <div>
@@ -512,6 +528,21 @@
         });
 
         setTheme('default');
+      })();
+
+      // Set current datetime in the work_date field
+      (function() {
+        const dateInput = document.getElementById('work_date');
+        if (dateInput) {
+          const now = new Date();
+          // Format as YYYY-MM-DDTHH:MM for datetime-local input
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const day = String(now.getDate()).padStart(2, '0');
+          const hours = String(now.getHours()).padStart(2, '0');
+          const minutes = String(now.getMinutes()).padStart(2, '0');
+          dateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
       })();
     </script>
   </body>
