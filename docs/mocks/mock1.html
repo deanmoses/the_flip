@@ -88,6 +88,54 @@
             --color-problem-light-border: #fed7aa;
         }
 
+        body[data-theme="midnight"] {
+            --color-background: #0f172a;
+            --color-surface: #1b263f;
+            --color-text-dark: #e5e7eb;
+            --color-accent-amber: #22d3ee;
+            /* Cyan accent */
+            --color-border-soft: #334155;
+            --color-log-base: #38bdf8;
+            /* Lighter cyan for logs */
+            --color-log-hover: #0ea5e9;
+            --color-log-light-bg: #0b1120;
+            --color-log-light-border: #1d4ed8;
+            --color-problem-base: #ef4444;
+            /* Bright red for problems */
+            --color-problem-hover: #dc2626;
+            --color-problem-light-bg: #1f0a0a;
+            --color-problem-light-border: #b91c1c;
+            --color-warning-base: #ef4444;
+            --color-warning-text: #ffffff;
+        }
+
+        /* Dark theme text overrides for readability */
+        body[data-theme="midnight"] {
+            color: var(--color-text-dark);
+        }
+
+        body[data-theme="midnight"] h1,
+        body[data-theme="midnight"] h2,
+        body[data-theme="midnight"] h3,
+        body[data-theme="midnight"] .text-gray-800,
+        body[data-theme="midnight"] .text-gray-700,
+        body[data-theme="midnight"] .text-gray-600 {
+            color: #e5e7eb !important;
+        }
+
+        body[data-theme="midnight"] .text-gray-500,
+        body[data-theme="midnight"] .text-gray-400 {
+            color: #cbd5e1 !important;
+        }
+
+        /* Dark theme: ensure text on light buttons/pills stays dark for contrast */
+        body[data-theme="midnight"] .button-style.bg-gray-100,
+        body[data-theme="midnight"] .button-style.bg-white,
+        body[data-theme="midnight"] .pill-style.bg-gray-100,
+        body[data-theme="midnight"] .status-pill-fixing {
+            color: #111827 !important;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--color-background);
@@ -240,7 +288,7 @@
         }
 
         .nav-link {
-            color: #4b5563;
+            color: var(--color-text-dark);
             border-bottom: 2px solid transparent;
         }
 
@@ -253,6 +301,11 @@
             height: 64px;
             width: auto;
             display: block;
+        }
+
+        .app-header {
+            background: var(--color-surface);
+            color: var(--color-text-dark);
         }
 
         .badge-warning {
@@ -371,9 +424,11 @@
   </head>
   <body>
     <!-- === PERSISTENT SITE HEADER (MASTHEAD) === -->
-    <header class="fixed top-0 w-full bg-white border-b border-gray-200 z-30 p-3 shadow-sm flex justify-between items-center h-16">
+    <header class="app-header fixed top-0 w-full border-b border-gray-200 z-30 p-3 shadow-sm flex justify-between items-center h-16">
       <!-- Logo/Brand Anchor --><a href="#" class="flex items-center gap-2 shrink-0">
       <img src="../../the_flip/static/core/images/logo_blue.svg"
+           data-logo-default="../../the_flip/static/core/images/logo_blue.svg"
+           data-logo-inverse="../../the_flip/static/core/images/logo_white.svg"
            alt="The Flip"
            class="brand-logo">
     </a>
@@ -605,6 +660,7 @@
     <button data-theme="default" class="is-active">Theme 1</button>
     <button data-theme="slate">Theme 2</button>
     <button data-theme="forest">Theme 3</button>
+    <button data-theme="midnight">Dark 1</button>
   </div>
   <!-- Javascript for Dropdowns and Mobile Drawer (Copied logic from previous versions) --><script>
         // Desktop Account Dropdown
@@ -671,6 +727,7 @@
         // Theme switching
         (function() {
             const buttons = document.querySelectorAll('.theme-switcher button');
+            const logo = document.querySelector('.brand-logo');
             const defaultTheme = 'default';
 
             function setTheme(theme) {
@@ -678,6 +735,13 @@
                 buttons.forEach(btn => {
                     btn.classList.toggle('is-active', btn.dataset.theme === theme);
                 });
+                if (logo) {
+                    if (theme === 'midnight') {
+                        logo.src = logo.dataset.logoInverse || logo.src;
+                    } else {
+                        logo.src = logo.dataset.logoDefault || logo.src;
+                    }
+                }
             }
 
             buttons.forEach(btn => {
