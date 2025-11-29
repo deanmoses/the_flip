@@ -128,6 +128,42 @@
             border-bottom-color: var(--color-border-soft);
         }
 
+        /* Dropdown Menu */
+        .dropdown-menu {
+            background-color: var(--color-surface);
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--color-border-soft);
+        }
+
+        /* Mobile Drawer */
+        .mobile-drawer {
+            background-color: var(--color-surface);
+        }
+
+        .mobile-drawer-footer {
+            border-top: 1px solid var(--color-border-soft);
+        }
+
+        .mobile-user-card {
+            background-color: var(--color-border-soft);
+        }
+
+        .mobile-nav-active {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--color-accent-amber);
+        }
+
+        .mobile-close-btn {
+            border-top: 1px solid var(--color-border-soft);
+            color: var(--color-text-muted);
+        }
+
+        .text-muted {
+            color: var(--color-text-muted);
+        }
+
         /* Pill Styles */
         .pill-style {
             border-radius: 9999px;
@@ -338,10 +374,10 @@
              class="hidden md:flex w-9 h-9 bg-amber-600 text-white rounded-full items-center justify-center font-bold text-sm cursor-pointer"
              onclick="toggleAccountMenu()">PW</div>
         <div id="account-menu"
-             class="hidden absolute right-0 top-10 w-48 bg-white card-style p-3 shadow-xl text-base z-50">
+             class="hidden absolute right-0 top-10 w-48 card-style p-3 shadow-xl text-base z-50 dropdown-menu">
           <p class="text-sm text-gray-500 mb-2">PinballWizard99</p>
-          <a href="#" class="block p-2 hover:bg-gray-50 rounded-lg"><i class="fa-solid fa-gear mr-2"></i> Account</a>
-          <a href="#" class="block p-2 hover:bg-gray-50 rounded-lg text-red-600"><i class="fa-solid fa-right-from-bracket mr-2"></i> Logout</a>
+          <a href="#" class="block p-2 dropdown-item rounded-lg"><i class="fa-solid fa-gear mr-2"></i> Account</a>
+          <a href="#" class="block p-2 dropdown-item rounded-lg text-red-600"><i class="fa-solid fa-right-from-bracket mr-2"></i> Logout</a>
         </div>
         <button class="md:hidden text-2xl text-gray-700" onclick="toggleMobileMenu()">
           <i class="fa-solid fa-bars"></i>
@@ -350,25 +386,24 @@
     </header>
     <!-- === MOBILE MENU DRAWER === -->
     <div id="mobile-menu-drawer"
-         class="fixed top-0 right-0 w-64 h-full bg-white shadow-xl pt-16 flex flex-col justify-between hidden md:hidden z-50">
+         class="fixed top-0 right-0 w-64 h-full shadow-xl pt-16 flex flex-col justify-between hidden md:hidden z-50 mobile-drawer">
       <div class="px-4 space-y-1 text-base font-semibold overflow-y-auto pt-2">
-        <a href="#"
-           class="block p-2 hover:bg-amber-50 rounded-lg text-amber-700"><i class="fa-solid fa-list mr-2"></i> Machines</a>
-        <a href="#" class="block p-2 hover:bg-gray-50 rounded-lg text-gray-700"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Problems</a>
-        <a href="#" class="block p-2 hover:bg-gray-50 rounded-lg text-gray-700"><i class="fa-solid fa-screwdriver-wrench mr-2"></i> Global Logs</a>
-        <a href="#" class="block p-2 hover:bg-gray-50 rounded-lg text-gray-700"><i class="fa-solid fa-users mr-2"></i> Admin Panel</a>
+        <a href="#" class="block p-2 rounded-lg mobile-nav-active"><i class="fa-solid fa-list mr-2"></i> Machines</a>
+        <a href="#" class="block p-2 dropdown-item rounded-lg"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Problems</a>
+        <a href="#" class="block p-2 dropdown-item rounded-lg"><i class="fa-solid fa-screwdriver-wrench mr-2"></i> Global Logs</a>
+        <a href="#" class="block p-2 dropdown-item rounded-lg"><i class="fa-solid fa-users mr-2"></i> Admin Panel</a>
       </div>
-      <div class="px-4 py-3 border-t border-gray-200">
-        <div class="card-style p-3 bg-gray-50 text-sm mb-3">
+      <div class="px-4 py-3 mobile-drawer-footer">
+        <div class="card-style p-3 text-sm mb-3 mobile-user-card">
           <p class="font-bold">Logged in as:</p>
-          <p class="text-gray-600">PinballWizard99</p>
+          <p class="text-muted">PinballWizard99</p>
         </div>
-        <a href="#" class="block p-2 hover:bg-gray-50 rounded-lg text-gray-700"><i class="fa-solid fa-gear mr-2"></i> Account Settings</a>
+        <a href="#" class="block p-2 dropdown-item rounded-lg"><i class="fa-solid fa-gear mr-2"></i> Account Settings</a>
         <a href="#"
-           class="block p-2 hover:bg-gray-50 rounded-lg text-red-600 font-semibold"><i class="fa-solid fa-right-from-bracket mr-2"></i> Logout</a>
+           class="block p-2 dropdown-item rounded-lg text-red-600 font-semibold"><i class="fa-solid fa-right-from-bracket mr-2"></i> Logout</a>
       </div>
       <button onclick="toggleMobileMenu()"
-              class="text-gray-500 text-sm p-3 border-t hover:bg-gray-50">
+              class="text-sm p-3 dropdown-item mobile-close-btn">
         Close Menu <i class="fa-solid fa-xmark ml-1"></i>
       </button>
     </div>
