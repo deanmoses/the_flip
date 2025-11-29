@@ -671,13 +671,25 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 if is_video:
                     enqueue_transcode(media.id)
 
-        messages.success(
-            self.request,
-            format_html(
-                'Log entry added. Edit it <a href="{}">here</a>.',
-                reverse("log-detail", kwargs={"pk": log_entry.pk}),
-            ),
-        )
+        # Close problem report if checkbox was checked
+        if self.problem_report and self.request.POST.get("close_problem"):
+            self.problem_report.status = ProblemReport.STATUS_CLOSED
+            self.problem_report.save(update_fields=["status"])
+            messages.success(
+                self.request,
+                format_html(
+                    'Log entry added and problem closed. Edit the log <a href="{}">here</a>.',
+                    reverse("log-detail", kwargs={"pk": log_entry.pk}),
+                ),
+            )
+        else:
+            messages.success(
+                self.request,
+                format_html(
+                    'Log entry added. Edit it <a href="{}">here</a>.',
+                    reverse("log-detail", kwargs={"pk": log_entry.pk}),
+                ),
+            )
 
         # Redirect back to problem report if created from there, otherwise to machine log
         if self.problem_report:

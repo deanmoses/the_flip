@@ -181,10 +181,12 @@ table {
   --color-log-hover: #1E40AF;
   --color-log-light-bg: #F0F9FF;
   --color-log-light-border: #93C5FD;
+  --color-log-dark: #1E3A8A;
   --color-problem: #DC2626;
   --color-problem-hover: #B91C1C;
   --color-problem-light-bg: #FEF2F2;
   --color-problem-light-border: #FCA5A5;
+  --color-problem-dark: #991B1B;
   --color-success: #16a34a;
   --color-success-bg: #D1FAE5;
   --color-success-text: #065F46;
@@ -226,11 +228,13 @@ table {
     --color-log-hover: #026ec1;
     --color-log-light-bg: #1a2332;
     --color-log-light-border: #2a3a4d;
+    --color-log-dark: #58a6ff;
 
     --color-problem: #f85149;
     --color-problem-hover: #e64545;
     --color-problem-light-bg: #2d1f1f;
     --color-problem-light-border: #4a2d2d;
+    --color-problem-dark: #ffa198;
 
     --color-input-bg: #2b2b2b;
     --color-input-border: #404040;
@@ -334,6 +338,64 @@ body {
 
 .card--padded {
   padding: var(--space-4);
+}
+
+.card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.card__title {
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
+}
+
+.card__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* --- Messages (Django flash messages) --- */
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.message {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.message a {
+  text-decoration: underline;
+  font-weight: var(--font-medium);
+}
+
+.message--success {
+  background-color: var(--color-log-light-bg);
+  border: 1px solid var(--color-log-light-border);
+  color: var(--color-log-dark);
+}
+
+.message--success a {
+  color: var(--color-log-dark);
+}
+
+.message--error {
+  background-color: var(--color-problem-light-bg);
+  border: 1px solid var(--color-problem-light-border);
+  color: var(--color-problem-dark);
+}
+
+.message--error a {
+  color: var(--color-problem-dark);
 }
 
 /* --- Buttons --- */
@@ -1090,6 +1152,37 @@ body {
   color: var(--color-gray-500);
 }
 
+.sidebar__link {
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.sidebar__link:hover {
+  color: var(--color-log);
+}
+
+/* --- Section Header --- */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.section-header__title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+/* --- Log Entry List (for problem report detail) --- */
+.log-entry-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
 /* --- Breadcrumbs --- */
 .breadcrumbs {
   display: flex;
@@ -1175,6 +1268,45 @@ body {
 
 .filter-bar__search--full {
   width: 100%;
+}
+
+/* --- Markdown Content --- */
+.markdown-content {
+  color: var(--color-text-primary);
+}
+
+.markdown-content p {
+  margin-bottom: var(--space-2);
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  padding-left: var(--space-5);
+  margin-bottom: var(--space-2);
+}
+
+.markdown-content ul {
+  list-style: disc;
+}
+
+.markdown-content ol {
+  list-style: decimal;
+}
+
+.markdown-content ul ul {
+  list-style: circle;
+}
+
+.markdown-content--compact p,
+.markdown-content--compact ul,
+.markdown-content--compact ol {
+  margin-bottom: var(--space-1-5);
+}
+
+.markdown-content:last-child p:last-child,
+.markdown-content:last-child ul:last-child,
+.markdown-content:last-child ol:last-child {
+  margin-bottom: 0;
 }
 
 /* --- Stats Grid --- */
@@ -1349,6 +1481,8 @@ body {
 .space-below-md { margin-bottom: var(--space-3); }
 .space-below-lg { margin-bottom: var(--space-4); }
 .space-above-sm { margin-top: var(--space-2); }
+.space-above-md { margin-top: var(--space-3); }
+.space-above-lg { margin-top: var(--space-4); }
 .space-right-xs { margin-right: var(--space-1); }
 .space-right-sm { margin-right: var(--space-2); }
 

@@ -95,23 +95,23 @@ class ProblemReportDetailViewTests(TestDataMixin, TestCase):
         self.assertNotContains(response, "by ")
 
     def test_detail_view_shows_close_button_for_open_report(self):
-        """Detail page should show 'Close Problem Report' button for open reports."""
+        """Detail page should show 'Close Problem' button for open reports."""
         self.client.login(username="staffuser", password="testpass123")
         response = self.client.get(self.detail_url)
 
-        self.assertContains(response, "Close Problem Report")
-        self.assertNotContains(response, "Re-Open Problem Report")
+        self.assertContains(response, "Close Problem")
+        self.assertNotContains(response, "Re-Open Problem")
 
     def test_detail_view_shows_reopen_button_for_closed_report(self):
-        """Detail page should show 'Re-Open Problem Report' button for closed reports."""
+        """Detail page should show 'Re-Open Problem' button for closed reports."""
         self.report.status = ProblemReport.STATUS_CLOSED
         self.report.save()
 
         self.client.login(username="staffuser", password="testpass123")
         response = self.client.get(self.detail_url)
 
-        self.assertContains(response, "Re-Open Problem Report")
-        self.assertNotContains(response, "Close Problem Report")
+        self.assertContains(response, "Re-Open Problem")
+        self.assertNotContains(response, "Close Problem")
 
     def test_status_toggle_requires_staff(self):
         """Non-staff users should not be able to toggle status."""
@@ -552,11 +552,11 @@ class ProblemReportDetailLogEntriesTests(TestDataMixin, TestCase):
         self.detail_url = reverse("problem-report-detail", kwargs={"pk": self.problem_report.pk})
 
     def test_detail_page_shows_add_log_entry_button(self):
-        """Problem report detail should have Add Log Entry button."""
+        """Problem report detail should have Add Log button."""
         self.client.login(username="staffuser", password="testpass123")
         response = self.client.get(self.detail_url)
 
-        self.assertContains(response, "Add Log Entry")
+        self.assertContains(response, "Add Log")
         add_url = reverse("log-create-problem-report", kwargs={"pk": self.problem_report.pk})
         self.assertContains(response, add_url)
 

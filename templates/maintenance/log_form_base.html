@@ -50,9 +50,9 @@
                  name="{{ form.media_file.html_name }}"
                  class="hidden"
                  multiple
-                 accept="image/*,video/*">
+                 accept="image/*,video/*,.heic,.heif">
           <a href="#" id="file-upload-link" class="file-upload-link">
-            <i class="fa-solid fa-paperclip space-right-xs"></i>Paste, drop, or click to add files
+            <i class="fa-solid fa-paperclip space-right-xs"></i>Paste, drop, or click to add photos
           </a>
         </div>
         {% for error in form.media_file.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
@@ -252,11 +252,29 @@
         Array.from(this.files).forEach((file, index) => {
           const preview = document.createElement('div');
           preview.className = 'file-preview';
-          preview.innerHTML = `
-            <div class="file-preview__thumb">
-              <i class="fa-solid ${file.type.startsWith('video/') ? 'fa-video' : 'fa-image'} text-muted"></i>
-            </div>
-          `;
+          const lowerName = file.name.toLowerCase();
+          const isImage =
+            (file.type && file.type.startsWith('image/')) ||
+            lowerName.endsWith('.heic') ||
+            lowerName.endsWith('.heif');
+
+          if (isImage) {
+            const thumb = document.createElement('div');
+            thumb.className = 'file-preview__thumb';
+            const img = document.createElement('img');
+            img.alt = file.name;
+            img.src = URL.createObjectURL(file);
+            img.onload = () => URL.revokeObjectURL(img.src);
+            thumb.appendChild(img);
+            preview.appendChild(thumb);
+          } else {
+            preview.innerHTML = `
+              <div class="file-preview__thumb">
+                <i class="fa-solid ${file.type.startsWith('video/') ? 'fa-video' : 'fa-image'} text-muted"></i>
+              </div>
+            `;
+          }
+
           previewRow.appendChild(preview);
         });
       });

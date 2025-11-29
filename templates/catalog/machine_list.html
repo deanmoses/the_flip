@@ -6,10 +6,12 @@
   <div class="two-column">
     <!-- MOBILE ACTION BUTTONS (visible on mobile only) -->
     <div class="mobile-actions">
-      <a href="{% url 'machine-quick-create' %}" class="btn btn--secondary">
-        <i class="fa-solid fa-plus meta"></i>
-        New Machine
-      </a>
+      {% if user.is_superuser %}
+        <a href="{% url 'machine-quick-create' %}" class="btn btn--secondary">
+          <i class="fa-solid fa-plus meta"></i>
+          New Machine
+        </a>
+      {% endif %}
     </div>
     <!-- SIDEBAR (desktop only) -->
     <aside class="two-column__sidebar">
@@ -30,11 +32,13 @@
         </div>
         <!-- ACTIONS -->
         <div class="sidebar__section">
-          <a href="{% url 'machine-quick-create' %}"
-             class="btn btn--secondary btn--full">
-            <i class="fa-solid fa-plus meta"></i>
-            New Machine
-          </a>
+          {% if user.is_superuser %}
+            <a href="{% url 'machine-quick-create' %}"
+               class="btn btn--secondary btn--full">
+              <i class="fa-solid fa-plus meta"></i>
+              New Machine
+            </a>
+          {% endif %}
         </div>
       </div>
     </aside>
