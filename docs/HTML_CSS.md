@@ -2,12 +2,11 @@
 
 This is a guide for developers and AI assistants creating HTML and CSS.
 
-Focus on clean, modern, lightweight mobile-friendly pages that rely only on system fonts and a single cached stylesheet.
+Focus on clean, modern, lightweight mobile-friendly pages that rely on a single cached stylesheet.
 
 
 ## Things to Avoid
 
-- **Do not introduce new font stacks** or load remote fonts. Rely on the font stack defined in the base stylesheet.
 - **Do not hardcode colors, spacing, or shadows**. Rely on the CSS variables and tokens established in the base stylesheet.
 
 ## Organization
