@@ -1111,7 +1111,7 @@ textarea.form-input {
 }
 
 /* ========================================
-   6. THEME SWITCHER (Dev Only)
+   6. THEME SWITCHER (Mock Only - do not include in production stylesheet)
    ======================================== */
 
 .theme-switcher {
