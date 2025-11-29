@@ -43,6 +43,10 @@
             /* Tailwind Red-50 (Card Background) */
             --color-problem-light-border: #FCA5A5;
             /* Tailwind Red-300 (Card Border) */
+
+            /* Status / Warning */
+            --color-warning-base: #f59e0b;
+            --color-warning-text: #7c2d12;
             /* === END THEME COLORS === */
         }
 
@@ -226,6 +230,31 @@
             color: #fff;
         }
 
+        .logo-accent {
+            color: var(--color-accent-amber);
+        }
+
+        .nav-active {
+            color: var(--color-accent-amber);
+            border-bottom: 2px solid var(--color-accent-amber);
+        }
+
+        .nav-link {
+            color: #4b5563;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-link:hover {
+            color: var(--color-accent-amber);
+            border-bottom-color: var(--color-border-soft);
+        }
+
+        .badge-warning {
+            background: var(--color-warning-base);
+            color: var(--color-warning-text);
+            border: 1px solid var(--color-border-soft);
+        }
+
         .accent-button {
             background-color: var(--color-accent-amber);
         }
@@ -338,16 +367,15 @@
     <!-- === PERSISTENT SITE HEADER (MASTHEAD) === -->
     <header class="fixed top-0 w-full bg-white border-b border-gray-200 z-30 p-3 shadow-sm flex justify-between items-center h-16">
       <!-- Logo/Brand Anchor --><a href="#"
-   class="text-2xl font-extrabold flex items-center gap-2 shrink-0 text-amber-600">
+   class="text-2xl font-extrabold flex items-center gap-2 shrink-0 logo-accent">
       <i class="fa-solid fa-gamepad"></i> The Flip
     </a>
     <!-- Desktop/Tablet Navigation Links (Visible md and up) -->
     <nav class="hidden md:flex gap-4 text-base font-medium">
-      <a href="#"
-         class="px-3 py-1 font-bold text-amber-600 border-b-2 border-amber-500">Machines</a>
-      <a href="#" class="px-3 py-1 text-gray-600 hover:text-amber-600">Problem Reports</a>
-      <a href="#" class="px-3 py-1 text-gray-600 hover:text-amber-600">Logs</a>
-      <a href="#" class="px-3 py-1 text-gray-500 hover:text-amber-600">Admin</a>
+      <a href="#" class="px-3 py-1 font-bold nav-active">Machines</a>
+      <a href="#" class="px-3 py-1 nav-link">Problem Reports</a>
+      <a href="#" class="px-3 py-1 nav-link">Logs</a>
+      <a href="#" class="px-3 py-1 nav-link text-gray-500">Admin</a>
     </nav>
     <!-- Account / Mobile Menu -->
     <div class="flex items-center gap-4 relative">
@@ -531,7 +559,7 @@
             <div class="flex justify-between items-start mb-2">
               <div class="flex flex-col sm:flex-row sm:items-center gap-2">
                 <span class="font-bold text-lg problem-color-text">Problem Report</span>
-                <span class="text-white px-2 py-0.5 text-xs font-bold rounded-md inline-block problem-color-bg">Open</span>
+                <span class="px-2 py-0.5 text-xs font-bold rounded-md inline-block badge-warning">Open</span>
               </div>
               <span class="text-gray-500 text-xs mt-1">Visitor &bull; <span class="font-semibold">Yesterday 10:15am</span></span>
             </div>
