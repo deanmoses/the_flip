@@ -11,7 +11,6 @@ class MachineInstanceForm(StyledFormMixin, forms.ModelForm):
     """Form for editing machine instance details."""
 
     fieldsets = [
-        ("Current State", ["operational_status", "location"]),
         ("Identification", ["name_override", "serial_number"]),
         ("Provenance", ["ownership_credit", "acquisition_notes"]),
     ]
@@ -19,8 +18,6 @@ class MachineInstanceForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = MachineInstance
         fields = [
-            "operational_status",
-            "location",
             "name_override",
             "serial_number",
             "ownership_credit",
