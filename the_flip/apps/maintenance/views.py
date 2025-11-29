@@ -343,7 +343,7 @@ class PublicProblemReportCreateView(FormView):
         ip_address = request.META.get("REMOTE_ADDR")
         if ip_address and not self._check_rate_limit(ip_address):
             messages.error(request, "Too many reports submitted recently. Please try again later.")
-            return redirect(self.machine.get_absolute_url())
+            return redirect("public-problem-report-create", slug=self.machine.slug)
         return super().post(request, *args, **kwargs)
 
     def _check_rate_limit(self, ip_address: str) -> bool:
@@ -362,7 +362,7 @@ class PublicProblemReportCreateView(FormView):
             report.reported_by_user = self.request.user
         report.save()
         messages.success(self.request, "Thanks! The maintenance team has been notified.")
-        return redirect(self.machine.get_absolute_url())
+        return redirect("public-problem-report-create", slug=self.machine.slug)
 
 
 class ProblemReportCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
@@ -989,9 +989,9 @@ class MachineQRView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context = super().get_context_data(**kwargs)
         machine = self.object
 
-        # Build the absolute URL for the public machine detail page
+        # Build the absolute URL for the public problem report page
         public_url = self.request.build_absolute_uri(
-            reverse("public-machine-detail", args=[machine.slug])
+            reverse("public-problem-report-create", args=[machine.slug])
         )
 
         # Generate QR code with high error correction for logo embedding
@@ -1049,6 +1049,78 @@ class MachineQRView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context["qr_code_data"] = qr_code_data
         context["public_url"] = public_url
 
+        return context
+
+
+class MachineBulkQRCodeView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    """Printable grid of QR codes for all machines (superusers only)."""
+
+    template_name = "maintenance/machine_qr_bulk.html"
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        machines = MachineInstance.objects.visible().select_related("model", "location")
+        qr_entries = []
+
+        logo_path = (
+            Path(__file__).resolve().parent.parent.parent / "static/core/images/logo_white.png"
+        )
+        logo_img = None
+        if logo_path.exists():
+            logo_img = Image.open(logo_path).convert("RGBA")
+
+        for machine in machines:
+            public_url = self.request.build_absolute_uri(
+                reverse("public-problem-report-create", args=[machine.slug])
+            )
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_H,
+                box_size=8,
+                border=4,
+            )
+            qr.add_data(public_url)
+            qr.make(fit=True)
+            qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+
+            if logo_img:
+                logo = logo_img.copy()
+                r, g, b, a = logo.split()
+                rgb = Image.merge("RGB", (r, g, b))
+                inverted = ImageOps.invert(rgb)
+                logo = Image.merge("RGBA", (*inverted.split(), a))
+
+                qr_width, qr_height = qr_img.size
+                logo_size = int(qr_width * 0.25)
+                logo.thumbnail((logo_size, logo_size), Image.LANCZOS)
+
+                padding = 4
+                logo_with_bg = Image.new(
+                    "RGB", (logo.size[0] + padding * 2, logo.size[1] + padding * 2), "white"
+                )
+                logo_with_bg.paste(logo, (padding, padding), logo)
+                logo_position = (
+                    (qr_width - logo_with_bg.size[0]) // 2,
+                    (qr_height - logo_with_bg.size[1]) // 2,
+                )
+                qr_img.paste(logo_with_bg, logo_position)
+
+            buffer = BytesIO()
+            qr_img.save(buffer, format="PNG")
+            qr_code_data = base64.b64encode(buffer.getvalue()).decode()
+
+            qr_entries.append(
+                {
+                    "machine": machine,
+                    "qr_data": qr_code_data,
+                    "public_url": public_url,
+                }
+            )
+
+        context["qr_entries"] = qr_entries
         return context
 
 
