@@ -413,30 +413,26 @@
               </div>
             </div>
           </div>
-          <!-- FORM ACTIONS (Primary on right, checkbox inline) -->
-          <div class="card-style p-6">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <!-- Close problem checkbox (inline) -->
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox"
-                       id="close_problem"
-                       name="close_problem"
-                       class="w-5 h-5 text-green-600 rounded border-gray-300">
-                <span class="text-gray-700 font-medium">Close the problem report</span>
-              </label>
-              <!-- Buttons (Cancel left, Submit right) -->
-              <div class="flex gap-3">
-                <a href="#"
-                   class="button-style bg-gray-100 text-gray-700 px-5 py-2.5 font-semibold flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-200">
-                  Cancel
-                </a>
-                <button type="submit"
-                        class="button-style log-button text-white px-5 py-2.5 font-bold flex items-center justify-center gap-2">
-                  <i class="fa-solid fa-check"></i>
-                  Log It
-                </button>
-              </div>
-            </div>
+          <!-- FORM ACTIONS (no card, right-aligned with checkbox) -->
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-end gap-4 pt-2">
+            <!-- Close problem checkbox -->
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox"
+                     id="close_problem"
+                     name="close_problem"
+                     class="w-5 h-5 text-green-600 rounded border-gray-300">
+              <span class="text-gray-700 font-medium">Close the problem report</span>
+            </label>
+            <!-- Buttons (Cancel, then Submit) -->
+            <a href="#"
+               class="button-style bg-gray-100 text-gray-700 px-5 py-2.5 font-semibold flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-200">
+              Cancel
+            </a>
+            <button type="submit"
+                    class="button-style log-button text-white px-5 py-2.5 font-bold flex items-center justify-center gap-2">
+              <i class="fa-solid fa-check"></i>
+              Log It
+            </button>
           </div>
         </div>
         <!-- SIDEBAR: Context & Metadata -->
