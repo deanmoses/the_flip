@@ -416,6 +416,13 @@ body {
   padding: var(--space-1) var(--space-2);
 }
 
+.pill--status-broken {
+  background-color: var(--color-problem-light-bg);
+  color: var(--color-problem);
+  border: 1px solid var(--color-problem-light-border);
+  padding: var(--space-1) var(--space-2);
+}
+
 .pill--neutral {
   background-color: var(--color-gray-100);
   color: var(--color-gray-700);
@@ -903,6 +910,68 @@ body {
   color: var(--color-text-muted);
   flex: 1;
   font-size: var(--text-xs);
+}
+
+/* --- Machine List & Cards --- */
+.machine-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.machine-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.machine-card:hover {
+  border-color: var(--color-gray-300);
+  box-shadow: var(--shadow-md);
+}
+
+.machine-card__inner {
+  display: block;
+  padding: var(--space-3);
+  text-decoration: none;
+  color: inherit;
+}
+
+.machine-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.machine-card__title {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
+}
+
+.machine-card__meta {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.machine-card__alert {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding: var(--space-2);
+  background: var(--color-problem-light);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--color-gray-700);
+}
+
+.machine-card__alert i {
+  flex-shrink: 0;
 }
 
 /* --- Sidebar --- */

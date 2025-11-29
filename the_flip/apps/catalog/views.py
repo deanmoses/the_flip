@@ -136,6 +136,19 @@ class PublicMachineListView(ListView):
 class MachineListView(PublicMachineListView):
     template_name = "catalog/machine_list.html"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Stats for sidebar - machines needing attention (not good status or have open reports)
+        needs_attention_count = (
+            MachineInstance.objects.visible()
+            .exclude(operational_status=MachineInstance.STATUS_GOOD)
+            .count()
+        )
+        total_count = MachineInstance.objects.visible().count()
+        context["needs_attention_count"] = needs_attention_count
+        context["total_count"] = total_count
+        return context
+
 
 class PublicMachineDetailView(DetailView):
     template_name = "catalog/machine_detail.html"
