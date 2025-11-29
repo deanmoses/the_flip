@@ -37,7 +37,6 @@
       <div class="card card--padded sidebar--sticky">
         <!-- MACHINE INFO -->
         <div class="sidebar__section">
-          <div class="sidebar__label">Machine</div>
           <div class="sidebar__title">{{ machine.display_name }}</div>
           <div class="sidebar__subtitle">
             {% if machine.model.manufacturer %}{{ machine.model.manufacturer }}{% endif %}
@@ -111,5 +110,6 @@
 {% endblock %}
 {% block extra_scripts %}
   <script src="{% static 'core/infinite_scroll.js' %}" defer></script>
-  {% block feed_scripts %}{% endblock %}
+  {% block feed_scripts %}
+  {% endblock %}
 {% endblock extra_scripts %}
