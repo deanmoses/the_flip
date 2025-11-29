@@ -10,14 +10,10 @@ class WebhookEndpoint(TimeStampedModel):
 
     # Event types that can trigger webhooks
     EVENT_PROBLEM_REPORT_CREATED = "problem_report_created"
-    EVENT_PROBLEM_REPORT_CLOSED = "problem_report_closed"
-    EVENT_PROBLEM_REPORT_REOPENED = "problem_report_reopened"
     EVENT_LOG_ENTRY_CREATED = "log_entry_created"
 
     EVENT_CHOICES = [
         (EVENT_PROBLEM_REPORT_CREATED, "Problem Report Created"),
-        (EVENT_PROBLEM_REPORT_CLOSED, "Problem Report Closed"),
-        (EVENT_PROBLEM_REPORT_REOPENED, "Problem Report Reopened"),
         (EVENT_LOG_ENTRY_CREATED, "Log Entry Created"),
     ]
 

@@ -21,10 +21,6 @@ def format_discord_message(event_type: str, obj: Any) -> dict:
     """Format a Discord webhook message for the given event and object."""
     if event_type == "problem_report_created":
         return _format_problem_report_created(obj)
-    elif event_type == "problem_report_closed":
-        return _format_problem_report_closed(obj)
-    elif event_type == "problem_report_reopened":
-        return _format_problem_report_reopened(obj)
     elif event_type == "log_entry_created":
         return _format_log_entry_created(obj)
     else:
@@ -58,48 +54,6 @@ def _format_problem_report_created(report: ProblemReport) -> dict:
                 "description": "\n".join(lines),
                 "url": url,
                 "color": 15158332,  # Red color for problems
-            }
-        ]
-    }
-
-
-def _format_problem_report_closed(report: ProblemReport) -> dict:
-    """Format a problem report closed notification."""
-    base_url = get_base_url()
-    url = base_url + reverse("problem-report-detail", kwargs={"pk": report.pk})
-
-    lines = []
-    lines.append(f"**Machine:** {report.machine.display_name}")
-    lines.append(f"**Problem:** {report.get_problem_type_display()}")
-
-    return {
-        "embeds": [
-            {
-                "title": "Problem Report Closed",
-                "description": "\n".join(lines),
-                "url": url,
-                "color": 3066993,  # Green color for resolved
-            }
-        ]
-    }
-
-
-def _format_problem_report_reopened(report: ProblemReport) -> dict:
-    """Format a problem report reopened notification."""
-    base_url = get_base_url()
-    url = base_url + reverse("problem-report-detail", kwargs={"pk": report.pk})
-
-    lines = []
-    lines.append(f"**Machine:** {report.machine.display_name}")
-    lines.append(f"**Problem:** {report.get_problem_type_display()}")
-
-    return {
-        "embeds": [
-            {
-                "title": "Problem Report Reopened",
-                "description": "\n".join(lines),
-                "url": url,
-                "color": 15105570,  # Orange color for reopened
             }
         ]
     }
@@ -151,8 +105,6 @@ def format_test_message(event_type: str) -> dict:
     """Format a test message for a given event type."""
     event_labels = {
         "problem_report_created": "Problem Report Created",
-        "problem_report_closed": "Problem Report Closed",
-        "problem_report_reopened": "Problem Report Reopened",
         "log_entry_created": "Log Entry Created",
     }
     label = event_labels.get(event_type, event_type)

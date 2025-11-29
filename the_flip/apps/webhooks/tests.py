@@ -121,22 +121,6 @@ class DiscordFormatterTests(TestCase):
         self.assertEqual(embed["title"], "New Problem Report")
         self.assertIn(self.machine.display_name, embed["description"])
 
-    def test_format_problem_report_closed(self):
-        """Format a closed problem report message."""
-        report = create_problem_report(machine=self.machine)
-        message = format_discord_message("problem_report_closed", report)
-
-        embed = message["embeds"][0]
-        self.assertEqual(embed["title"], "Problem Report Closed")
-
-    def test_format_problem_report_reopened(self):
-        """Format a reopened problem report message."""
-        report = create_problem_report(machine=self.machine)
-        message = format_discord_message("problem_report_reopened", report)
-
-        embed = message["embeds"][0]
-        self.assertEqual(embed["title"], "Problem Report Reopened")
-
     def test_format_log_entry_created(self):
         """Format a new log entry message."""
         log_entry = create_log_entry(machine=self.machine, created_by=self.staff_user)
