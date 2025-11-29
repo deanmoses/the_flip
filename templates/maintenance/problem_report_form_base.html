@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% load static core_extras %}
+{% block title %}
+  {% block form_title %}New Problem Report{% endblock %}
+  · {{ block.super }}
+{% endblock %}
+{% block content %}
+  <!-- BREADCRUMBS -->
+  <nav class="breadcrumbs breadcrumbs--responsive">
+    {% block breadcrumbs %}
+      {% if machine %}
+        <a href="{% url 'maintainer-machine-list' %}" class="breadcrumbs__link">Machines</a>
+        <span>/</span>
+        <a href="{% url 'maintainer-machine-detail' machine.slug %}"
+           class="breadcrumbs__link">{{ machine.display_name }}</a>
+        <span>/</span>
+        <a href="{% url 'machine-problem-reports' machine.slug %}"
+           class="breadcrumbs__link">Problems</a>
+        <span>/</span>
+      {% else %}
+        <a href="{% url 'problem-report-list' %}" class="breadcrumbs__link">Problem Reports</a>
+        <span>/</span>
+      {% endif %}
+      <span class="breadcrumbs__current">
+        {% block breadcrumb_current %}New Report{% endblock %}
+      </span>
+    {% endblock %}
+  </nav>
+  <!-- TWO COLUMN LAYOUT: Main Form + Sidebar -->
+  <form method="post" class="two-column">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+    <!-- MAIN COLUMN: Primary form fields -->
+    <div class="two-column__main form-main">
+      <!-- PROBLEM TYPE -->
+      <div class="form-field">
+        <label class="form-label">
+          What type of problem? <span class="text-problem">*</span>
+        </label>
+        <div class="radio-group">
+          {% for radio in form.problem_type %}
+            <label class="radio-label">
+              {{ radio.tag }}
+              <span>{{ radio.choice_label }}</span>
+            </label>
+          {% endfor %}
+        </div>
+        {% for error in form.problem_type.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+      </div>
+      <!-- DESCRIPTION -->
+      <div class="form-field">
+        <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+        <textarea id="{{ form.description.id_for_label }}"
+                  name="{{ form.description.html_name }}"
+                  class="form-input form-textarea"
+                  placeholder="Describe the problem...">{{ form.description.value|default:'' }}</textarea>
+        {% for error in form.description.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+      </div>
+      <!-- FORM ACTIONS -->
+      <div class="form-actions">
+        {% block form_actions_extra %}{% endblock %}
+        <a href="{% block cancel_url %}{% if machine %}{% url 'machine-problem-reports' machine.slug %}{% else %}{% url 'problem-report-list' %}{% endif %}{% endblock %}"
+           class="btn btn--secondary">Cancel</a>
+        <button type="submit" class="btn btn--report">
+          <i class="fa-solid fa-bug meta"></i>
+          {% block submit_label %}Report Problem{% endblock %}
+        </button>
+      </div>
+    </div>
+    <!-- SIDEBAR: Context & Metadata (desktop only) -->
+    <aside class="two-column__sidebar">
+      <div class="card card--padded sidebar--sticky">
+        <!-- MACHINE -->
+        {% if machine %}
+          <input type="hidden"
+                 name="{{ form.machine_slug.html_name }}"
+                 value="{{ machine.slug }}">
+          <div class="sidebar__section">
+            <div class="sidebar__label">Machine</div>
+            <div class="sidebar__title">{{ machine.display_name }}</div>
+            <div class="sidebar__subtitle">
+              {% if machine.model.manufacturer %}{{ machine.model.manufacturer }}{% endif %}
+              {% if machine.model.manufacturer and machine.model.year %}·{% endif %}
+              {% if machine.model.year %}{{ machine.model.year }}{% endif %}
+            </div>
+            <div class="flex flex-wrap stack-tight space-above-sm">
+              <span class="pill {% if machine.operational_status == 'good' %}pill--status-good{% elif machine.operational_status == 'fixing' %}pill--status-fixing{% elif machine.operational_status == 'broken' %}pill--status-broken{% else %}pill--neutral{% endif %}">
+                {% if machine.operational_status == 'fixing' %}
+                  <i class="fa-solid fa-wrench meta"></i>
+                {% elif machine.operational_status == 'good' %}
+                  <i class="fa-solid fa-check meta"></i>
+                {% elif machine.operational_status == 'broken' %}
+                  <i class="fa-solid fa-circle-xmark meta"></i>
+                {% else %}
+                  <i class="fa-solid fa-circle-question meta"></i>
+                {% endif %}
+                {{ machine.get_operational_status_display }}
+              </span>
+              {% if machine.location and machine.location.slug != "floor" %}
+                <span class="pill pill--neutral">
+                  <i class="fa-solid fa-location-dot meta"></i>
+                  {{ machine.location.name }}
+                </span>
+              {% endif %}
+            </div>
+          </div>
+        {% else %}
+          <!-- Global: Machine selector -->
+          <div class="sidebar__section">
+            <div class="sidebar__label">
+              Machine <span class="text-problem">*</span>
+            </div>
+            <div class="autocomplete"
+                 data-machine-autocomplete
+                 data-autocomplete-url="{% url 'api-machine-autocomplete' %}">
+              <input type="search"
+                     id="machine-search"
+                     placeholder="Search machines..."
+                     class="form-input form-input--sm"
+                     autocomplete="off"
+                     data-machine-search
+                     required
+                     value="{% if selected_machine %}{{ selected_machine.display_name }}{% endif %}">
+              <input type="hidden"
+                     name="{{ form.machine_slug.html_name }}"
+                     id="{{ form.machine_slug.id_for_label }}"
+                     value="{{ form.machine_slug.value|default_if_none:'' }}"
+                     data-machine-slug-input>
+              <div class="autocomplete__dropdown hidden"></div>
+            </div>
+            {% for error in form.machine_slug.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+          </div>
+        {% endif %}
+        {% block sidebar_extra %}{% endblock %}
+      </div>
+    </aside>
+  </form>
+{% endblock %}
+{% block extra_scripts %}
+  <script src="{% static 'core/machine_autocomplete.js' %}" defer></script>
+  <script>
+    // Auto-resize description textarea to fit content
+    (function() {
+      const descriptionInput = document.getElementById('{{ form.description.id_for_label }}');
+      if (!descriptionInput) return;
+      const resize = () => {
+        descriptionInput.style.height = 'auto';
+        descriptionInput.style.height = `${descriptionInput.scrollHeight}px`;
+        descriptionInput.style.overflowY = 'hidden';
+      };
+      resize();
+      descriptionInput.addEventListener('input', resize);
+    })();
+  </script>
+  {% block extra_scripts_child %}
+  {% endblock %}
+{% endblock %}
