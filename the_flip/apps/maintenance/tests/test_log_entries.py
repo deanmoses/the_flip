@@ -297,7 +297,8 @@ class LogEntryProblemReportTests(TestDataMixin, TestCase):
         self.client.login(username="staffuser", password="testpass123")
         response = self.client.get(self.create_url)
 
-        self.assertContains(response, "Problem Report")
+        # Sidebar shows "Problem" label with linked problem card
+        self.assertContains(response, "linked-problem-card")
         self.assertContains(response, self.machine.display_name)
 
     def test_create_log_entry_inherits_machine_from_problem_report(self):
