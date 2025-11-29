@@ -324,8 +324,6 @@
     <header class="app-header fixed top-0 w-full border-b border-gray-200 z-30 p-3 shadow-sm flex justify-between items-center h-16">
       <a href="#" class="flex items-center gap-2 shrink-0">
         <img src="../../../the_flip/static/core/images/logo_blue.svg"
-             data-logo-default="../../../the_flip/static/core/images/logo_blue.svg"
-             data-logo-inverse="../../../the_flip/static/core/images/logo_white.svg"
              alt="The Flip"
              class="brand-logo">
       </a>
@@ -602,20 +600,12 @@
       // Theme switching
       (function() {
         const buttons = document.querySelectorAll('.theme-switcher button');
-        const logo = document.querySelector('.brand-logo');
 
         function setTheme(theme) {
           document.body.setAttribute('data-theme', theme);
           buttons.forEach(btn => {
             btn.classList.toggle('is-active', btn.dataset.theme === theme);
           });
-          if (logo) {
-            if (theme === 'dark3') {
-              logo.src = logo.dataset.logoInverse || logo.src;
-            } else {
-              logo.src = logo.dataset.logoDefault || logo.src;
-            }
-          }
         }
 
         buttons.forEach(btn => {
