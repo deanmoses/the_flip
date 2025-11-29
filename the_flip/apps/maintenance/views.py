@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import base64
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from datetime import timezone as dt_timezone
 from io import BytesIO
 from pathlib import Path
@@ -174,11 +174,18 @@ class ProblemReportListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
         paginator = Paginator(reports, 10)
         page_obj = paginator.get_page(self.request.GET.get("page"))
+
+        # Stats for sidebar
+        open_count = ProblemReport.objects.filter(status="open").count()
+        closed_count = ProblemReport.objects.filter(status="closed").count()
+
         context.update(
             {
                 "page_obj": page_obj,
                 "reports": page_obj.object_list,
                 "search_form": SearchForm(initial={"q": search_query}),
+                "open_count": open_count,
+                "closed_count": closed_count,
             }
         )
         return context
@@ -759,11 +766,20 @@ class LogListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         paginator = Paginator(logs, 10)
         page_obj = paginator.get_page(self.request.GET.get("page"))
+
+        # Stats for sidebar
+        today = datetime.now(UTC).date()
+        week_ago = today - timedelta(days=7)
+        this_week_count = LogEntry.objects.filter(work_date__gte=week_ago).count()
+        total_count = LogEntry.objects.count()
+
         context.update(
             {
                 "page_obj": page_obj,
                 "log_entries": page_obj.object_list,
                 "search_form": SearchForm(initial={"q": search_query}),
+                "this_week_count": this_week_count,
+                "total_count": total_count,
             }
         )
         return context

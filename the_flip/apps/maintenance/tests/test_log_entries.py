@@ -393,6 +393,6 @@ class LogListSearchTests(TestDataMixin, TestCase):
         response = self.client.get(self.list_url, {"q": "coil stop"})
 
         self.assertContains(response, log_with_report.text)
-        self.assertContains(response, "Problem report:")
+        self.assertContains(response, "Problem:")
         self.assertContains(response, "Coil stop broken")
         self.assertNotContains(response, "Adjusted flipper alignment")

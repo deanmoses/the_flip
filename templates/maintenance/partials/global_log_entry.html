@@ -1,0 +1,27 @@
+{% load core_extras %}
+<div class="timeline__entry">
+  <a href="{% url 'log-detail' entry.pk %}" class="timeline__entry-inner">
+    <div class="timeline__icon timeline__icon--log">
+      <i class="fa-solid fa-screwdriver-wrench"></i>
+    </div>
+    <div class="timeline__content">
+      <div class="card card--log timeline__card">
+        <div class="timeline__header">
+          <span class="timeline__title timeline__title--log">{{ entry.machine.display_name }}</span>
+          <span class="timeline__meta">{{ entry|log_entry_meta }}</span>
+        </div>
+        <div class="timeline__body {% if entry.problem_report %}space-below-sm{% endif %}">
+          {{ entry.text|truncatewords:30 }}
+        </div>
+        {% if entry.problem_report %}
+          <div class="snippet-row">
+            <span class="snippet-label text-problem">
+              <i class="fa-solid fa-bug space-right-xs"></i>Problem:
+            </span>
+            <span class="snippet-text">{{ entry.problem_report|problem_report_summary }}</span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </a>
+</div>
