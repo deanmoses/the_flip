@@ -190,8 +190,8 @@
    class="text-2xl font-extrabold flex items-center gap-2 shrink-0 text-amber-600">
       <i class="fa-solid fa-gamepad"></i> The Flip
     </a>
-    <!-- Desktop Navigation Links (Hidden on mobile) -->
-    <nav class="hidden lg:flex gap-4 text-base font-medium">
+    <!-- Desktop/Tablet Navigation Links (Visible md and up) -->
+    <nav class="hidden md:flex gap-4 text-base font-medium">
       <a href="#"
          class="px-3 py-1 font-bold text-amber-600 border-b-2 border-amber-500">Machines</a>
       <a href="#" class="px-3 py-1 text-gray-600 hover:text-amber-600">Problem Reports</a>
@@ -202,7 +202,7 @@
     <div class="flex items-center gap-4 relative">
       <!-- Account Dropdown (Desktop Only) -->
       <div id="account-dropdown-toggle"
-           class="hidden lg:flex w-9 h-9 bg-amber-600 text-white rounded-full items-center justify-center font-bold text-sm cursor-pointer"
+           class="hidden md:flex w-9 h-9 bg-amber-600 text-white rounded-full items-center justify-center font-bold text-sm cursor-pointer"
            onclick="toggleAccountMenu()">PW</div>
       <div id="account-menu"
            class="hidden absolute right-0 top-10 w-48 bg-white card-style p-3 shadow-xl text-base z-50">
@@ -211,14 +211,14 @@
         <a href="#" class="block p-2 hover:bg-gray-50 rounded-lg text-red-600"><i class="fa-solid fa-right-from-bracket mr-2"></i> Logout</a>
       </div>
       <!-- Mobile Utility Menu Toggle (Only visible on mobile) -->
-      <button class="lg:hidden text-2xl text-gray-700" onclick="toggleMobileMenu()">
+      <button class="md:hidden text-2xl text-gray-700" onclick="toggleMobileMenu()">
         <i class="fa-solid fa-bars"></i>
       </button>
     </div>
   </header>
   <!-- === MOBILE MENU DRAWER (Consolidated Navigation) === -->
   <div id="mobile-menu-drawer"
-       class="fixed top-0 right-0 w-64 h-full bg-white shadow-xl pt-16 flex flex-col justify-between hidden lg:hidden z-50">
+       class="fixed top-0 right-0 w-64 h-full bg-white shadow-xl pt-16 flex flex-col justify-between hidden md:hidden z-50">
     <!-- Top Section: Core Navigation -->
     <div class="px-4 space-y-1 text-base font-semibold overflow-y-auto pt-2">
       <!-- Core Navigation Links --><a href="#"
@@ -244,7 +244,7 @@
   </div>
   <!-- === OVERLAY (Hides main content when mobile menu is open) === -->
   <div id="overlay"
-       class="fixed inset-0 hidden lg:hidden bg-black opacity-30 z-40"
+       class="fixed inset-0 hidden md:hidden bg-black opacity-30 z-40"
        onclick="toggleMobileMenu()"></div>
   <!-- === MAIN CONTENT === -->
   <main id="main-content" class="p-4 lg:p-8 max-w-5xl mx-auto relative">
