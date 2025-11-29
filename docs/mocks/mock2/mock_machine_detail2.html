@@ -388,8 +388,26 @@
       </div>
       <!-- TWO COLUMN LAYOUT: Main Content + Sidebar -->
       <div class="flex flex-col lg:flex-row gap-5">
-        <!-- SIDEBAR (appears first on mobile, right on desktop) -->
-        <div class="lg:order-2 lg:w-72 shrink-0">
+        <!-- MOBILE ACTION BUTTONS (visible on mobile only) -->
+        <div class="lg:hidden flex gap-2">
+          <a href="#"
+             class="button-style bg-gray-100 text-gray-700 px-3 py-1.5 text-sm font-medium flex items-center justify-center gap-1 border border-gray-300 hover:bg-gray-200 flex-1">
+            <i class="fa-solid fa-gear text-xs"></i>
+            Edit
+          </a>
+          <a href="#"
+             class="button-style report-button text-white px-3 py-1.5 text-sm font-semibold flex items-center justify-center gap-1 flex-1">
+            <i class="fa-solid fa-bug text-xs"></i>
+            Report
+          </a>
+          <a href="#"
+             class="button-style log-button text-white px-3 py-1.5 text-sm font-semibold flex items-center justify-center gap-1 flex-1">
+            <i class="fa-solid fa-screwdriver-wrench text-xs"></i>
+            Log
+          </a>
+        </div>
+        <!-- SIDEBAR (desktop only) -->
+        <div class="hidden lg:block lg:order-2 lg:w-72 shrink-0">
           <div class="card-style p-4 lg:sticky lg:top-20">
             <!-- MACHINE INFO -->
             <div class="sidebar-section">
