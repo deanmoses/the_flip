@@ -92,6 +92,23 @@
             background-color: var(--color-problem-hover);
         }
 
+        .accent-button {
+            background-color: var(--color-accent-amber);
+        }
+
+        .accent-button:hover {
+            background-color: #d97706;
+        }
+
+        .filter-active {
+            background-color: var(--color-accent-amber);
+            color: #fff;
+        }
+
+        .filter-active:hover {
+            background-color: #d97706;
+        }
+
 
         /* New Pill Styles (Standardized size/weight) */
         .pill-style {
@@ -305,7 +322,7 @@
       <!-- 1. Primary Filters (Type) - Shrink on mobile but wrap if needed -->
       <div class="flex gap-2 overflow-x-auto pb-1 shrink-0">
         <!-- Filter Buttons (Smaller, pill-style for better integration with search) -->
-        <button class="pill-style bg-amber-500 text-white shadow-md hover:bg-amber-600 px-4 py-2 text-sm font-semibold whitespace-nowrap transition">
+        <button class="pill-style filter-active shadow-md px-4 py-2 text-sm font-semibold whitespace-nowrap transition">
           <i class="fa-solid fa-list"></i> All Activity
         </button>
         <button class="pill-style bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 px-4 py-2 text-sm font-semibold whitespace-nowrap transition">
@@ -375,7 +392,7 @@
             <p class="mb-3 text-base text-gray-800">The top right flipper barely moves when I hit the button. Ball gets stuck.</p>
             <div class="flex gap-2 mt-4 border-t pt-3">
               <!-- Close Report button - styled as a Log/Success Action -->
-              <button class="button-style log-button text-white px-3 py-1 text-sm font-semibold">
+              <button class="button-style accent-button text-white px-3 py-1 text-sm font-semibold">
                 <i class="fa-solid fa-check mr-1"></i> Close Report
               </button>
             </div>
