@@ -87,7 +87,7 @@ def get_activity_page(machine, page_num, page_size=10, search_query=None):
     return page_items, has_next
 
 
-class PublicMachineListView(ListView):
+class MachineListViewForPublic(ListView):
     template_name = "catalog/machine_list_public.html"
     context_object_name = "machines"
 
@@ -133,8 +133,8 @@ class PublicMachineListView(ListView):
         )
 
 
-class MachineListView(PublicMachineListView):
-    template_name = "catalog/machine_list.html"
+class MachineListView(MachineListViewForPublic):
+    template_name = "catalog/machine_list_for_maintainers.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -150,8 +150,8 @@ class MachineListView(PublicMachineListView):
         return context
 
 
-class PublicMachineDetailView(DetailView):
-    template_name = "catalog/machine_detail.html"
+class MachineDetailViewForPublic(DetailView):
+    template_name = "catalog/machine_detail_public.html"
     queryset = MachineInstance.objects.visible()
     slug_field = "slug"
     slug_url_kwarg = "slug"
@@ -162,10 +162,10 @@ class PublicMachineDetailView(DetailView):
         return context
 
 
-class MachineDetailView(PublicMachineDetailView):
+class MachineDetailViewForMaintainers(MachineDetailViewForPublic):
     """Maintainer-facing detail page; customize as needed."""
 
-    template_name = "catalog/maintainer_machine_detail.html"
+    template_name = "catalog/machine_detail_maintainer.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
