@@ -455,11 +455,11 @@ class ProblemReportDetailView(LoginRequiredMixin, UserPassesTestMixin, View):
         # Toggle status
         if report.status == ProblemReport.STATUS_OPEN:
             report.status = ProblemReport.STATUS_CLOSED
-            message = "Problem report closed."
+            action_text = "closed"
             log_text = "Closed problem report"
         else:
             report.status = ProblemReport.STATUS_OPEN
-            message = "Problem report re-opened."
+            action_text = "re-opened"
             log_text = "Re-opened problem report"
 
         report.save(update_fields=["status", "updated_at"])
@@ -472,7 +472,15 @@ class ProblemReportDetailView(LoginRequiredMixin, UserPassesTestMixin, View):
         maintainer = Maintainer.objects.filter(user=request.user).first()
         if maintainer:
             log_entry.maintainers.add(maintainer)
-        messages.success(request, message)
+        messages.success(
+            request,
+            format_html(
+                'Problem report <a href="{}">#{}</a> {}.',
+                reverse("problem-report-detail", kwargs={"pk": report.pk}),
+                report.pk,
+                action_text,
+            ),
+        )
         return redirect("problem-report-detail", pk=report.pk)
 
     def render_response(self, request, report):

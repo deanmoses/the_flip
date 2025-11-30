@@ -5,7 +5,8 @@ from django.contrib.auth import get_user_model, login
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
+from django.utils.html import format_html
 from django.views import View
 from django.views.generic import FormView, ListView, UpdateView
 
@@ -218,7 +219,14 @@ class TerminalCreateView(SuperuserRequiredMixin, FormView):
         maintainer.is_shared_account = True
         maintainer.save()
 
-        messages.success(self.request, f"Terminal '{maintainer.display_name}' created.")
+        messages.success(
+            self.request,
+            format_html(
+                "Terminal '<a href=\"{}\">{}</a>' created.",
+                reverse("terminal-edit", kwargs={"pk": maintainer.pk}),
+                maintainer.display_name,
+            ),
+        )
         return super().form_valid(form)
 
 
@@ -251,7 +259,14 @@ class TerminalUpdateView(SuperuserRequiredMixin, FormView):
         terminal.user.last_name = form.cleaned_data.get("last_name") or ""
         terminal.user.save()
 
-        messages.success(self.request, f"Terminal '{terminal.display_name}' updated.")
+        messages.success(
+            self.request,
+            format_html(
+                "Terminal '<a href=\"{}\">{}</a>' updated.",
+                reverse("terminal-edit", kwargs={"pk": terminal.pk}),
+                terminal.display_name,
+            ),
+        )
         return super().form_valid(form)
 
 
@@ -262,7 +277,14 @@ class TerminalDeactivateView(SuperuserRequiredMixin, View):
         terminal = get_object_or_404(Maintainer, pk=pk, is_shared_account=True)
         terminal.user.is_active = False
         terminal.user.save()
-        messages.success(request, f"Terminal '{terminal.display_name}' deactivated.")
+        messages.success(
+            request,
+            format_html(
+                "Terminal '<a href=\"{}\">{}</a>' deactivated.",
+                reverse("terminal-edit", kwargs={"pk": terminal.pk}),
+                terminal.display_name,
+            ),
+        )
         return redirect("terminal-list")
 
 
@@ -273,5 +295,12 @@ class TerminalReactivateView(SuperuserRequiredMixin, View):
         terminal = get_object_or_404(Maintainer, pk=pk, is_shared_account=True)
         terminal.user.is_active = True
         terminal.user.save()
-        messages.success(request, f"Terminal '{terminal.display_name}' reactivated.")
+        messages.success(
+            request,
+            format_html(
+                "Terminal '<a href=\"{}\">{}</a>' reactivated.",
+                reverse("terminal-edit", kwargs={"pk": terminal.pk}),
+                terminal.display_name,
+            ),
+        )
         return redirect("terminal-list")
