@@ -415,7 +415,14 @@ class ProblemReportCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView)
         if self.request.user.is_authenticated:
             report.reported_by_user = self.request.user
         report.save()
-        messages.success(self.request, "Problem report created.")
+        messages.success(
+            self.request,
+            format_html(
+                'Problem report <a href="{}">#{}</a> created.',
+                reverse("problem-report-detail", kwargs={"pk": report.pk}),
+                report.pk,
+            ),
+        )
         return redirect("problem-report-detail", pk=report.pk)
 
 
