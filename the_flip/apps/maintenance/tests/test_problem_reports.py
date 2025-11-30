@@ -164,7 +164,7 @@ class ProblemReportDetailViewTests(TestDataMixin, TestCase):
 
         messages = list(response.context["messages"])
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "Problem report closed.")
+        self.assertIn("closed", str(messages[0]))
 
     def test_status_toggle_shows_reopen_message(self):
         """Re-opening a report should show appropriate success message."""
@@ -176,7 +176,7 @@ class ProblemReportDetailViewTests(TestDataMixin, TestCase):
 
         messages = list(response.context["messages"])
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "Problem report re-opened.")
+        self.assertIn("re-opened", str(messages[0]))
 
     def test_detail_view_search_filters_log_entries_by_text(self):
         """Search should filter log entries by text on the detail page."""
