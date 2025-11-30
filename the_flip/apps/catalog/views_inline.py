@@ -3,9 +3,11 @@ from __future__ import annotations
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
 from django.views import View
 
 from the_flip.apps.catalog.models import Location, MachineInstance
+from the_flip.apps.maintenance.models import LogEntry
 
 
 class MachineInlineUpdateView(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -43,7 +45,15 @@ class MachineInlineUpdateView(LoginRequiredMixin, UserPassesTestMixin, View):
                 machine.location = None
                 machine.updated_by = request.user
                 machine.save(update_fields=["location", "updated_by", "updated_at"])
-                return JsonResponse({"status": "success", "location": "", "location_display": ""})
+                log_entry_html = self._render_latest_log_entry(machine)
+                return JsonResponse(
+                    {
+                        "status": "success",
+                        "location": "",
+                        "location_display": "",
+                        "log_entry_html": log_entry_html,
+                    }
+                )
             try:
                 location = Location.objects.get(slug=location_slug)
                 if machine.location and machine.location.slug == location.slug:
@@ -52,15 +62,27 @@ class MachineInlineUpdateView(LoginRequiredMixin, UserPassesTestMixin, View):
                 machine.updated_by = request.user
                 machine.save(update_fields=["location", "updated_by", "updated_at"])
                 celebration = location.slug == "floor"
+                log_entry_html = self._render_latest_log_entry(machine)
                 return JsonResponse(
                     {
                         "status": "success",
                         "location": location.slug,
                         "location_display": location.name,
                         "celebration": celebration,
+                        "log_entry_html": log_entry_html,
                     }
                 )
             except Location.DoesNotExist:
                 return JsonResponse({"error": "Invalid location"}, status=400)
 
         return JsonResponse({"error": "Unknown action"}, status=400)
+
+    def _render_latest_log_entry(self, machine):
+        """Render the most recent log entry as HTML for injection into the feed."""
+        log_entry = LogEntry.objects.filter(machine=machine).order_by("-created_at").first()
+        if not log_entry:
+            return ""
+        return render_to_string(
+            "maintenance/partials/log_entry.html",
+            {"entry": log_entry},
+        )

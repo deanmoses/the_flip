@@ -72,7 +72,7 @@ def create_auto_log_entries(sender, instance, created, **kwargs):
         if old_name != new_name:
             # Celebrate moving to the floor!
             if instance.location and instance.location.slug == "floor":
-                text = "🎉🎊 Moved to the floor!"
+                text = f"🎉🎊 {instance.display_name} has moved to the floor!"
             else:
                 text = f"Location changed: {old_name} → {new_name}"
 

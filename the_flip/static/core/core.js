@@ -278,6 +278,15 @@ function updateMachineField(button) {
         } else {
           showMessage('success', `Location of ${machineName} set to ${pillHtml}`);
         }
+        // Inject the new log entry into the feed
+        if (data.log_entry_html) {
+          const feed = document.querySelector('.timeline');
+          if (feed) {
+            feed.insertAdjacentHTML('afterbegin', data.log_entry_html);
+            // Apply smart date formatting to the new entry
+            applySmartDates(feed.firstElementChild);
+          }
+        }
       }
     } else {
       showMessage('error', 'Error saving change');
