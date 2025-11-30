@@ -698,6 +698,10 @@ body {
   transition: background-color 0.15s ease;
 }
 
+.dropdown__item i {
+  width: 1.25em;
+}
+
 .dropdown__item:hover {
   background-color: var(--color-border-soft);
 }
