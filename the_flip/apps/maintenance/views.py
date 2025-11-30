@@ -695,7 +695,9 @@ class MachineLogCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             messages.success(
                 self.request,
                 format_html(
-                    'Log entry added and problem closed. Edit the log <a href="{}">here</a>.',
+                    'Log entry added and problem <a href="{}">#{}</a> closed. Edit the log <a href="{}">here</a>.',
+                    reverse("problem-report-detail", kwargs={"pk": self.problem_report.pk}),
+                    self.problem_report.pk,
                     reverse("log-detail", kwargs={"pk": log_entry.pk}),
                 ),
             )
