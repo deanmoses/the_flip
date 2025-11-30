@@ -56,6 +56,10 @@ p {
   text-wrap: pretty;
 }
 
+p + p {
+  margin-top: var(--space-3);
+}
+
 img,
 picture,
 video,
