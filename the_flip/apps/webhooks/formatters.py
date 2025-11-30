@@ -92,12 +92,18 @@ def _format_log_entry_created(log_entry: LogEntry) -> dict:
         else:
             description += f"\n\n📎 [Problem Report #{pr.pk}]({pr_url})"
 
-    # Get maintainer names
+    # Get maintainer names (from explicit maintainers or fall back to created_by)
     maintainer_names = []
     for m in log_entry.maintainers.all():
         maintainer_names.append(m.user.get_full_name() or m.user.username)
     if log_entry.maintainer_names:
         maintainer_names.append(log_entry.maintainer_names)
+
+    # Fall back to created_by for auto-generated log entries
+    if not maintainer_names and log_entry.created_by:
+        maintainer_names.append(
+            log_entry.created_by.get_full_name() or log_entry.created_by.username
+        )
 
     # Add maintainer names with a visual prefix
     if maintainer_names:

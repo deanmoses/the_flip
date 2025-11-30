@@ -77,14 +77,14 @@ class WebhookSettingsAdmin(admin.ModelAdmin):
             "Global Settings",
             {
                 "fields": ("webhooks_enabled",),
-                "description": "Master switch for all webhook notifications.",
+                "description": "Turn all webhooks on/off for the site. When off, no webhook deliveries or tests are sent.",
             },
         ),
         (
             "Event Type Settings",
             {
                 "fields": ("problem_reports_enabled", "log_entries_enabled"),
-                "description": "Enable/disable webhooks by event category.",
+                "description": "Choose which event categories can send webhooks. These take effect only if the global switch is on.",
             },
         ),
     )
@@ -96,3 +96,8 @@ class WebhookSettingsAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         # Prevent deletion of the singleton
         return False
+
+    def changelist_view(self, request, extra_context=None):
+        # Always redirect to the singleton instance instead of showing a list.
+        obj = WebhookSettings.get_settings()
+        return HttpResponseRedirect(reverse("admin:webhooks_webhooksettings_change", args=[obj.pk]))

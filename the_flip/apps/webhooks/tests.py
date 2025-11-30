@@ -205,6 +205,28 @@ class DiscordFormatterTests(TestCase):
             self.assertIn("image", embed)
             self.assertEqual(embed["url"], main_url)
 
+    def test_format_log_entry_includes_created_by_name(self):
+        """Log entry without maintainers falls back to created_by user name."""
+        # Create a user with a full name
+        from django.contrib.auth import get_user_model
+
+        user_model = get_user_model()
+        user = user_model.objects.create_user(
+            username="janedoe",
+            password="testpass123",  # pragma: allowlist secret
+            first_name="Jane",
+            last_name="Doe",
+        )
+
+        # Create log entry with only created_by (no maintainers)
+        log_entry = create_log_entry(machine=self.machine, created_by=user)
+        message = format_discord_message("log_entry_created", log_entry)
+
+        embed = message["embeds"][0]
+
+        # Description should include the user's full name
+        self.assertIn("Jane Doe", embed["description"])
+
     def test_format_test_message(self):
         """Format a test message has required structure."""
         message = format_test_message("problem_report_created")
