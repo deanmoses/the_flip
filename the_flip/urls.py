@@ -18,13 +18,13 @@ from the_flip.apps.accounts.views import (
 )
 from the_flip.apps.catalog.views import (
     MachineActivityPartialView,
-    MachineDetailView,
+    MachineDetailViewForMaintainers,
+    MachineDetailViewForPublic,
     MachineListView,
+    MachineListViewForPublic,
     MachineModelUpdateView,
     MachineQuickCreateView,
     MachineUpdateView,
-    PublicMachineDetailView,
-    PublicMachineListView,
 )
 from the_flip.apps.catalog.views_inline import MachineInlineUpdateView
 from the_flip.apps.core.views import HomeView
@@ -83,8 +83,8 @@ urlpatterns = [
         name="terminal-reactivate",
     ),
     # Public machine pages
-    path("m/", PublicMachineListView.as_view(), name="public-machine-list"),
-    path("m/<slug:slug>/", PublicMachineDetailView.as_view(), name="public-machine-detail"),
+    path("m/", MachineListViewForPublic.as_view(), name="public-machine-list"),
+    path("m/<slug:slug>/", MachineDetailViewForPublic.as_view(), name="public-machine-detail"),
     # Problem report submission
     path(
         "p/<slug:slug>/",
@@ -130,7 +130,11 @@ urlpatterns = [
     # Maintainer machine views
     path("machines/", MachineListView.as_view(), name="maintainer-machine-list"),
     path("machines/new/", MachineQuickCreateView.as_view(), name="machine-quick-create"),
-    path("machines/<slug:slug>/", MachineDetailView.as_view(), name="maintainer-machine-detail"),
+    path(
+        "machines/<slug:slug>/",
+        MachineDetailViewForMaintainers.as_view(),
+        name="maintainer-machine-detail",
+    ),
     path(
         "machines/<slug:slug>/activity/",
         MachineActivityPartialView.as_view(),
