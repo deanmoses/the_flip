@@ -668,6 +668,11 @@ body {
   color: #dc2626;
 }
 
+.dropdown__item--selected {
+  font-weight: var(--font-semibold);
+  background-color: var(--color-gray-100);
+}
+
 /* Avatar */
 .avatar {
   width: 2.25rem;
