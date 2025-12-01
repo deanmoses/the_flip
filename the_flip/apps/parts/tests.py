@@ -163,20 +163,20 @@ class PartRequestViewTests(TestCase):
 
     def test_list_view_requires_staff_permission(self):
         """Non-staff users should be denied access."""
-        self.client.login(username="regularuser", password="testpass123")
+        self.client.force_login(self.regular_user)
         response = self.client.get(reverse("part-request-list"))
         self.assertEqual(response.status_code, 403)
 
     def test_list_view_accessible_to_staff(self):
         """Staff users should be able to access the list."""
-        self.client.login(username="staffuser", password="testpass123")
+        self.client.force_login(self.staff_user)
         response = self.client.get(reverse("part-request-list"))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "parts/part_list.html")
 
     def test_list_view_shows_part_requests(self):
         """List view shows part requests."""
-        self.client.login(username="staffuser", password="testpass123")
+        self.client.force_login(self.staff_user)
         create_part_request(
             text="Flipper rubbers",
             requested_by=self.maintainer,
@@ -187,19 +187,19 @@ class PartRequestViewTests(TestCase):
 
     def test_create_view_requires_staff(self):
         """Create view requires staff permission."""
-        self.client.login(username="regularuser", password="testpass123")
+        self.client.force_login(self.regular_user)
         response = self.client.get(reverse("part-request-create"))
         self.assertEqual(response.status_code, 403)
 
     def test_create_view_accessible_to_staff(self):
         """Staff can access create view."""
-        self.client.login(username="staffuser", password="testpass123")
+        self.client.force_login(self.staff_user)
         response = self.client.get(reverse("part-request-create"))
         self.assertEqual(response.status_code, 200)
 
     def test_create_part_request(self):
         """Staff can create a part request."""
-        self.client.login(username="staffuser", password="testpass123")
+        self.client.force_login(self.staff_user)
         response = self.client.post(
             reverse("part-request-create"),
             {
@@ -216,7 +216,7 @@ class PartRequestViewTests(TestCase):
 
     def test_create_part_request_without_machine(self):
         """Can create a part request without linking to a machine."""
-        self.client.login(username="staffuser", password="testpass123")
+        self.client.force_login(self.staff_user)
         response = self.client.post(
             reverse("part-request-create"),
             {
@@ -231,7 +231,7 @@ class PartRequestViewTests(TestCase):
     def test_detail_view_requires_staff(self):
         """Detail view requires staff permission."""
         part_request = create_part_request(requested_by=self.maintainer)
-        self.client.login(username="regularuser", password="testpass123")
+        self.client.force_login(self.regular_user)
         response = self.client.get(reverse("part-request-detail", kwargs={"pk": part_request.pk}))
         self.assertEqual(response.status_code, 403)
 
@@ -241,7 +241,7 @@ class PartRequestViewTests(TestCase):
             text="Test part request",
             requested_by=self.maintainer,
         )
-        self.client.login(username="staffuser", password="testpass123")
+        self.client.force_login(self.staff_user)
         response = self.client.get(reverse("part-request-detail", kwargs={"pk": part_request.pk}))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Test part request")
@@ -258,7 +258,7 @@ class PartRequestUpdateViewTests(TestCase):
 
     def test_create_update(self):
         """Staff can create an update on a part request."""
-        self.client.login(username="staffuser", password="testpass123")
+        self.client.force_login(self.staff_user)
         response = self.client.post(
             reverse("part-request-update-create", kwargs={"pk": self.part_request.pk}),
             {
@@ -274,7 +274,7 @@ class PartRequestUpdateViewTests(TestCase):
 
     def test_create_update_with_status_change(self):
         """Can create an update that changes the status."""
-        self.client.login(username="staffuser", password="testpass123")
+        self.client.force_login(self.staff_user)
         response = self.client.post(
             reverse("part-request-update-create", kwargs={"pk": self.part_request.pk}),
             {
@@ -473,28 +473,29 @@ class PartRequestListFilterTests(TestCase):
             status=PartRequest.STATUS_CANCELLED,
         )
 
-    def test_filter_by_status(self):
-        """Can filter part requests by status."""
-        self.client.login(username="staffuser", password="testpass123")
+    def test_search_by_status_requested(self):
+        """Can search part requests by status 'requested'."""
+        self.client.force_login(self.staff_user)
 
-        # Filter by requested status
-        response = self.client.get(reverse("part-request-list") + "?status=requested")
+        response = self.client.get(reverse("part-request-list") + "?q=requested")
         self.assertContains(response, "Requested part")
         self.assertNotContains(response, "Ordered part")
         self.assertNotContains(response, "Received part")
+        self.assertNotContains(response, "Cancelled part")
 
-    def test_filter_by_ordered_status(self):
-        """Can filter by 'ordered' status."""
-        self.client.login(username="staffuser", password="testpass123")
+    def test_search_by_status_ordered(self):
+        """Can search part requests by status 'ordered'."""
+        self.client.force_login(self.staff_user)
 
-        response = self.client.get(reverse("part-request-list") + "?status=ordered")
+        response = self.client.get(reverse("part-request-list") + "?q=ordered")
         self.assertContains(response, "Ordered part")
         self.assertNotContains(response, "Requested part")
         self.assertNotContains(response, "Received part")
+        self.assertNotContains(response, "Cancelled part")
 
     def test_search_by_text(self):
         """Can search part requests by text."""
-        self.client.login(username="staffuser", password="testpass123")
+        self.client.force_login(self.staff_user)
 
         response = self.client.get(reverse("part-request-list") + "?q=Ordered")
         self.assertContains(response, "Ordered part")
@@ -515,7 +516,7 @@ class PartsFeatureFlagTests(TestCase):
 
     def test_nav_link_hidden_when_disabled(self):
         """Parts nav link is hidden when PARTS_ENABLED is False."""
-        self.client.login(username="staffuser", password="testpass123")
+        self.client.force_login(self.staff_user)
 
         with self.override_config(PARTS_ENABLED=False):
             response = self.client.get(reverse("maintainer-machine-list"))
@@ -524,7 +525,7 @@ class PartsFeatureFlagTests(TestCase):
 
     def test_nav_link_shown_when_enabled(self):
         """Parts nav link is shown when PARTS_ENABLED is True."""
-        self.client.login(username="staffuser", password="testpass123")
+        self.client.force_login(self.staff_user)
 
         with self.override_config(PARTS_ENABLED=True):
             response = self.client.get(reverse("maintainer-machine-list"))

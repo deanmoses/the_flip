@@ -50,16 +50,12 @@ class PartRequestListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
             .order_by("-created_at")
         )
 
-        # Filter by status
-        status_filter = self.request.GET.get("status", "").strip()
-        if status_filter:
-            parts = parts.filter(status=status_filter)
-
-        # Search
+        # Search (includes status field so users can search "ordered", "requested", etc.)
         search_query = self.request.GET.get("q", "").strip()
         if search_query:
             parts = parts.filter(
                 Q(text__icontains=search_query)
+                | Q(status__icontains=search_query)
                 | Q(machine__model__name__icontains=search_query)
                 | Q(machine__name_override__icontains=search_query)
                 | Q(requested_by__user__first_name__icontains=search_query)
@@ -80,7 +76,6 @@ class PartRequestListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                 "page_obj": page_obj,
                 "part_requests": page_obj.object_list,
                 "search_form": SearchForm(initial={"q": search_query}),
-                "status_filter": status_filter,
                 "requested_count": requested_count,
                 "ordered_count": ordered_count,
                 "received_count": received_count,
@@ -110,14 +105,11 @@ class PartRequestListPartialView(LoginRequiredMixin, UserPassesTestMixin, View):
             .order_by("-created_at")
         )
 
-        status_filter = request.GET.get("status", "").strip()
-        if status_filter:
-            parts = parts.filter(status=status_filter)
-
         search_query = request.GET.get("q", "").strip()
         if search_query:
             parts = parts.filter(
                 Q(text__icontains=search_query)
+                | Q(status__icontains=search_query)
                 | Q(machine__model__name__icontains=search_query)
                 | Q(machine__name_override__icontains=search_query)
                 | Q(requested_by__user__first_name__icontains=search_query)
@@ -455,3 +447,107 @@ class PartRequestUpdatesPartialView(LoginRequiredMixin, UserPassesTestMixin, Vie
                 "next_page": page_obj.next_page_number() if page_obj.has_next() else None,
             }
         )
+
+
+class PartRequestUpdateDetailView(LoginRequiredMixin, UserPassesTestMixin, View):
+    """Detail view for a part request update. Maintainer-only access."""
+
+    template_name = "parts/part_update_detail.html"
+
+    def test_func(self):
+        return self.request.user.is_staff
+
+    def get(self, request, *args, **kwargs):
+        update = get_object_or_404(
+            PartRequestUpdate.objects.select_related(
+                "part_request__requested_by__user",
+                "part_request__machine",
+                "part_request__machine__model",
+                "posted_by__user",
+            ).prefetch_related("media"),
+            pk=kwargs["pk"],
+        )
+        return self.render_response(request, update)
+
+    def post(self, request, *args, **kwargs):
+        update = get_object_or_404(
+            PartRequestUpdate.objects.select_related(
+                "part_request__requested_by__user",
+                "part_request__machine",
+                "part_request__machine__model",
+                "posted_by__user",
+            ).prefetch_related("media"),
+            pk=kwargs["pk"],
+        )
+        action = request.POST.get("action")
+
+        # Handle AJAX text update
+        if action == "update_text":
+            update.text = request.POST.get("text", "")
+            update.save(update_fields=["text", "updated_at"])
+            return JsonResponse({"success": True})
+
+        # Handle AJAX media upload
+        if action == "upload_media":
+            if "file" in request.FILES:
+                upload = request.FILES["file"]
+                content_type = (getattr(upload, "content_type", "") or "").lower()
+                ext = Path(getattr(upload, "name", "")).suffix.lower()
+                is_video = content_type.startswith("video/") or ext in {
+                    ".mp4",
+                    ".mov",
+                    ".m4v",
+                    ".hevc",
+                }
+                media = PartRequestUpdateMedia.objects.create(
+                    update=update,
+                    media_type=PartRequestUpdateMedia.TYPE_VIDEO
+                    if is_video
+                    else PartRequestUpdateMedia.TYPE_PHOTO,
+                    file=upload,
+                    transcode_status=PartRequestUpdateMedia.STATUS_PENDING if is_video else "",
+                )
+                if is_video:
+                    enqueue_transcode(media.id, model_name="PartRequestUpdateMedia")
+                return JsonResponse(
+                    {
+                        "success": True,
+                        "media_id": media.id,
+                        "media_url": media.file.url,
+                        "thumbnail_url": media.thumbnail_file.url
+                        if media.thumbnail_file
+                        else media.file.url,
+                        "media_type": media.media_type,
+                        "transcode_status": media.transcode_status,
+                        "poster_url": media.poster_file.url if media.poster_file else None,
+                    }
+                )
+            return JsonResponse({"success": False, "error": "No file provided"}, status=400)
+
+        # Handle AJAX media delete
+        if action == "delete_media":
+            media_id = request.POST.get("media_id")
+            try:
+                media = PartRequestUpdateMedia.objects.get(id=media_id, update=update)
+                if media.transcoded_file:
+                    media.transcoded_file.delete(save=False)
+                if media.poster_file:
+                    media.poster_file.delete(save=False)
+                if media.thumbnail_file:
+                    media.thumbnail_file.delete(save=False)
+                media.file.delete()
+                media.delete()
+                return JsonResponse({"success": True})
+            except PartRequestUpdateMedia.DoesNotExist:
+                return JsonResponse({"success": False, "error": "Media not found"}, status=404)
+
+        return JsonResponse({"success": False, "error": "Invalid action"}, status=400)
+
+    def render_response(self, request, update):
+        from django.shortcuts import render
+
+        context = {
+            "update": update,
+            "part_request": update.part_request,
+        }
+        return render(request, self.template_name, context)

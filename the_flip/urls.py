@@ -219,6 +219,11 @@ urlpatterns = [
         parts_views.PartRequestUpdatesPartialView.as_view(),
         name="part-request-updates",
     ),
+    path(
+        "parts/updates/<int:pk>/",
+        parts_views.PartRequestUpdateDetailView.as_view(),
+        name="part-request-update-detail",
+    ),
 ]
 
 media_url = settings.MEDIA_URL.lstrip("/")

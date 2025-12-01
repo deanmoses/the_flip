@@ -29,22 +29,6 @@
             </div>
           </div>
         </div>
-        <!-- FILTERS -->
-        <div class="sidebar__section">
-          <div class="sidebar__label">Filter by Status</div>
-          <div class="filter-pills">
-            <a href="{% url 'part-request-list' %}"
-               class="pill {% if not status_filter %}pill--active{% endif %}">All</a>
-            <a href="{% url 'part-request-list' %}?status=requested"
-               class="pill {% if status_filter == 'requested' %}pill--active{% endif %}">Requested</a>
-            <a href="{% url 'part-request-list' %}?status=ordered"
-               class="pill {% if status_filter == 'ordered' %}pill--active{% endif %}">Ordered</a>
-            <a href="{% url 'part-request-list' %}?status=received"
-               class="pill {% if status_filter == 'received' %}pill--active{% endif %}">Received</a>
-            <a href="{% url 'part-request-list' %}?status=cancelled"
-               class="pill {% if status_filter == 'cancelled' %}pill--active{% endif %}">Cancelled</a>
-          </div>
-        </div>
         <!-- ACTIONS -->
         <div class="sidebar__section">
           <a href="{% url 'part-request-create' %}" class="btn btn--log btn--full">Request a Part</a>
@@ -57,7 +41,6 @@
       <div class="filter-bar">
         <div class="filter-bar__search filter-bar__search--full">
           <form method="get" action="">
-            {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
             <input type="search"
                    name="q"
                    placeholder="Search..."
@@ -69,7 +52,7 @@
       </div>
       <!-- LIST CONTENT -->
       <div id="log-container"
-           data-fetch-url="{% url 'part-request-list-entries' %}{% if status_filter %}?status={{ status_filter }}{% endif %}">
+           data-fetch-url="{% url 'part-request-list-entries' %}">
         {% if part_requests %}
           <div class="timeline">
             <div class="timeline__line"></div>
@@ -85,8 +68,6 @@
           <p class="text-muted">
             {% if search_form.q.value %}
               No part requests match your search.
-            {% elif status_filter %}
-              No {{ status_filter }} part requests.
             {% else %}
               No part requests yet.
             {% endif %}

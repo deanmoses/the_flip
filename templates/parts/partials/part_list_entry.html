@@ -9,21 +9,20 @@
       <div class="card card--log timeline__card">
         <div class="timeline__header">
           <div class="flex items-center stack-tight">
-            <span class="timeline__title">#{{ entry.pk }}</span>
+            <span class="timeline__title">
+              {% if entry.machine %}
+                {{ entry.machine.display_name }} – Part Request #{{ entry.pk }}
+              {% else %}
+                Part Request #{{ entry.pk }}
+              {% endif %}
+            </span>
             <span class="pill pill--neutral">{{ entry.get_status_display }}</span>
           </div>
           <span class="timeline__meta">{{ entry.requested_by.display_name }} · <strong>{{ entry.created_at|smart_date }}</strong></span>
         </div>
-        <div class="timeline__body {% if entry.prefetched_updates or entry.machine %}space-below-sm{% endif %} markdown-content markdown-content--compact">
+        <div class="timeline__body {% if entry.prefetched_updates %}space-below-sm{% endif %} markdown-content markdown-content--compact">
           {{ entry.text|truncatechars:200|render_markdown }}
         </div>
-        {% if entry.machine %}
-          <div class="snippet-row">
-            <span class="snippet-label">
-              <i class="fa-solid fa-gamepad space-right-xs"></i>{{ entry.machine.display_name }}
-            </span>
-          </div>
-        {% endif %}
         {% if entry.prefetched_updates %}
           {% with latest_update=entry.prefetched_updates.0 %}
             <div class="snippet-row">
