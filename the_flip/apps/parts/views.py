@@ -7,7 +7,7 @@ from pathlib import Path
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
@@ -38,10 +38,15 @@ class PartRequestListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        latest_update_prefetch = Prefetch(
+            "updates",
+            queryset=PartRequestUpdate.objects.order_by("-created_at"),
+            to_attr="prefetched_updates",
+        )
         parts = (
             PartRequest.objects.all()
             .select_related("requested_by__user", "machine", "machine__model")
-            .prefetch_related("media")
+            .prefetch_related("media", latest_update_prefetch)
             .order_by("-created_at")
         )
 
@@ -93,10 +98,15 @@ class PartRequestListPartialView(LoginRequiredMixin, UserPassesTestMixin, View):
         return self.request.user.is_staff
 
     def get(self, request, *args, **kwargs):
+        latest_update_prefetch = Prefetch(
+            "updates",
+            queryset=PartRequestUpdate.objects.order_by("-created_at"),
+            to_attr="prefetched_updates",
+        )
         parts = (
             PartRequest.objects.all()
             .select_related("requested_by__user", "machine", "machine__model")
-            .prefetch_related("media")
+            .prefetch_related("media", latest_update_prefetch)
             .order_by("-created_at")
         )
 
@@ -320,16 +330,12 @@ class PartRequestDetailView(LoginRequiredMixin, UserPassesTestMixin, View):
         paginator = Paginator(updates, 10)
         page_obj = paginator.get_page(request.GET.get("page"))
 
-        # Form for adding updates
-        update_form = PartRequestUpdateForm()
-
         context = {
             "part_request": part_request,
             "machine": part_request.machine,
             "page_obj": page_obj,
             "updates": page_obj.object_list,
             "search_form": SearchForm(initial={"q": search_query}),
-            "update_form": update_form,
         }
         return render(request, self.template_name, context)
 
@@ -337,14 +343,23 @@ class PartRequestDetailView(LoginRequiredMixin, UserPassesTestMixin, View):
 class PartRequestUpdateCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     """Add an update/comment to a part request."""
 
+    template_name = "parts/part_update_form.html"
     form_class = PartRequestUpdateForm
 
     def test_func(self):
         return self.request.user.is_staff
 
     def dispatch(self, request, *args, **kwargs):
-        self.part_request = get_object_or_404(PartRequest, pk=kwargs["pk"])
+        self.part_request = get_object_or_404(
+            PartRequest.objects.select_related("requested_by__user", "machine", "machine__model"),
+            pk=kwargs["pk"],
+        )
         return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["part_request"] = self.part_request
+        return context
 
     def form_valid(self, form):
         maintainer = get_object_or_404(Maintainer, user=self.request.user)

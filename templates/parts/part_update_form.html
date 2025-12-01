@@ -1,54 +1,38 @@
 {% extends "base.html" %}
 {% load static core_extras %}
-{% block title %}
-  {% if is_edit %}
-    Edit
-  {% else %}
-    New
-  {% endif %}
-  Part Request · {{ block.super }}
-{% endblock %}
+{% block title %}Add Update · Part Request #{{ part_request.pk }} · {{ block.super }}{% endblock %}
 {% block content %}
   <!-- BREADCRUMBS -->
   <nav class="breadcrumbs breadcrumbs--responsive">
     <a href="{% url 'part-request-list' %}" class="breadcrumbs__link">Parts</a>
     <span>/</span>
-    {% if is_edit %}
-      <a href="{% url 'part-request-detail' part_request.pk %}"
-         class="breadcrumbs__link">#{{ part_request.pk }}</a>
-      <span>/</span>
-      <span class="breadcrumbs__current">Edit</span>
-    {% else %}
-      <span class="breadcrumbs__current">New Request</span>
-    {% endif %}
+    <a href="{% url 'part-request-detail' part_request.pk %}"
+       class="breadcrumbs__link">#{{ part_request.pk }}</a>
+    <span>/</span>
+    <span class="breadcrumbs__current">Add Update</span>
   </nav>
   <!-- TWO COLUMN LAYOUT -->
   <div class="two-column">
     <!-- SIDEBAR -->
     <aside class="two-column__sidebar">
       <div class="card card--padded sidebar--sticky">
+        <!-- PART REQUEST -->
         <div class="sidebar__section">
-          <div class="sidebar__label">
-            {% if is_edit %}
-              Edit
-            {% else %}
-              New
-            {% endif %}
-            Part Request
+          <div class="sidebar__label">Part Request</div>
+          <a href="{% url 'part-request-detail' part_request.pk %}"
+             class="sidebar__title sidebar__link">
+            <i class="fa-solid fa-box-open"></i> #{{ part_request.pk }}
+          </a>
+          <div class="flex flex-wrap stack-tight space-above-sm">
+            <span class="pill pill--neutral">{{ part_request.get_status_display }}</span>
           </div>
-          <p class="text-muted text-sm">
-            {% if is_edit %}
-              Update the part request details.
-            {% else %}
-              Request a part needed for maintenance. Optionally link it to a machine.
-            {% endif %}
-          </p>
         </div>
-        {% if machine %}
+        <!-- MACHINE (if linked) -->
+        {% if part_request.machine %}
           <div class="sidebar__section">
             <div class="sidebar__label">Machine</div>
-            <a href="{% url 'maintainer-machine-detail' machine.slug %}"
-               class="sidebar__title sidebar__link">{{ machine.display_name }}</a>
+            <a href="{% url 'maintainer-machine-detail' part_request.machine.slug %}"
+               class="sidebar__title sidebar__link">{{ part_request.machine.display_name }}</a>
           </div>
         {% endif %}
       </div>
@@ -56,36 +40,14 @@
     <!-- MAIN COLUMN -->
     <div class="two-column__main">
       <div class="card card--padded">
+        <div class="card__header">
+          <div class="card__title">Add Update</div>
+        </div>
         <form method="post" enctype="multipart/form-data">
           {% csrf_token %}
-          <!-- Machine selector (if not pre-selected) -->
-          {% if not machine %}
-            <div class="form-field">
-              <label class="form-label">Machine (optional)</label>
-              <div class="autocomplete"
-                   data-machine-autocomplete
-                   data-autocomplete-url="{% url 'api-machine-autocomplete' %}">
-                <input type="search"
-                       placeholder="Search machines..."
-                       class="form-input"
-                       autocomplete="off"
-                       data-1p-ignore="true"
-                       data-lpignore="true"
-                       data-machine-search
-                       {% if selected_machine %}value="{{ selected_machine.display_name }}"{% endif %}>
-                <input type="hidden"
-                       name="{{ form.machine_slug.html_name }}"
-                       id="{{ form.machine_slug.id_for_label }}"
-                       value="{{ form.machine_slug.value|default_if_none:'' }}"
-                       data-machine-slug-input>
-                <div class="autocomplete__dropdown hidden"></div>
-              </div>
-              {% if form.machine_slug.errors %}<div class="form-error">{{ form.machine_slug.errors.0 }}</div>{% endif %}
-            </div>
-          {% endif %}
-          <!-- Description -->
+          <!-- Comment -->
           <div class="form-field">
-            <label for="id_text" class="form-label">Description</label>
+            <label for="id_text" class="form-label">Comment</label>
             {{ form.text }}
             {% if form.text.errors %}<div class="form-error">{{ form.text.errors.0 }}</div>{% endif %}
             <!-- File upload link (GitHub-style) -->
@@ -104,18 +66,17 @@
             <!-- Uploaded files preview -->
             <div class="file-preview-row" id="file-preview-row"></div>
           </div>
+          <!-- Status change -->
+          <div class="form-field">
+            <label for="id_new_status" class="form-label">Change status to</label>
+            {{ form.new_status }}
+            {% if form.new_status.errors %}<div class="form-error">{{ form.new_status.errors.0 }}</div>{% endif %}
+          </div>
           <!-- Submit -->
           <div class="form-actions">
-            <a href="{% if is_edit %}{% url 'part-request-detail' part_request.pk %}{% else %}{% url 'part-request-list' %}{% endif %}"
+            <a href="{% url 'part-request-detail' part_request.pk %}"
                class="btn btn--secondary">Cancel</a>
-            <button type="submit" class="btn btn--log">
-              <i class="fa-solid fa-box-open meta"></i>
-              {% if is_edit %}
-                Save Changes
-              {% else %}
-                Create Request
-              {% endif %}
-            </button>
+            <button type="submit" class="btn btn--log">Post Update</button>
           </div>
         </form>
       </div>
@@ -123,7 +84,6 @@
   </div>
 {% endblock %}
 {% block extra_scripts %}
-  <script src="{% static 'core/machine_autocomplete.js' %}" defer></script>
   <script>
     // File upload click handler
     document.getElementById('file-upload-link').addEventListener('click', function(e) {

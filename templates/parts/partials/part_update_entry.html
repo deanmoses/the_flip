@@ -7,15 +7,11 @@
       <span>{{ update.posted_by.display_name }}</span>
       {% if update.new_status %}
         <span class="text-muted">·</span>
-        <span class="pill pill--status-{{ update.new_status }}">
-          → {{ update.get_new_status_display }}
-        </span>
+        <span class="pill pill--neutral">→ {{ update.get_new_status_display }}</span>
       {% endif %}
     </div>
   </div>
-  <div class="log-entry-card__body markdown-content">
-    {{ update.text|render_markdown }}
-  </div>
+  <div class="log-entry-card__body markdown-content">{{ update.text|render_markdown }}</div>
   {% if update.media.all %}
     <div class="log-entry-card__media">
       <div class="media-grid">

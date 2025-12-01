@@ -12,7 +12,8 @@
   <div class="two-column">
     <!-- MOBILE ACTIONS -->
     <div class="mobile-actions">
-      <a href="#add-update" class="btn btn--log btn--full">
+      <a href="{% url 'part-request-update-create' part_request.pk %}"
+         class="btn btn--log btn--full">
         <i class="fa-solid fa-plus meta"></i>
         Add Update
       </a>
@@ -27,9 +28,7 @@
             <i class="fa-solid fa-box-open"></i> #{{ part_request.pk }}
           </div>
           <div class="flex flex-wrap stack-tight space-above-sm">
-            <span class="pill pill--status-{{ part_request.status_display_class }}">
-              {{ part_request.get_status_display }}
-            </span>
+            <span class="pill pill--neutral">{{ part_request.get_status_display }}</span>
           </div>
           <p class="text-muted text-sm space-above-sm">
             {{ part_request.created_at|smart_date }} by {{ part_request.requested_by.display_name }}
@@ -50,7 +49,8 @@
         {% endif %}
         <!-- ACTIONS -->
         <div class="sidebar__section">
-          <a href="#add-update" class="btn btn--log btn--full">
+          <a href="{% url 'part-request-update-create' part_request.pk %}"
+             class="btn btn--log btn--full">
             <i class="fa-solid fa-plus meta"></i>
             Add Update
           </a>
@@ -73,9 +73,7 @@
           </div>
         </div>
         <div id="text-view-mode">
-          <div id="description-display" class="markdown-content">
-            {{ part_request.text|render_markdown }}
-          </div>
+          <div id="description-display" class="markdown-content">{{ part_request.text|render_markdown }}</div>
         </div>
         <div id="text-edit-mode" class="hidden">
           <textarea id="description-text"
@@ -119,35 +117,6 @@
             </div>
           </div>
         {% endif %}
-      </div>
-      <!-- ADD UPDATE FORM -->
-      <div class="space-above-lg" id="add-update">
-        <div class="card card--padded">
-          <div class="card__header">
-            <div class="card__title">Add Update</div>
-          </div>
-          <form method="post" action="{% url 'part-request-update-create' part_request.pk %}" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="form-field">
-              <label for="id_text" class="form-label">Comment</label>
-              {{ update_form.text }}
-            </div>
-            <div class="form-field">
-              <label for="id_new_status" class="form-label">Change status to</label>
-              {{ update_form.new_status }}
-            </div>
-            <div class="form-field">
-              <label for="id_media_file" class="form-label">Photos/Videos (optional)</label>
-              {{ update_form.media_file }}
-            </div>
-            <div class="form-actions">
-              <button type="submit" class="btn btn--log">
-                <i class="fa-solid fa-plus meta"></i>
-                Post Update
-              </button>
-            </div>
-          </form>
-        </div>
       </div>
       <!-- UPDATES SECTION -->
       <div class="space-above-lg">
