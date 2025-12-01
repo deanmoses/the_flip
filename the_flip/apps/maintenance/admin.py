@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib import admin
+from simple_history.admin import SimpleHistoryAdmin
 
 from .models import LogEntry, LogEntryMedia, ProblemReport
 
@@ -39,7 +40,7 @@ class LogEntryMediaInline(admin.TabularInline):
 
 
 @admin.register(ProblemReport)
-class ProblemReportAdmin(admin.ModelAdmin):
+class ProblemReportAdmin(SimpleHistoryAdmin):
     list_display = ("machine", "problem_type", "status", "reporter_display", "created_at")
     list_filter = ("status", "problem_type", "machine__location")
     search_fields = (
@@ -58,7 +59,7 @@ class ProblemReportAdmin(admin.ModelAdmin):
 
 
 @admin.register(LogEntry)
-class LogEntryAdmin(admin.ModelAdmin):
+class LogEntryAdmin(SimpleHistoryAdmin):
     list_display = ("machine", "work_date", "problem_report", "maintainer_list", "created_by")
     list_filter = ("machine__location", "problem_report__status")
     search_fields = (
@@ -91,7 +92,7 @@ class LogEntryAdmin(admin.ModelAdmin):
 
 
 @admin.register(LogEntryMedia)
-class LogEntryMediaAdmin(admin.ModelAdmin):
+class LogEntryMediaAdmin(SimpleHistoryAdmin):
     list_display = ("log_entry", "media_type", "transcode_status", "created_at")
     list_filter = ("media_type", "transcode_status")
     search_fields = (

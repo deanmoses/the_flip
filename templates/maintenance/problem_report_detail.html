@@ -39,6 +39,7 @@
     <!-- SIDEBAR -->
     <aside class="two-column__sidebar">
       <div class="card card--padded sidebar--sticky">
+        {% include "components/history_link.html" with history_url=report.get_admin_history_url %}
         <!-- PROBLEM REPORT -->
         <div class="sidebar__section">
           <div class="sidebar__label">Problem Report</div>
