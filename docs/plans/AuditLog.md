@@ -42,6 +42,13 @@ We want the integration and maintenance costs to be as low as possible.  Weight 
 
 We don't want this to affect the performance of writing data.  At least, weight will be given to packages that affect performance the least.
 
+### Viability
+
+We want a package that is:
+ - actively maintained (as measured by recent commits)
+ - used by lots of people
+ - established, has a long history
+
 ### Models to Audit
 
 Audit models that can be created or modified by maintainers through the application:
@@ -83,6 +90,9 @@ Both packages are maintained by [Jazzband](https://jazzband.co/), a collaborativ
 
 **django-simple-history**: "What was the state?" — Full version control. Stores complete snapshots of each record in per-model history tables. Enables rollback and time-travel queries.
 
+### Contenders
+
+
 ### Comparison
 
 |  | **django-auditlog** | **django-simple-history** |
@@ -120,19 +130,3 @@ Plus: actor, timestamp, action type
 
 **django-simple-history stores:**
 Full copy of the ProblemReport row (all fields), plus: `history_user`, `history_date`, `history_type`
-
----
-
-## Recommendation
-
-**TBD** — Pending decision on whether rollback capability is worth the per-model setup.
-
-**If rollback is important:** django-simple-history
-- Built-in revert functionality
-- Time-travel queries (`as_of(datetime)`)
-- Slightly more setup (one line per model)
-
-**If rollback is not needed:** django-auditlog
-- Zero model changes (settings-only configuration)
-- Smaller storage footprint
-- Simpler mental model (just diffs)
