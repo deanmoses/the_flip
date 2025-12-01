@@ -38,6 +38,7 @@ from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import Location, MachineInstance
 from the_flip.apps.maintenance.forms import (
     LogEntryQuickForm,
+    MaintainerProblemReportForm,
     ProblemReportForm,
     SearchForm,
 )
@@ -370,7 +371,7 @@ class ProblemReportCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView)
     """Maintainer-facing problem report creation (global or machine-scoped)."""
 
     template_name = "maintenance/problem_report_new.html"
-    form_class = ProblemReportForm
+    form_class = MaintainerProblemReportForm
 
     def test_func(self):
         return self.request.user.is_staff

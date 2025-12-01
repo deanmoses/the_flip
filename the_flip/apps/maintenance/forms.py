@@ -47,6 +47,8 @@ class MultiFileField(forms.FileField):
 
 
 class ProblemReportForm(StyledFormMixin, forms.ModelForm):
+    """Public-facing problem report form with problem type selection."""
+
     machine_slug = forms.CharField(required=False, widget=forms.HiddenInput())
 
     class Meta:
@@ -78,6 +80,35 @@ class ProblemReportForm(StyledFormMixin, forms.ModelForm):
         if problem_type == ProblemReport.PROBLEM_OTHER and not description:
             self.add_error("description", "Please describe the problem.")
         return cleaned
+
+
+class MaintainerProblemReportForm(StyledFormMixin, forms.ModelForm):
+    """Maintainer-facing problem report form. Type defaults to 'Other'."""
+
+    machine_slug = forms.CharField(required=False, widget=forms.HiddenInput())
+
+    class Meta:
+        model = ProblemReport
+        fields = ["description"]
+        widgets = {
+            "description": forms.Textarea(
+                attrs={"rows": 4, "placeholder": "Describe the problem..."}
+            ),
+        }
+
+    def clean_machine_slug(self):
+        slug = (self.cleaned_data.get("machine_slug") or "").strip()
+        if not slug:
+            return ""
+        if MachineInstance.objects.filter(slug=slug).exists():
+            return slug
+        raise forms.ValidationError("Select a machine.")
+
+    def clean_description(self):
+        description = (self.cleaned_data.get("description") or "").strip()
+        if not description:
+            raise forms.ValidationError("Please describe the problem.")
+        return description
 
 
 class SearchForm(forms.Form):
