@@ -1,4 +1,5 @@
 from django.contrib import admin
+from simple_history.admin import SimpleHistoryAdmin
 
 from .models import Location, MachineInstance, MachineModel
 
@@ -17,7 +18,7 @@ class LocationAdmin(admin.ModelAdmin):
 
 
 @admin.register(MachineModel)
-class MachineModelAdmin(admin.ModelAdmin):
+class MachineModelAdmin(SimpleHistoryAdmin):
     list_display = ("name", "manufacturer", "year", "era")
     search_fields = ("name", "slug", "manufacturer", "ipdb_id")
     list_filter = ("era", "manufacturer")
@@ -26,7 +27,7 @@ class MachineModelAdmin(admin.ModelAdmin):
 
 
 @admin.register(MachineInstance)
-class MachineInstanceAdmin(admin.ModelAdmin):
+class MachineInstanceAdmin(SimpleHistoryAdmin):
     list_display = ("display_name", "model", "location", "operational_status")
     search_fields = ("name_override", "model__name", "serial_number")
     list_filter = ("operational_status", "location")

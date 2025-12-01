@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     "django_q",
     "constance",
     "constance.backends.database",
+    "simple_history",
     "the_flip.apps.core",
     "the_flip.apps.accounts",
     "the_flip.apps.catalog",
@@ -42,6 +43,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "simple_history.middleware.HistoryRequestMiddleware",
 ]
 
 ROOT_URLCONF = "the_flip.urls"

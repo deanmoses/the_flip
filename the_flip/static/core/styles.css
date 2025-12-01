@@ -335,6 +335,7 @@ body {
 
 /* --- Cards --- */
 .card {
+  position: relative;
   background-color: var(--color-surface);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border-soft);
@@ -1317,6 +1318,25 @@ body {
   color: var(--color-log);
 }
 
+.sidebar__list {
+  list-style: disc;
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.sidebar__list li {
+  margin-bottom: var(--space-1);
+}
+
+.sidebar__list a {
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.sidebar__list a:hover {
+  color: var(--color-log);
+}
+
 /* --- Section Header --- */
 .section-header {
   display: flex;
@@ -1741,4 +1761,28 @@ body {
   padding: var(--space-4);
   color: var(--color-text-muted);
   font-size: var(--text-sm);
+}
+
+/* ========================================
+   HISTORY LINK
+   Positioned in sidebar top-right corner
+   ======================================== */
+
+.history-link {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  color: var(--color-text-muted);
+  transition: color 0.15s ease;
+}
+
+.history-link:hover {
+  color: var(--color-accent);
+}
+
+/* Hide on mobile */
+@media (max-width: 768px) {
+  .history-link {
+    display: none;
+  }
 }

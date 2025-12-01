@@ -25,6 +25,7 @@
     <!-- SIDEBAR -->
     <aside class="two-column__sidebar">
       <div class="card card--padded sidebar--sticky">
+        {% include "components/history_link.html" with history_url=entry.get_admin_history_url %}
         <!-- MACHINE -->
         <div class="sidebar__section">
           <div class="sidebar__label">Machine</div>
