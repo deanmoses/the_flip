@@ -499,3 +499,67 @@ class PartRequestListFilterTests(TestCase):
         response = self.client.get(reverse("part-request-list") + "?q=Ordered")
         self.assertContains(response, "Ordered part")
         self.assertNotContains(response, "Requested part")
+
+
+@tag("feature_flags")
+class PartsFeatureFlagTests(TestCase):
+    """Tests for the PARTS_ENABLED feature flag."""
+
+    def setUp(self):
+        from constance.test import override_config
+
+        self.override_config = override_config
+        self.staff_user = create_staff_user(username="staffuser")
+        self.maintainer = Maintainer.objects.get(user=self.staff_user)
+        self.machine = create_machine()
+
+    def test_nav_link_hidden_when_disabled(self):
+        """Parts nav link is hidden when PARTS_ENABLED is False."""
+        self.client.login(username="staffuser", password="testpass123")
+
+        with self.override_config(PARTS_ENABLED=False):
+            response = self.client.get(reverse("maintainer-machine-list"))
+            # The nav link to parts should not be present
+            self.assertNotContains(response, 'href="/parts/"')
+
+    def test_nav_link_shown_when_enabled(self):
+        """Parts nav link is shown when PARTS_ENABLED is True."""
+        self.client.login(username="staffuser", password="testpass123")
+
+        with self.override_config(PARTS_ENABLED=True):
+            response = self.client.get(reverse("maintainer-machine-list"))
+            # The nav link to parts should be present
+            self.assertContains(response, 'href="/parts/"')
+
+    def test_activity_feed_excludes_parts_when_disabled(self):
+        """Machine activity feed excludes parts when PARTS_ENABLED is False."""
+        from the_flip.apps.catalog.views import get_activity_entries
+
+        # Create a part request for this machine
+        create_part_request(
+            text="Test part",
+            requested_by=self.maintainer,
+            machine=self.machine,
+        )
+
+        with self.override_config(PARTS_ENABLED=False):
+            logs, reports, part_requests, part_updates = get_activity_entries(self.machine)
+            # Parts querysets should be empty
+            self.assertEqual(list(part_requests), [])
+            self.assertEqual(list(part_updates), [])
+
+    def test_activity_feed_includes_parts_when_enabled(self):
+        """Machine activity feed includes parts when PARTS_ENABLED is True."""
+        from the_flip.apps.catalog.views import get_activity_entries
+
+        # Create a part request for this machine
+        part = create_part_request(
+            text="Test part",
+            requested_by=self.maintainer,
+            machine=self.machine,
+        )
+
+        with self.override_config(PARTS_ENABLED=True):
+            logs, reports, part_requests, part_updates = get_activity_entries(self.machine)
+            # Parts should be included
+            self.assertEqual(list(part_requests), [part])

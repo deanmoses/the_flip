@@ -1,3 +1,4 @@
+from constance import config
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db import transaction
@@ -38,12 +39,18 @@ def get_activity_entries(machine, search_query=None):
         .select_related("reported_by_user")
         .prefetch_related(latest_log_prefetch)
     )
-    # Get part requests linked to this machine
-    part_requests = PartRequest.objects.filter(machine=machine).select_related("requested_by__user")
-    # Get updates for part requests linked to this machine
-    part_updates = PartRequestUpdate.objects.filter(part_request__machine=machine).select_related(
-        "posted_by__user", "part_request"
-    )
+
+    # Get part requests and updates only if parts feature is enabled
+    if config.PARTS_ENABLED:
+        part_requests = PartRequest.objects.filter(machine=machine).select_related(
+            "requested_by__user"
+        )
+        part_updates = PartRequestUpdate.objects.filter(
+            part_request__machine=machine
+        ).select_related("posted_by__user", "part_request")
+    else:
+        part_requests = PartRequest.objects.none()
+        part_updates = PartRequestUpdate.objects.none()
 
     if search_query:
         logs = logs.filter(
