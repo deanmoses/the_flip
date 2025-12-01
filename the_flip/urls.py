@@ -35,9 +35,9 @@ from the_flip.views import serve_media
 urlpatterns = [
     path("", HomeView.as_view(), name="home"),
     path("healthz", healthz, name="healthz"),
+    path("admin/tools/debug/", admin_debug_view, name="admin-debug-dashboard"),
     # Django admin app
     path("admin/", admin.site.urls),
-    path("admin/tools/debug/", admin_debug_view, name="admin-debug-dashboard"),
     # Authentication
     path(
         "login/",
