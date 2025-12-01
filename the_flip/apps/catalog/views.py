@@ -352,11 +352,11 @@ class MachineModelUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView
 
     def form_valid(self, form):
         form.instance.updated_by = self.request.user
+        form.instance._request = self.request
         return super().form_valid(form)
 
     def get_success_url(self):
-        # For now, redirect to the machine list since model detail view doesn't exist yet
-        return reverse("maintainer-machine-list")
+        return reverse("machine-model-edit", kwargs={"slug": self.object.slug})
 
 
 class MachineQuickCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):

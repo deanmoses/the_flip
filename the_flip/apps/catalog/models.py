@@ -5,7 +5,9 @@ from __future__ import annotations
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.urls import reverse
 from django.utils.text import slugify
+from simple_history.models import HistoricalRecords
 
 from the_flip.apps.core.models import TimeStampedModel
 
@@ -133,11 +135,16 @@ class MachineModel(TimeStampedModel):
         related_name="machine_models_updated",
     )
 
+    history = HistoricalRecords()
+
     class Meta:
         ordering = ["name"]
 
     def __str__(self) -> str:
         return self.name
+
+    def get_admin_history_url(self) -> str:
+        return reverse("admin:catalog_machinemodel_history", args=[self.pk])
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -228,6 +235,7 @@ class MachineInstance(TimeStampedModel):
     )
 
     objects = MachineInstanceQuerySet.as_manager()
+    history = HistoricalRecords()
 
     class Meta:
         ordering = ["model__name", "serial_number"]
@@ -244,9 +252,10 @@ class MachineInstance(TimeStampedModel):
         return self.ownership_credit or "The Flip Collection"
 
     def get_absolute_url(self):
-        from django.urls import reverse
-
         return reverse("public-machine-detail", args=[self.slug])
+
+    def get_admin_history_url(self) -> str:
+        return reverse("admin:catalog_machineinstance_history", args=[self.pk])
 
     def save(self, *args, **kwargs):
         if not self.slug:

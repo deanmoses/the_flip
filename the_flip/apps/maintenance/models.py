@@ -7,7 +7,9 @@ from uuid import uuid4
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.urls import reverse
 from django.utils import timezone
+from simple_history.models import HistoricalRecords
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import MachineInstance
@@ -70,6 +72,7 @@ class ProblemReport(TimeStampedModel):
     ip_address = models.GenericIPAddressField(null=True, blank=True)
 
     objects = ProblemReportQuerySet.as_manager()
+    history = HistoricalRecords()
 
     class Meta:
         ordering = ["-created_at"]
@@ -80,6 +83,9 @@ class ProblemReport(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.machine.display_name} – {self.get_problem_type_display()}"
+
+    def get_admin_history_url(self) -> str:
+        return reverse("admin:maintenance_problemreport_history", args=[self.pk])
 
     @property
     def reporter_display(self) -> str:
@@ -128,6 +134,8 @@ class LogEntry(TimeStampedModel):
         help_text="The user who created this log entry (for audit trail).",
     )
 
+    history = HistoricalRecords()
+
     class Meta:
         ordering = ["-work_date"]
         verbose_name = "Log entry"
@@ -135,6 +143,9 @@ class LogEntry(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"Log entry for {self.machine.display_name}"
+
+    def get_admin_history_url(self) -> str:
+        return reverse("admin:maintenance_logentry_history", args=[self.pk])
 
     def clean(self):
         super().clean()
@@ -195,6 +206,8 @@ class LogEntryMedia(TimeStampedModel):
     duration = models.IntegerField(null=True, blank=True, help_text="Duration in seconds")
     display_order = models.PositiveIntegerField(null=True, blank=True)
 
+    history = HistoricalRecords()
+
     class Meta:
         ordering = ["display_order", "created_at"]
         verbose_name = "Log entry media"
@@ -202,6 +215,9 @@ class LogEntryMedia(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.get_media_type_display()} for log entry {self.log_entry_id}"
+
+    def get_admin_history_url(self) -> str:
+        return reverse("admin:maintenance_logentrymedia_history", args=[self.pk])
 
     def save(self, *args, **kwargs):
         if self.media_type == self.TYPE_PHOTO and self.file:
