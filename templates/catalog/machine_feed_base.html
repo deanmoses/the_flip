@@ -171,6 +171,13 @@
               <i class="fa-solid fa-pencil meta"></i>
               Edit Machine
             </a>
+            {% if config.PARTS_ENABLED %}
+              <a href="{% url 'part-request-create-machine' machine.slug %}"
+                 class="btn btn--secondary btn--full">
+                <i class="fa-solid fa-box-open meta"></i>
+                Request Parts
+              </a>
+            {% endif %}
             <a href="{% url 'problem-report-create-machine' machine.slug %}"
                class="btn btn--report btn--full">
               <i class="fa-solid fa-bug meta"></i>
