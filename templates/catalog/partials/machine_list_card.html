@@ -45,7 +45,7 @@
     <a href="{% url 'problem-report-detail' machine.latest_open_report.0.pk %}"
        class="machine-card__problem">
       <span class="snippet-label text-problem">
-        <i class="fa-solid fa-bug space-right-xs"></i>Problem:
+        <i class="fa-solid fa-bug"></i>Problem:
       </span>
       <span class="snippet-text">{{ machine.latest_open_report.0|problem_report_summary }}</span>
     </a>
