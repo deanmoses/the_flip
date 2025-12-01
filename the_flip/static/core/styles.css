@@ -184,11 +184,13 @@ table {
   --color-log: #1D4ED8;
   --color-log-hover: #1E40AF;
   --color-log-light-bg: #F0F9FF;
+  --color-log-light-bg-hover: #DBEAFE;
   --color-log-light-border: #93C5FD;
   --color-log-dark: #1E3A8A;
   --color-problem: #DC2626;
   --color-problem-hover: #B91C1C;
   --color-problem-light-bg: #FEF2F2;
+  --color-problem-light-bg-hover: #FEE2E2;
   --color-problem-light-border: #FCA5A5;
   --color-problem-dark: #991B1B;
   --color-success: #16a34a;
@@ -232,12 +234,14 @@ table {
     --color-log: #0078d4;
     --color-log-hover: #026ec1;
     --color-log-light-bg: #1a2332;
+    --color-log-light-bg-hover: #223344;
     --color-log-light-border: #2a3a4d;
     --color-log-dark: #58a6ff;
 
     --color-problem: #f85149;
     --color-problem-hover: #e64545;
     --color-problem-light-bg: #2d1f1f;
+    --color-problem-light-bg-hover: #3a2828;
     --color-problem-light-border: #4a2d2d;
     --color-problem-dark: #ffa198;
 
@@ -1064,8 +1068,12 @@ body {
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
-.timeline__card-link:hover {
-  background-color: var(--color-gray-100);
+.card--log .timeline__card-link:hover {
+  background-color: var(--color-log-light-bg-hover);
+}
+
+.card--problem .timeline__card-link:hover {
+  background-color: var(--color-problem-light-bg-hover);
 }
 
 /* When there's no snippet link, round all corners */
@@ -1090,8 +1098,12 @@ body {
   white-space: nowrap;
 }
 
-.timeline__snippet-link:hover {
-  background-color: var(--color-gray-100);
+.card--log .timeline__snippet-link:hover {
+  background-color: var(--color-log-light-bg-hover);
+}
+
+.card--problem .timeline__snippet-link:hover {
+  background-color: var(--color-problem-light-bg-hover);
 }
 
 .timeline__snippet-link .snippet-label {
