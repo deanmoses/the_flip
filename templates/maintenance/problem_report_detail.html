@@ -42,7 +42,9 @@
         <!-- PROBLEM REPORT -->
         <div class="sidebar__section">
           <div class="sidebar__label">Problem Report</div>
-          <div class="sidebar__title">#{{ report.pk }}</div>
+          <div class="sidebar__title">
+            <i class="fa-solid fa-bug"></i> #{{ report.pk }}
+          </div>
           <div class="flex flex-wrap stack-tight space-above-sm">
             <span class="pill {% if report.status == report.STATUS_OPEN %}pill--status-broken{% else %}pill--status-good{% endif %}">
               {% if report.status == report.STATUS_OPEN %}
