@@ -167,30 +167,28 @@
              class="space-above-sm"
              data-fetch-url="{% url 'part-request-updates' part_request.pk %}">
           {% if updates %}
-            <div class="timeline" id="log-list">
-              <div class="timeline__line"></div>
-              {% for update in updates %}
-                {% include "parts/partials/part_update_entry.html" with update=update %}
-              {% endfor %}
-            </div>
-            <div id="log-pagination"
-                 data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}0{% endif %}">
-            </div>
-          {% else %}
-            <p class="text-muted">
-              {% if search_form.q.value %}
-                No updates match your search.
-              {% else %}
-                No updates yet.
-              {% endif %}
-            </p>
-          {% endif %}
-        </div>
-        <div id="log-loading" class="hidden">Loading…</div>
-        <div id="log-sentinel"></div>
+            {% timeline id="log-list" %}
+            {% for update in updates %}
+              {% include "parts/partials/part_update_entry.html" with update=update %}
+            {% endfor %}
+          {% endtimeline %}
+          <div id="log-pagination"
+               data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}0{% endif %}"></div>
+        {% else %}
+          <p class="text-muted">
+            {% if search_form.q.value %}
+              No updates match your search.
+            {% else %}
+              No updates yet.
+            {% endif %}
+          </p>
+        {% endif %}
       </div>
+      <div id="log-loading" class="hidden">Loading…</div>
+      <div id="log-sentinel"></div>
     </div>
   </div>
+</div>
 {% endblock %}
 {% block extra_scripts %}
   <script src="{% static 'core/infinite_scroll.js' %}" defer></script>

@@ -207,3 +207,62 @@ def log_entry_meta(entry):
     if names:
         return format_html("{} · <strong>{}</strong>", names, ts)
     return format_html("<strong>{}</strong>", ts)
+
+
+# -----------------------------------------------------------------------------
+# Timeline template tags
+# -----------------------------------------------------------------------------
+
+
+@register.simple_block_tag
+def timeline(content, id=""):
+    """Wrap content in a timeline container with vertical line.
+
+    Usage:
+        {% timeline %}
+          {% for entry in entries %}
+            {% include "partials/entry.html" %}
+          {% endfor %}
+        {% endtimeline %}
+
+        {% timeline id="log-list" %}...{% endtimeline %}
+    """
+    id_attr = f' id="{id}"' if id else ""
+    return format_html(
+        '<div class="timeline"{}>\n' '  <div class="timeline__line"></div>\n' "{}" "</div>",
+        mark_safe(id_attr),  # noqa: S308 - id is from template, not user input
+        content,
+    )
+
+
+@register.simple_block_tag
+def timeline_entry(content, icon, variant="log"):
+    """Wrap content in a timeline entry with icon.
+
+    Usage:
+        {% timeline_entry icon="comment" variant="log" %}
+          <article class="card card--log timeline__card">
+            ...card content...
+          </article>
+        {% endtimeline_entry %}
+
+    Args:
+        content: The card content (captured between tags)
+        icon: FontAwesome icon name (e.g., "comment", "screwdriver-wrench", "bug")
+        variant: "log" or "problem" for color styling
+    """
+    return format_html(
+        '<div class="timeline__entry">\n'
+        '  <div class="timeline__entry-inner">\n'
+        '    <div class="timeline__icon timeline__icon--{}">\n'
+        '      <i class="fa-solid fa-{}"></i>\n'
+        "    </div>\n"
+        '    <div class="timeline__content">\n'
+        "{}"
+        "    </div>\n"
+        "  </div>\n"
+        "</div>",
+        variant,
+        icon,
+        content,
+    )
