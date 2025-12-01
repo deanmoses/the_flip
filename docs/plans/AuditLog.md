@@ -102,7 +102,7 @@ The audit trail should be displayed at the bottom of detail pages in the maintai
 
 **django-reversion**: "Version control for models" — Stores serialized snapshots with focus on admin-based recovery of deleted objects and rollback. Requires wrapping views/code in revision blocks.
 
-### Comparison
+### Features
 
 |  | **django-auditlog** | **django-simple-history** | **django-reversion** |
 |---|---|---|---|
@@ -110,6 +110,11 @@ The audit trail should be displayed at the bottom of detail pages in the maintai
 | [No Increase in Hosting Cost](#storage-impact) | ✅ (~7MB over 3 years) | ✅ (~20MB over 3 years) | ✅ (~20MB over 3 years) |
 | [Write Performance](#performance) | ✅ 1 INSERT + diff calculation | ✅ 1 INSERT (row copy) | ✅ 1 INSERT (serialized snapshot) |
 | [Supports Rollback](#revert--restore) | ❌ | ✅ Built-in revert | ✅ Built-in revert + recover deleted |
+
+### Maintainability
+
+|  | **django-auditlog** | **django-simple-history** | **django-reversion** |
+|---|---|---|---|
 | Built-in Admin Diff View | ✅ Field/From/To table | ✅ Select two versions to compare | ⚠️ Requires [django-reversion-compare](https://pypi.org/project/django-reversion-compare/) add-on |
 | [Model Changes Required](#integration--maintenance-costs) | None (settings-based) | Add `history = HistoricalRecords()` to each model | None (register via admin or decorator) |
 | [Number of Migrations](#integration--maintenance-costs) | 1 (single table) | 1 per tracked model (5 migrations) | 1 (single `reversion_*` tables) |
@@ -118,6 +123,11 @@ The audit trail should be displayed at the bottom of detail pages in the maintai
 | [Template Code for Display](#integration--maintenance-costs) | ~10 lines (iterate `changes_dict`) | ~12 lines (use `diff_against()`) | ~20+ lines (deserialize versions manually) |
 | [Front-End Display](#front-end-display) | Custom templates (easy) | Custom templates (easy) | Custom templates (harder - serialized data) |
 | [Ongoing Maintenance](#integration--maintenance-costs) | Add model name to settings | Add `history` field to new models | Register new models in admin |
+
+### Viability
+
+|  | **django-auditlog** | **django-simple-history** | **django-reversion** |
+|---|---|---|---|
 | [Actively Maintained](#viability) | ✅ v3.3.0 (Oct 2025) | ✅ v3.10.1 (Jun 2025) | ✅ v6.0.0 (Sep 2025) |
 | [Popularity](#viability) (PyPI downloads/month) | 712K | 2.2M | 1.0M |
 | [GitHub Stars](#viability) | 1.3K | 2.4K | 3.1K |
@@ -125,7 +135,7 @@ The audit trail should be displayed at the bottom of detail pages in the maintai
 
 ### Storage Model
 
-| Aspect | django-auditlog | django-simple-history | django-reversion |
+|  | django-auditlog | django-simple-history | django-reversion |
 |--------|-----------------|----------------------|------------------|
 | **Table structure** | Single `auditlog_logentry` table for ALL models | Separate `_history` table per model | Single `reversion_version` table for ALL models |
 | **What's stored** | JSON diff of changed fields only | Full snapshot of entire record | Serialized (JSON) snapshot of entire record |
