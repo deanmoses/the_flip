@@ -1100,27 +1100,29 @@ body {
   border: 1px solid var(--color-border-soft);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.machine-card:hover {
-  border-color: var(--color-gray-300);
-  box-shadow: var(--shadow-md);
-}
-
-.machine-card__inner {
-  display: block;
-  padding: var(--space-3);
-  text-decoration: none;
-  color: inherit;
 }
 
 .machine-card__header {
+  position: relative;
+}
+
+.machine-card__header-link {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-1);
+  flex-direction: column;
+  gap: var(--space-1);
+  text-decoration: none;
+  color: inherit;
+  padding: var(--space-3);
+  padding-right: calc(var(--space-3) * 4 + 6rem); /* Space for buttons */
+}
+
+/* Round top corners; round bottom only when header is the last child (no problem row) */
+.machine-card__header:last-child .machine-card__header-link {
+  border-radius: var(--radius-lg);
+}
+
+.machine-card__header-link:hover {
+  background-color: var(--color-gray-100);
 }
 
 .machine-card__title {
@@ -1129,25 +1131,41 @@ body {
   color: var(--color-text-primary);
 }
 
-.machine-card__meta {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.machine-card__alert {
+.machine-card__pills {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-2);
-  margin-top: var(--space-2);
-  padding: var(--space-2);
-  background: var(--color-problem-light);
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  color: var(--color-gray-700);
 }
 
-.machine-card__alert i {
-  flex-shrink: 0;
+.machine-card__actions {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  display: flex;
+  gap: var(--space-2);
+}
+
+.machine-card__btn-text {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .machine-card__btn-text {
+    display: inline;
+  }
+}
+
+/* Clickable snippet row (for linked items in machine cards) */
+.snippet-row--clickable {
+  display: flex;
+  text-decoration: none;
+  color: inherit;
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.snippet-row--clickable:hover {
+  background-color: var(--color-gray-100);
 }
 
 /* --- Terminal List & Cards --- */
