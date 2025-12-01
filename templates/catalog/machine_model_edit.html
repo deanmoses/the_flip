@@ -23,16 +23,19 @@
         <div class="sidebar__section">
           <div class="sidebar__label">Edit Model</div>
           <div class="sidebar__title">{{ object.name }}</div>
-          {% if instances %}
-            <div class="sidebar__meta">
-              Machines:
-              {% for instance in instances %}
-                <a href="{% url 'maintainer-machine-detail' instance.slug %}">{{ instance.display_name }}</a>
-                {% if not forloop.last %},{% endif %}
-              {% endfor %}
-            </div>
-          {% endif %}
         </div>
+        {% if instances %}
+          <div class="sidebar__section">
+            <div class="sidebar__label">Machines</div>
+            <ul class="sidebar__list">
+              {% for instance in instances %}
+                <li>
+                  <a href="{% url 'maintainer-machine-detail' instance.slug %}">{{ instance.display_name }}</a>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
       </div>
     </aside>
     <!-- Main -->

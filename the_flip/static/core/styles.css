@@ -1318,6 +1318,25 @@ body {
   color: var(--color-log);
 }
 
+.sidebar__list {
+  list-style: disc;
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.sidebar__list li {
+  margin-bottom: var(--space-1);
+}
+
+.sidebar__list a {
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.sidebar__list a:hover {
+  color: var(--color-log);
+}
+
 /* --- Section Header --- */
 .section-header {
   display: flex;
