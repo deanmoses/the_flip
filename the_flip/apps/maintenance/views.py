@@ -36,13 +36,14 @@ from PIL import Image, ImageOps
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import Location, MachineInstance
+from the_flip.apps.core.mixins import MediaUploadMixin
+from the_flip.apps.core.tasks import enqueue_transcode
 from the_flip.apps.maintenance.forms import (
     LogEntryQuickForm,
     ProblemReportForm,
     SearchForm,
 )
 from the_flip.apps.maintenance.models import LogEntry, LogEntryMedia, ProblemReport
-from the_flip.apps.maintenance.tasks import enqueue_transcode
 
 
 class MaintainerAutocompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -799,8 +800,7 @@ class LogListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         page_obj = paginator.get_page(self.request.GET.get("page"))
 
         # Stats for sidebar
-        today = datetime.now(UTC).date()
-        week_ago = today - timedelta(days=7)
+        week_ago = datetime.now(UTC) - timedelta(days=7)
         this_week_count = LogEntry.objects.filter(work_date__gte=week_ago).count()
         total_count = LogEntry.objects.count()
 
@@ -858,7 +858,7 @@ class LogListPartialView(LoginRequiredMixin, UserPassesTestMixin, View):
         )
 
 
-class LogEntryDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+class LogEntryDetailView(MediaUploadMixin, LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = LogEntry
     template_name = "maintenance/log_entry_detail.html"
     context_object_name = "entry"
@@ -868,6 +868,12 @@ class LogEntryDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def get_queryset(self):
         return LogEntry.objects.select_related("machine").prefetch_related("maintainers", "media")
+
+    def get_media_model(self):
+        return LogEntryMedia
+
+    def get_media_parent(self):
+        return self.object
 
     def post(self, request, *args, **kwargs):
         """Handle AJAX updates to the log entry."""
@@ -911,54 +917,10 @@ class LogEntryDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 return JsonResponse({"success": False, "error": "Invalid date format"}, status=400)
 
         elif action == "upload_media":
-            if "file" in request.FILES:
-                upload = request.FILES["file"]
-                content_type = (getattr(upload, "content_type", "") or "").lower()
-                ext = Path(getattr(upload, "name", "")).suffix.lower()
-                is_video = content_type.startswith("video/") or ext in {
-                    ".mp4",
-                    ".mov",
-                    ".m4v",
-                    ".hevc",
-                }
-                media = LogEntryMedia.objects.create(
-                    log_entry=self.object,
-                    media_type=LogEntryMedia.TYPE_VIDEO if is_video else LogEntryMedia.TYPE_PHOTO,
-                    file=upload,
-                    transcode_status=LogEntryMedia.STATUS_PENDING if is_video else "",
-                )
-                if is_video:
-                    enqueue_transcode(media.id)
-                return JsonResponse(
-                    {
-                        "success": True,
-                        "media_id": media.id,
-                        "media_url": media.file.url,
-                        "thumbnail_url": media.thumbnail_file.url
-                        if media.thumbnail_file
-                        else media.file.url,
-                        "media_type": media.media_type,
-                        "transcode_status": media.transcode_status,
-                        "poster_url": media.poster_file.url if media.poster_file else None,
-                    }
-                )
-            return JsonResponse({"success": False, "error": "No file provided"}, status=400)
+            return self.handle_upload_media(request)
 
         elif action == "delete_media":
-            media_id = request.POST.get("media_id")
-            try:
-                media = LogEntryMedia.objects.get(id=media_id, log_entry=self.object)
-                if media.transcoded_file:
-                    media.transcoded_file.delete(save=False)
-                if media.poster_file:
-                    media.poster_file.delete(save=False)
-                if media.thumbnail_file:
-                    media.thumbnail_file.delete(save=False)
-                media.file.delete()
-                media.delete()
-                return JsonResponse({"success": True})
-            except LogEntryMedia.DoesNotExist:
-                return JsonResponse({"success": False, "error": "Media not found"}, status=404)
+            return self.handle_delete_media(request)
 
         elif action == "update_maintainers":
             names_raw = request.POST.get("maintainers", "")

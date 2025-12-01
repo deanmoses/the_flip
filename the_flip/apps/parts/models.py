@@ -5,11 +5,11 @@ from __future__ import annotations
 from uuid import uuid4
 
 from django.db import models
+from simple_history.models import HistoricalRecords
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import MachineInstance
-from the_flip.apps.core.models import TimeStampedModel
-from the_flip.apps.maintenance.utils import THUMB_IMAGE_DIMENSION, resize_image_file
+from the_flip.apps.core.models import AbstractMedia, TimeStampedModel
 
 
 class PartRequestQuerySet(models.QuerySet):
@@ -91,46 +91,24 @@ def part_request_media_upload_to(instance: PartRequestMedia, filename: str) -> s
     return f"part_requests/{instance.part_request_id}/{uuid4()}-{filename}"
 
 
-class PartRequestMedia(TimeStampedModel):
+class PartRequestMedia(AbstractMedia):
     """Media files attached to a part request."""
 
-    TYPE_PHOTO = "photo"
-    TYPE_VIDEO = "video"
-    STATUS_PENDING = "pending"
-    STATUS_PROCESSING = "processing"
-    STATUS_READY = "ready"
-    STATUS_FAILED = "failed"
-    MEDIA_CHOICES = [
-        (TYPE_PHOTO, "Photo"),
-        (TYPE_VIDEO, "Video"),
-    ]
-    TRANSCODE_STATUS_CHOICES = [
-        (STATUS_PENDING, "Pending"),
-        (STATUS_PROCESSING, "Processing"),
-        (STATUS_READY, "Ready"),
-        (STATUS_FAILED, "Failed"),
-    ]
+    parent_field_name = "part_request"
 
     part_request = models.ForeignKey(
         PartRequest,
         on_delete=models.CASCADE,
         related_name="media",
     )
-    media_type = models.CharField(max_length=20, choices=MEDIA_CHOICES)
     file = models.FileField(upload_to=part_request_media_upload_to)
     thumbnail_file = models.FileField(upload_to=part_request_media_upload_to, blank=True)
     transcoded_file = models.FileField(
         upload_to=part_request_media_upload_to, blank=True, null=True
     )
     poster_file = models.ImageField(upload_to=part_request_media_upload_to, blank=True, null=True)
-    transcode_status = models.CharField(
-        max_length=20,
-        choices=TRANSCODE_STATUS_CHOICES,
-        blank=True,
-        default=STATUS_PENDING,
-    )
-    duration = models.IntegerField(null=True, blank=True, help_text="Duration in seconds")
-    display_order = models.PositiveIntegerField(null=True, blank=True)
+
+    history = HistoricalRecords()
 
     class Meta:
         ordering = ["display_order", "created_at"]
@@ -139,33 +117,6 @@ class PartRequestMedia(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.get_media_type_display()} for part request {self.part_request_id}"
-
-    def save(self, *args, **kwargs):
-        if self.media_type == self.TYPE_PHOTO and self.file:
-            from django.core.files.uploadedfile import UploadedFile
-
-            is_fresh_upload = hasattr(self.file, "file") and isinstance(
-                self.file.file, UploadedFile
-            )
-            if is_fresh_upload:
-                try:
-                    original = self.file
-                    if not self.thumbnail_file:
-                        self.thumbnail_file = resize_image_file(
-                            original, max_dimension=THUMB_IMAGE_DIMENSION
-                        )
-                        try:
-                            original.seek(0)
-                        except (OSError, AttributeError):
-                            pass
-                    self.file = resize_image_file(original)
-                except Exception:
-                    import logging
-
-                    logging.getLogger(__name__).warning(
-                        "Could not resize uploaded photo %s", self.file, exc_info=True
-                    )
-        super().save(*args, **kwargs)
 
 
 class PartRequestUpdate(TimeStampedModel):
@@ -213,32 +164,16 @@ def part_request_update_media_upload_to(instance: PartRequestUpdateMedia, filena
     return f"part_request_updates/{instance.update_id}/{uuid4()}-{filename}"
 
 
-class PartRequestUpdateMedia(TimeStampedModel):
+class PartRequestUpdateMedia(AbstractMedia):
     """Media files attached to a part request update."""
 
-    TYPE_PHOTO = "photo"
-    TYPE_VIDEO = "video"
-    STATUS_PENDING = "pending"
-    STATUS_PROCESSING = "processing"
-    STATUS_READY = "ready"
-    STATUS_FAILED = "failed"
-    MEDIA_CHOICES = [
-        (TYPE_PHOTO, "Photo"),
-        (TYPE_VIDEO, "Video"),
-    ]
-    TRANSCODE_STATUS_CHOICES = [
-        (STATUS_PENDING, "Pending"),
-        (STATUS_PROCESSING, "Processing"),
-        (STATUS_READY, "Ready"),
-        (STATUS_FAILED, "Failed"),
-    ]
+    parent_field_name = "update"
 
     update = models.ForeignKey(
         PartRequestUpdate,
         on_delete=models.CASCADE,
         related_name="media",
     )
-    media_type = models.CharField(max_length=20, choices=MEDIA_CHOICES)
     file = models.FileField(upload_to=part_request_update_media_upload_to)
     thumbnail_file = models.FileField(upload_to=part_request_update_media_upload_to, blank=True)
     transcoded_file = models.FileField(
@@ -247,14 +182,8 @@ class PartRequestUpdateMedia(TimeStampedModel):
     poster_file = models.ImageField(
         upload_to=part_request_update_media_upload_to, blank=True, null=True
     )
-    transcode_status = models.CharField(
-        max_length=20,
-        choices=TRANSCODE_STATUS_CHOICES,
-        blank=True,
-        default=STATUS_PENDING,
-    )
-    duration = models.IntegerField(null=True, blank=True, help_text="Duration in seconds")
-    display_order = models.PositiveIntegerField(null=True, blank=True)
+
+    history = HistoricalRecords()
 
     class Meta:
         ordering = ["display_order", "created_at"]
@@ -263,30 +192,3 @@ class PartRequestUpdateMedia(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.get_media_type_display()} for update {self.update_id}"
-
-    def save(self, *args, **kwargs):
-        if self.media_type == self.TYPE_PHOTO and self.file:
-            from django.core.files.uploadedfile import UploadedFile
-
-            is_fresh_upload = hasattr(self.file, "file") and isinstance(
-                self.file.file, UploadedFile
-            )
-            if is_fresh_upload:
-                try:
-                    original = self.file
-                    if not self.thumbnail_file:
-                        self.thumbnail_file = resize_image_file(
-                            original, max_dimension=THUMB_IMAGE_DIMENSION
-                        )
-                        try:
-                            original.seek(0)
-                        except (OSError, AttributeError):
-                            pass
-                    self.file = resize_image_file(original)
-                except Exception:
-                    import logging
-
-                    logging.getLogger(__name__).warning(
-                        "Could not resize uploaded photo %s", self.file, exc_info=True
-                    )
-        super().save(*args, **kwargs)

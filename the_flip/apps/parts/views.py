@@ -17,8 +17,9 @@ from django.views.generic import FormView, TemplateView, View
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import MachineInstance
+from the_flip.apps.core.mixins import MediaUploadMixin
+from the_flip.apps.core.tasks import enqueue_transcode
 from the_flip.apps.maintenance.forms import SearchForm
-from the_flip.apps.maintenance.tasks import enqueue_transcode
 from the_flip.apps.parts.forms import PartRequestForm, PartRequestUpdateForm
 from the_flip.apps.parts.models import (
     PartRequest,
@@ -216,7 +217,7 @@ class PartRequestCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         return redirect("part-request-detail", pk=part_request.pk)
 
 
-class PartRequestDetailView(LoginRequiredMixin, UserPassesTestMixin, View):
+class PartRequestDetailView(MediaUploadMixin, LoginRequiredMixin, UserPassesTestMixin, View):
     """Detail view for a part request. Maintainer-only access."""
 
     template_name = "parts/part_detail.html"
@@ -224,17 +225,23 @@ class PartRequestDetailView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
         return self.request.user.is_staff
 
+    def get_media_model(self):
+        return PartRequestMedia
+
+    def get_media_parent(self):
+        return self.part_request
+
     def get(self, request, *args, **kwargs):
-        part_request = get_object_or_404(
+        self.part_request = get_object_or_404(
             PartRequest.objects.select_related(
                 "requested_by__user", "machine", "machine__model"
             ).prefetch_related("media"),
             pk=kwargs["pk"],
         )
-        return self.render_response(request, part_request)
+        return self.render_response(request, self.part_request)
 
     def post(self, request, *args, **kwargs):
-        part_request = get_object_or_404(
+        self.part_request = get_object_or_404(
             PartRequest.objects.select_related(
                 "requested_by__user", "machine", "machine__model"
             ).prefetch_related("media"),
@@ -244,63 +251,17 @@ class PartRequestDetailView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         # Handle AJAX text update
         if action == "update_text":
-            part_request.text = request.POST.get("text", "")
-            part_request.save(update_fields=["text", "updated_at"])
+            self.part_request.text = request.POST.get("text", "")
+            self.part_request.save(update_fields=["text", "updated_at"])
             return JsonResponse({"success": True})
 
         # Handle AJAX media upload
         if action == "upload_media":
-            if "file" in request.FILES:
-                upload = request.FILES["file"]
-                content_type = (getattr(upload, "content_type", "") or "").lower()
-                ext = Path(getattr(upload, "name", "")).suffix.lower()
-                is_video = content_type.startswith("video/") or ext in {
-                    ".mp4",
-                    ".mov",
-                    ".m4v",
-                    ".hevc",
-                }
-                media = PartRequestMedia.objects.create(
-                    part_request=part_request,
-                    media_type=PartRequestMedia.TYPE_VIDEO
-                    if is_video
-                    else PartRequestMedia.TYPE_PHOTO,
-                    file=upload,
-                    transcode_status=PartRequestMedia.STATUS_PENDING if is_video else "",
-                )
-                if is_video:
-                    enqueue_transcode(media.id, model_name="PartRequestMedia")
-                return JsonResponse(
-                    {
-                        "success": True,
-                        "media_id": media.id,
-                        "media_url": media.file.url,
-                        "thumbnail_url": media.thumbnail_file.url
-                        if media.thumbnail_file
-                        else media.file.url,
-                        "media_type": media.media_type,
-                        "transcode_status": media.transcode_status,
-                        "poster_url": media.poster_file.url if media.poster_file else None,
-                    }
-                )
-            return JsonResponse({"success": False, "error": "No file provided"}, status=400)
+            return self.handle_upload_media(request)
 
         # Handle AJAX media delete
         if action == "delete_media":
-            media_id = request.POST.get("media_id")
-            try:
-                media = PartRequestMedia.objects.get(id=media_id, part_request=part_request)
-                if media.transcoded_file:
-                    media.transcoded_file.delete(save=False)
-                if media.poster_file:
-                    media.poster_file.delete(save=False)
-                if media.thumbnail_file:
-                    media.thumbnail_file.delete(save=False)
-                media.file.delete()
-                media.delete()
-                return JsonResponse({"success": True})
-            except PartRequestMedia.DoesNotExist:
-                return JsonResponse({"success": False, "error": "Media not found"}, status=404)
+            return self.handle_delete_media(request)
 
         return JsonResponse({"success": False, "error": "Invalid action"}, status=400)
 
@@ -449,7 +410,7 @@ class PartRequestUpdatesPartialView(LoginRequiredMixin, UserPassesTestMixin, Vie
         )
 
 
-class PartRequestUpdateDetailView(LoginRequiredMixin, UserPassesTestMixin, View):
+class PartRequestUpdateDetailView(MediaUploadMixin, LoginRequiredMixin, UserPassesTestMixin, View):
     """Detail view for a part request update. Maintainer-only access."""
 
     template_name = "parts/part_update_detail.html"
@@ -457,8 +418,14 @@ class PartRequestUpdateDetailView(LoginRequiredMixin, UserPassesTestMixin, View)
     def test_func(self):
         return self.request.user.is_staff
 
+    def get_media_model(self):
+        return PartRequestUpdateMedia
+
+    def get_media_parent(self):
+        return self.update
+
     def get(self, request, *args, **kwargs):
-        update = get_object_or_404(
+        self.update = get_object_or_404(
             PartRequestUpdate.objects.select_related(
                 "part_request__requested_by__user",
                 "part_request__machine",
@@ -467,10 +434,10 @@ class PartRequestUpdateDetailView(LoginRequiredMixin, UserPassesTestMixin, View)
             ).prefetch_related("media"),
             pk=kwargs["pk"],
         )
-        return self.render_response(request, update)
+        return self.render_response(request, self.update)
 
     def post(self, request, *args, **kwargs):
-        update = get_object_or_404(
+        self.update = get_object_or_404(
             PartRequestUpdate.objects.select_related(
                 "part_request__requested_by__user",
                 "part_request__machine",
@@ -483,63 +450,17 @@ class PartRequestUpdateDetailView(LoginRequiredMixin, UserPassesTestMixin, View)
 
         # Handle AJAX text update
         if action == "update_text":
-            update.text = request.POST.get("text", "")
-            update.save(update_fields=["text", "updated_at"])
+            self.update.text = request.POST.get("text", "")
+            self.update.save(update_fields=["text", "updated_at"])
             return JsonResponse({"success": True})
 
         # Handle AJAX media upload
         if action == "upload_media":
-            if "file" in request.FILES:
-                upload = request.FILES["file"]
-                content_type = (getattr(upload, "content_type", "") or "").lower()
-                ext = Path(getattr(upload, "name", "")).suffix.lower()
-                is_video = content_type.startswith("video/") or ext in {
-                    ".mp4",
-                    ".mov",
-                    ".m4v",
-                    ".hevc",
-                }
-                media = PartRequestUpdateMedia.objects.create(
-                    update=update,
-                    media_type=PartRequestUpdateMedia.TYPE_VIDEO
-                    if is_video
-                    else PartRequestUpdateMedia.TYPE_PHOTO,
-                    file=upload,
-                    transcode_status=PartRequestUpdateMedia.STATUS_PENDING if is_video else "",
-                )
-                if is_video:
-                    enqueue_transcode(media.id, model_name="PartRequestUpdateMedia")
-                return JsonResponse(
-                    {
-                        "success": True,
-                        "media_id": media.id,
-                        "media_url": media.file.url,
-                        "thumbnail_url": media.thumbnail_file.url
-                        if media.thumbnail_file
-                        else media.file.url,
-                        "media_type": media.media_type,
-                        "transcode_status": media.transcode_status,
-                        "poster_url": media.poster_file.url if media.poster_file else None,
-                    }
-                )
-            return JsonResponse({"success": False, "error": "No file provided"}, status=400)
+            return self.handle_upload_media(request)
 
         # Handle AJAX media delete
         if action == "delete_media":
-            media_id = request.POST.get("media_id")
-            try:
-                media = PartRequestUpdateMedia.objects.get(id=media_id, update=update)
-                if media.transcoded_file:
-                    media.transcoded_file.delete(save=False)
-                if media.poster_file:
-                    media.poster_file.delete(save=False)
-                if media.thumbnail_file:
-                    media.thumbnail_file.delete(save=False)
-                media.file.delete()
-                media.delete()
-                return JsonResponse({"success": True})
-            except PartRequestUpdateMedia.DoesNotExist:
-                return JsonResponse({"success": False, "error": "Media not found"}, status=404)
+            return self.handle_delete_media(request)
 
         return JsonResponse({"success": False, "error": "Invalid action"}, status=400)
 

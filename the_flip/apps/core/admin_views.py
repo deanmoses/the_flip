@@ -10,7 +10,7 @@ from typing import Any
 import django
 from django.conf import settings
 from django.contrib import admin
-from django.http import HttpResponseForbidden
+from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
 from django.shortcuts import render
 
 
@@ -23,7 +23,7 @@ def _mask(value: str | None) -> str:
     return f"{value[:4]}…{value[-2:]}"
 
 
-def admin_debug_dashboard(request):
+def admin_debug_dashboard(request: HttpRequest) -> HttpResponse:
     """Superuser-only dashboard showing selected runtime diagnostics."""
     if not request.user.is_superuser:
         return HttpResponseForbidden("Superuser access required")
@@ -59,7 +59,7 @@ def admin_debug_dashboard(request):
         "NAME": db_settings.get("NAME", ""),
         "HOST": db_settings.get("HOST", ""),
         "PORT": db_settings.get("PORT", ""),
-        "USER": _mask(db_settings.get("USER", "")),
+        "USER": _mask(str(db_settings.get("USER", ""))),
     }
 
     runtime_info = [
