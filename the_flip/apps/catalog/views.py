@@ -168,11 +168,8 @@ class MachineListView(MachineListViewForPublic):
         context = super().get_context_data(**kwargs)
         visible_machines = MachineInstance.objects.visible()
 
-        # Total count
-        context["total_count"] = visible_machines.count()
-
-        # Location-based counts (only show locations with machines, max 3 to fit grid)
-        location_counts = []
+        # Stats for sidebar (total + location counts, max 4 to fit grid)
+        stats = [{"value": visible_machines.count(), "label": "Total"}]
         for slug, label in [
             ("floor", "Floor"),
             ("workshop", "Workshop"),
@@ -181,10 +178,10 @@ class MachineListView(MachineListViewForPublic):
         ]:
             count = visible_machines.filter(location__slug=slug).count()
             if count > 0:
-                location_counts.append({"name": label, "count": count})
-            if len(location_counts) >= 3:
+                stats.append({"value": count, "label": label})
+            if len(stats) >= 4:
                 break
-        context["location_counts"] = location_counts
+        context["stats"] = stats
 
         return context
 
