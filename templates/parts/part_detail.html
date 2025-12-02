@@ -68,10 +68,14 @@
               </p>
               <div class="sidebar-card__badges">
                 <span class="pill {% if part_request.machine.operational_status == 'good' %}pill--status-good{% elif part_request.machine.operational_status == 'fixing' %}pill--status-fixing{% elif part_request.machine.operational_status == 'broken' %}pill--status-broken{% else %}pill--neutral{% endif %}">
+                  <i class="fa-solid {% if part_request.machine.operational_status == 'fixing' %}fa-wrench{% elif part_request.machine.operational_status == 'good' %}fa-check{% elif part_request.machine.operational_status == 'broken' %}fa-circle-xmark{% else %}fa-circle-question{% endif %} meta"></i>
                   {{ part_request.machine.get_operational_status_display }}
                 </span>
                 {% if part_request.machine.location %}
-                  <span class="pill pill--neutral">{{ part_request.machine.location.name }}</span>
+                  <span class="pill pill--neutral">
+                    <i class="fa-solid fa-location-dot meta"></i>
+                    {{ part_request.machine.location.name }}
+                  </span>
                 {% endif %}
               </div>
             </a>
