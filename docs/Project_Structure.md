@@ -5,7 +5,9 @@ This document describes the project's structure. It favors conventional Django p
 ```
 the_flip/
 ├── manage.py
-├── build.sh / railway.toml / runtime.txt / requirements.txt
+├── build.web.sh / build.worker.sh    # Service-specific build scripts
+├── railway.toml / runtime.txt
+├── requirements.*.txt                # base, web, worker, dev
 ├── docs/                     # development guides, deployment docs, and plans
 ├── templates/                # Django templates organized by app
 └── the_flip/                 # Django project package
