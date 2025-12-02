@@ -68,13 +68,7 @@
         <!-- MACHINE -->
         <div class="sidebar__section">
           <div class="sidebar__label">Machine</div>
-          <a href="{% url 'maintainer-machine-detail' machine.slug %}"
-             class="sidebar__title sidebar__link">{{ machine.display_name }}</a>
-          <div class="sidebar__subtitle">
-            {% if machine.model.manufacturer %}{{ machine.model.manufacturer }}{% endif %}
-            {% if machine.model.manufacturer and machine.model.year %}·{% endif %}
-            {% if machine.model.year %}{{ machine.model.year }}{% endif %}
-          </div>
+          {% include "components/machine_sidebar_card.html" %}
         </div>
         <!-- ACTIONS -->
         <div class="sidebar__section">

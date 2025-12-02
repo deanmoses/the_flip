@@ -4,8 +4,12 @@ from django import template
 from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
+from linkify_it import LinkifyIt
 
 register = template.Library()
+
+# Linkifier instance for URL detection (handles URLs, emails, www links)
+_linkify = LinkifyIt()
 
 # Allowed HTML tags for markdown rendering
 ALLOWED_TAGS = {
@@ -49,6 +53,35 @@ ALLOWED_ATTRIBUTES = {
 }
 
 
+def _linkify_urls(html: str) -> str:
+    """Convert bare URLs to anchor tags using linkify-it-py.
+
+    Handles URLs, www links, and email addresses. Properly handles edge cases
+    like parentheses in URLs (e.g., Wikipedia links) and avoids double-linking
+    URLs already in anchor tags.
+    """
+    matches = _linkify.match(html)
+    if not matches:
+        return html
+
+    # Process matches in reverse order to preserve string indices
+    result = html
+    for match in reversed(matches):
+        start = match.index
+        end = match.last_index
+
+        # Skip if this URL is already inside an href attribute
+        prefix = html[:start]
+        if prefix.endswith('href="') or prefix.endswith("href='"):
+            continue
+
+        # Replace with anchor tag
+        anchor = f'<a href="{match.url}">{match.text}</a>'
+        result = result[:start] + anchor + result[end:]
+
+    return result
+
+
 @register.filter
 def render_markdown(text):
     """Convert markdown text to sanitized HTML."""
@@ -56,6 +89,8 @@ def render_markdown(text):
         return ""
     # Convert markdown to HTML
     html = markdown.markdown(text, extensions=["fenced_code", "nl2br"])
+    # Convert bare URLs to links
+    html = _linkify_urls(html)
     # Sanitize to prevent XSS
     safe_html = nh3.clean(html, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRIBUTES)
     return mark_safe(safe_html)  # noqa: S308 - HTML sanitized by nh3
@@ -172,3 +207,62 @@ def log_entry_meta(entry):
     if names:
         return format_html("{} · <strong>{}</strong>", names, ts)
     return format_html("<strong>{}</strong>", ts)
+
+
+# -----------------------------------------------------------------------------
+# Timeline template tags
+# -----------------------------------------------------------------------------
+
+
+@register.simple_block_tag
+def timeline(content, id=""):
+    """Wrap content in a timeline container with vertical line.
+
+    Usage:
+        {% timeline %}
+          {% for entry in entries %}
+            {% include "partials/entry.html" %}
+          {% endfor %}
+        {% endtimeline %}
+
+        {% timeline id="log-list" %}...{% endtimeline %}
+    """
+    id_attr = f' id="{id}"' if id else ""
+    return format_html(
+        '<div class="timeline"{}>\n' '  <div class="timeline__line"></div>\n' "{}" "</div>",
+        mark_safe(id_attr),  # noqa: S308 - id is from template, not user input
+        content,
+    )
+
+
+@register.simple_block_tag
+def timeline_entry(content, icon, variant="log"):
+    """Wrap content in a timeline entry with icon.
+
+    Usage:
+        {% timeline_entry icon="comment" variant="log" %}
+          <article class="card card--log timeline__card">
+            ...card content...
+          </article>
+        {% endtimeline_entry %}
+
+    Args:
+        content: The card content (captured between tags)
+        icon: FontAwesome icon name (e.g., "comment", "screwdriver-wrench", "bug")
+        variant: "log" or "problem" for color styling
+    """
+    return format_html(
+        '<div class="timeline__entry">\n'
+        '  <div class="timeline__entry-inner">\n'
+        '    <div class="timeline__icon timeline__icon--{}">\n'
+        '      <i class="fa-solid fa-{}"></i>\n'
+        "    </div>\n"
+        '    <div class="timeline__content">\n'
+        "{}"
+        "    </div>\n"
+        "  </div>\n"
+        "</div>",
+        variant,
+        icon,
+        content,
+    )

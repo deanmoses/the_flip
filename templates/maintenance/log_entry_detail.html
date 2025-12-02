@@ -29,26 +29,20 @@
         <!-- MACHINE -->
         <div class="sidebar__section">
           <div class="sidebar__label">Machine</div>
-          <a href="{% url 'maintainer-machine-detail' entry.machine.slug %}"
-             class="sidebar__title sidebar__link">{{ entry.machine.display_name }}</a>
-          <div class="sidebar__subtitle">
-            {% if entry.machine.model.manufacturer %}{{ entry.machine.model.manufacturer }}{% endif %}
-            {% if entry.machine.model.manufacturer and entry.machine.model.year %}·{% endif %}
-            {% if entry.machine.model.year %}{{ entry.machine.model.year }}{% endif %}
-          </div>
+          {% include "components/machine_sidebar_card.html" with machine=entry.machine %}
         </div>
         <!-- LINKED PROBLEM -->
         {% if entry.problem_report %}
           <div class="sidebar__section">
             <div class="sidebar__label">Problem</div>
             <a href="{% url 'problem-report-detail' entry.problem_report.pk %}"
-               class="linked-problem-card">
-              <div class="linked-problem-card__header">
-                <i class="fa-solid fa-bug text-problem"></i>
-                <span class="linked-problem-card__number">#{{ entry.problem_report.pk }}</span>
+               class="sidebar-card sidebar-card--problem">
+              <div class="sidebar-card__header sidebar-card__header--problem">
+                <i class="fa-solid fa-bug"></i>
+                <span>#{{ entry.problem_report.pk }}</span>
               </div>
-              <p class="linked-problem-card__text">{{ entry.problem_report|problem_report_summary }}</p>
-              <p class="linked-problem-card__meta">
+              <p class="sidebar-card__text">{{ entry.problem_report|problem_report_summary }}</p>
+              <p class="sidebar-card__meta">
                 {% if entry.problem_report.reporter_display %}{{ entry.problem_report.reporter_display }} ·{% endif %}
                 {{ entry.problem_report.created_at|smart_date }}
               </p>
@@ -118,20 +112,20 @@
         <div id="media-container" class="media-grid">
           {% if entry.media.all %}
             {% for media in entry.media.all %}
-              <div class="media-item" data-media-id="{{ media.id }}">
+              <div class="media-grid__item" data-media-id="{{ media.id }}">
                 {% if media.media_type == 'video' %}
                   {% if media.transcode_status == 'ready' and media.transcoded_file %}
-                    <video controls poster="{{ media.poster_file.url }}" class="media-video">
+                    <video controls poster="{{ media.poster_file.url }}">
                       <source src="{{ media.transcoded_file.url }}" type="video/mp4">
                       Your browser doesn't support video playback.
                     </video>
                   {% elif media.transcode_status == 'processing' or media.transcode_status == 'pending' %}
-                    <div class="media-status">Processing video…</div>
+                    <div class="media-grid__status">Processing video…</div>
                   {% else %}
-                    <div class="media-status error">Video processing failed.</div>
+                    <div class="media-grid__status media-grid__status--error">Video processing failed.</div>
                   {% endif %}
                 {% else %}
-                  <a href="{{ media.file.url }}" target="_blank" class="media-link">
+                  <a href="{{ media.file.url }}" target="_blank">
                     {% if media.thumbnail_file %}
                       <img src="{{ media.thumbnail_file.url }}" alt="Log entry photo">
                     {% else %}
@@ -140,7 +134,7 @@
                   </a>
                 {% endif %}
                 <button type="button"
-                        class="btn-delete-media"
+                        class="media-grid__delete"
                         data-media-id="{{ media.id }}"
                         aria-label="Delete media">×</button>
               </div>
@@ -293,7 +287,7 @@
     // Upload media
     const uploadButton = document.getElementById('upload-button');
     const mediaInput = document.getElementById('media-upload');
-    const existingMediaCount = document.querySelectorAll('#media-container .media-item').length;
+    const existingMediaCount = document.querySelectorAll('#media-container .media-grid__item').length;
     if (uploadButton && existingMediaCount > 0) {
       uploadButton.textContent = 'Upload More Photos';
     }
@@ -330,36 +324,36 @@
           if (data.success) {
             const mediaContainer = document.getElementById('media-container');
             const mediaItem = document.createElement('div');
-            mediaItem.className = 'media-item';
+            mediaItem.className = 'media-grid__item';
             mediaItem.dataset.mediaId = data.media_id;
             let content = '';
             if (data.media_type === 'video') {
               if (data.transcode_status === 'ready' && data.media_url) {
                 const posterAttr = data.poster_url ? ` poster="${data.poster_url}"` : '';
                 content = `
-                  <video controls${posterAttr} class="media-video">
+                  <video controls${posterAttr}>
                     <source src="${data.media_url}" type="video/mp4">
                     Your browser doesn't support video playback.
                   </video>
                 `;
               } else if (data.transcode_status === 'failed') {
-                content = `<div class="media-status error">Video processing failed.</div>`;
+                content = `<div class="media-grid__status media-grid__status--error">Video processing failed.</div>`;
               } else {
-                content = `<div class="media-status">Processing video…</div>`;
+                content = `<div class="media-grid__status">Processing video…</div>`;
               }
             } else {
               content = `
-                <a href="${data.media_url}" target="_blank" class="media-link">
+                <a href="${data.media_url}" target="_blank">
                   <img src="${data.thumbnail_url}" alt="Log entry photo">
                 </a>
               `;
             }
             mediaItem.innerHTML = `
               ${content}
-              <button type="button" class="btn-delete-media" data-media-id="${data.media_id}" aria-label="Delete media">×</button>
+              <button type="button" class="media-grid__delete" data-media-id="${data.media_id}" aria-label="Delete media">×</button>
             `;
             mediaContainer.appendChild(mediaItem);
-            attachDeleteHandler(mediaItem.querySelector('.btn-delete-media'));
+            attachDeleteHandler(mediaItem.querySelector('.media-grid__delete'));
             uploadButton.textContent = 'Upload More Photos';
           } else {
             alert('Failed to upload media: ' + (data.error || 'Unknown error'));
@@ -389,7 +383,7 @@
           });
 
           if (response.ok) {
-            const mediaItem = button.closest('.media-item');
+            const mediaItem = button.closest('.media-grid__item');
             mediaItem.remove();
           } else {
             alert('Failed to delete media');
@@ -401,7 +395,7 @@
       });
     }
 
-    document.querySelectorAll('.btn-delete-media').forEach(attachDeleteHandler);
+    document.querySelectorAll('.media-grid__delete').forEach(attachDeleteHandler);
 
     // Maintainer autocomplete
     async function saveMaintainers() {

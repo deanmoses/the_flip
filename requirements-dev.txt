@@ -7,7 +7,7 @@ djlint==1.36.4
 
 # Type checking
 mypy==1.13.0
-django-stubs==5.1.1
+django-stubs==5.2.8
 
 # Test coverage
 coverage==7.6.9

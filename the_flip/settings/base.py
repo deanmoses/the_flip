@@ -23,11 +23,14 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
     "whitenoise.runserver_nostatic",
     "django_q",
+    "constance",
+    "constance.backends.database",
     "simple_history",
     "the_flip.apps.core",
     "the_flip.apps.accounts",
     "the_flip.apps.catalog",
     "the_flip.apps.maintenance",
+    "the_flip.apps.parts",
     "the_flip.apps.webhooks",
 ]
 
@@ -56,6 +59,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "constance.context_processors.config",
             ],
         },
     },
@@ -119,3 +123,14 @@ RATE_LIMIT_WINDOW_MINUTES = config("RATE_LIMIT_WINDOW_MINUTES", default=10, cast
 
 # Transcoding upload authentication token (shared between web and worker services)
 TRANSCODING_UPLOAD_TOKEN = config("TRANSCODING_UPLOAD_TOKEN", default=None)
+
+# django-constance configuration (admin-editable settings)
+CONSTANCE_BACKEND = "constance.backends.database.DatabaseBackend"
+
+CONSTANCE_CONFIG = {
+    "PARTS_ENABLED": (True, "Enable the parts request feature", bool),
+}
+
+CONSTANCE_CONFIG_FIELDSETS = {
+    "Feature Flags": ("PARTS_ENABLED",),
+}

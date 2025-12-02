@@ -319,7 +319,9 @@ class WebhookDeliveryTests(TestCase):
         mock_post.side_effect = requests.RequestException("Connection error")
 
         report = create_problem_report(machine=self.machine)
-        result = deliver_webhooks("problem_report_created", report.pk, "ProblemReport")
+        # Capture expected warning log to avoid noise in test output
+        with self.assertLogs("the_flip.apps.webhooks.tasks", level="WARNING"):
+            result = deliver_webhooks("problem_report_created", report.pk, "ProblemReport")
 
         self.assertEqual(result["status"], "completed")
         self.assertEqual(result["results"][0]["status"], "error")

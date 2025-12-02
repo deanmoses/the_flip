@@ -91,7 +91,7 @@ function initMachineAutocomplete(container) {
         .then((response) => (response.ok ? response.json() : Promise.reject()))
         .then((data) => {
           results = data.machines || [];
-          activeIndex = results.length ? 0 : -1;
+          activeIndex = -1;
           renderDropdown(results);
         })
         .catch((error) => {
