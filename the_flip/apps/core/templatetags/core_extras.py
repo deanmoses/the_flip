@@ -305,20 +305,20 @@ def sidebar(content):
 
 
 @register.simple_block_tag
-def sidebar_section(content, title=""):
-    """Wrap content in a sidebar section with optional title.
+def sidebar_section(content, label=""):
+    """Wrap content in a sidebar section with optional label.
 
     Usage:
-        {% sidebar_section title="Actions" %}
-          <a href="#" class="btn">Do something</a>
+        {% sidebar_section label="Machine" %}
+          <div class="sidebar__title">Ballyhoo</div>
         {% endsidebar_section %}
     """
-    title_html = ""
-    if title:
-        title_html = f'<div class="sidebar__label">{title}</div>\n'
+    label_html = ""
+    if label:
+        label_html = f'<div class="sidebar__label">{label}</div>\n'
     return format_html(
         '<div class="sidebar__section">\n{}{}</div>',
-        mark_safe(title_html),  # noqa: S308 - title is from template, not user input
+        mark_safe(label_html),  # noqa: S308 - label is from template, not user input
         content,
     )
 

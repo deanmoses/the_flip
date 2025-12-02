@@ -1,4 +1,5 @@
 {% extends "layouts/two_column.html" %}
+{% load core_extras %}
 {% block title %}
   {% if is_create %}
     Add Terminal
@@ -44,43 +45,42 @@
   {% endif %}
 {% endblock %}
 {% block sidebar %}
-  <div class="card card--padded sidebar--sticky">
-    <div class="sidebar__section">
-      <div class="sidebar__label">Shared Terminal</div>
-      {% if not is_create %}
-        <div class="sidebar__title">
-          {% if terminal.user.first_name or terminal.user.last_name %}
-            {{ terminal.user.first_name }} {{ terminal.user.last_name }} ({{ terminal.user.username }})
-          {% else %}
-            {{ terminal.user.username }}
-          {% endif %}
-        </div>
+  {% sidebar %}
+  {% sidebar_section label="Shared Terminal" %}
+  {% if not is_create %}
+    <div class="sidebar__title">
+      {% if terminal.user.first_name or terminal.user.last_name %}
+        {{ terminal.user.first_name }} {{ terminal.user.last_name }} ({{ terminal.user.username }})
       {% else %}
-        <div class="sidebar__title text-muted">New terminal</div>
+        {{ terminal.user.username }}
       {% endif %}
     </div>
-    {% if not is_create %}
-      <div class="sidebar__section">
-        {% if terminal.user.is_active %}
-          <form method="post" action="{% url 'terminal-deactivate' terminal.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn--danger btn--full">
-              <i class="fa-solid fa-ban meta"></i>
-              Deactivate
-            </button>
-          </form>
-        {% else %}
-          <form method="post" action="{% url 'terminal-reactivate' terminal.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn--success btn--full">
-              <i class="fa-solid fa-rotate-left meta"></i>
-              Reactivate
-            </button>
-          </form>
-        {% endif %}
-      </div>
-    {% endif %}
-  </div>
+  {% else %}
+    <div class="sidebar__title text-muted">New terminal</div>
+  {% endif %}
+{% endsidebar_section %}
+{% if not is_create %}
+  {% sidebar_section %}
+  {% if terminal.user.is_active %}
+    <form method="post" action="{% url 'terminal-deactivate' terminal.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn--danger btn--full">
+        <i class="fa-solid fa-ban meta"></i>
+        Deactivate
+      </button>
+    </form>
+  {% else %}
+    <form method="post" action="{% url 'terminal-reactivate' terminal.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn--success btn--full">
+        <i class="fa-solid fa-rotate-left meta"></i>
+        Reactivate
+      </button>
+    </form>
+  {% endif %}
+{% endsidebar_section %}
+{% endif %}
+{% endsidebar %}
 {% endblock %}
 {% block main %}
   <div class="card card--padded">
