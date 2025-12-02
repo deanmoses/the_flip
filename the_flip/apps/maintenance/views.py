@@ -183,16 +183,23 @@ class ProblemReportListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         page_obj = paginator.get_page(self.request.GET.get("page"))
 
         # Stats for sidebar
-        open_count = ProblemReport.objects.filter(status="open").count()
-        closed_count = ProblemReport.objects.filter(status="closed").count()
+        stats = [
+            {
+                "value": ProblemReport.objects.filter(status="open").count(),
+                "label": "Open",
+            },
+            {
+                "value": ProblemReport.objects.filter(status="closed").count(),
+                "label": "Closed",
+            },
+        ]
 
         context.update(
             {
                 "page_obj": page_obj,
                 "reports": page_obj.object_list,
                 "search_form": SearchForm(initial={"q": search_query}),
-                "open_count": open_count,
-                "closed_count": closed_count,
+                "stats": stats,
             }
         )
         return context

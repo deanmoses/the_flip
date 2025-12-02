@@ -18,6 +18,12 @@ Focus on clean, modern, lightweight mobile-friendly pages that rely on a single 
 - **Never Use Inline `style=` Attributes**. Inline styles (`style="..."`) are prohibited.  Always use CSS classes instead.
 
 
+## Page Layout
+
+Most pages extend `layouts/two_column.html`. See that file for available blocks (`breadcrumbs`, `mobile_actions`, `sidebar`, `main`).
+
+For list pages with search and infinite scroll, extend `maintenance/global_list_base.html` instead.
+
 ## Component Expectations
 
 The project establishes component patterns in [the_flip/static/core/styles.css](../the_flip/static/core/styles.css). Before creating new components, review existing patterns:

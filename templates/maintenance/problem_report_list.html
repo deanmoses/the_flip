@@ -9,16 +9,7 @@
 {% endblock %}
 {% block sidebar_stats %}
   <div class="sidebar__label">Problem Reports</div>
-  <div class="stat-grid">
-    <div class="stat">
-      <span class="stat__value">{{ open_count }}</span>
-      <span class="stat__label">Open</span>
-    </div>
-    <div class="stat">
-      <span class="stat__value">{{ closed_count }}</span>
-      <span class="stat__label">Closed</span>
-    </div>
-  </div>
+  {% stat_grid stats=stats %}
 {% endblock %}
 {% block sidebar_actions %}
   <a href="{% url 'problem-report-create' %}"
@@ -32,23 +23,20 @@
 {% endblock %}
 {% block list_content %}
   {% if reports %}
-    <div class="timeline">
-      <div class="timeline__line"></div>
-      <div id="log-list">
-        {% for entry in reports %}
-          {% include "maintenance/partials/global_problem_report_entry.html" with entry=entry %}
-        {% endfor %}
-      </div>
-    </div>
-    <div id="log-pagination"
-         data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}0{% endif %}"></div>
-  {% else %}
-    <p class="text-muted">
-      {% if search_form.q.value %}
-        No problem reports match your search.
-      {% else %}
-        No problem reports yet.
-      {% endif %}
-    </p>
-  {% endif %}
+    {% timeline id="log-list" %}
+    {% for entry in reports %}
+      {% include "maintenance/partials/global_problem_report_entry.html" with entry=entry %}
+    {% endfor %}
+  {% endtimeline %}
+  <div id="log-pagination"
+       data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}0{% endif %}"></div>
+{% else %}
+  <p class="text-muted">
+    {% if search_form.q.value %}
+      No problem reports match your search.
+    {% else %}
+      No problem reports yet.
+    {% endif %}
+  </p>
+{% endif %}
 {% endblock %}

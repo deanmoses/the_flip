@@ -210,12 +210,145 @@ def log_entry_meta(entry):
 
 
 # -----------------------------------------------------------------------------
+# UI Component template tags
+# -----------------------------------------------------------------------------
+
+
+@register.inclusion_tag("components/button.html")
+def button(
+    url: str,
+    label: str,
+    icon: str = "",
+    variant: str = "secondary",
+    full_width: bool = False,
+    icon_only: bool = False,
+):
+    """Render a button/link component.
+
+    Usage:
+        {% button url="/logs/new/" label="New Log" icon="plus" variant="log" %}
+        {% button url="/edit/" label="Edit" icon="pencil" icon_only=True %}
+
+    Args:
+        url: Link href
+        icon: FontAwesome icon name (without fa- prefix)
+        label: Button text (becomes aria-label if icon_only)
+        variant: 'primary', 'secondary', 'report', 'log'
+        full_width: Add btn--full class
+        icon_only: Render icon-only button with aria-label
+    """
+    return {
+        "url": url,
+        "label": label,
+        "icon": icon,
+        "variant": variant,
+        "full_width": full_width,
+        "icon_only": icon_only,
+    }
+
+
+@register.inclusion_tag("components/stat_grid.html")
+def stat_grid(stats: list):
+    """Render a grid of statistics.
+
+    Usage:
+        {% stat_grid stats=stats_list %}
+
+    Args:
+        stats: List of dicts with 'value', 'label', and optional 'variant' keys
+               variant can be 'problem', 'log', or None for default styling
+    """
+    return {"stats": stats}
+
+
+@register.inclusion_tag("components/empty_state.html")
+def empty_state(empty_message: str, search_message: str, is_search: bool = False):
+    """Render an empty state message, with search-aware variant.
+
+    Usage:
+        {% empty_state empty_message="No log entries yet." search_message="No log entries match your search." is_search=search_form.q.value %}
+
+    Args:
+        empty_message: Message shown when there are no items
+        search_message: Message shown when search returns no results
+        is_search: Whether a search is active (typically search_form.q.value)
+    """
+    return {
+        "empty_message": empty_message,
+        "search_message": search_message,
+        "is_search": bool(is_search),
+    }
+
+
+@register.inclusion_tag("components/pill.html")
+def pill(label: str, variant: str = "neutral", icon: str = ""):
+    """Render a pill/badge component.
+
+    Usage:
+        {% pill label="Open" variant="open" %}
+        {% pill label="Closed" variant="closed" %}
+        {% pill label="Fixing" variant="status-fixing" icon="wrench" %}
+
+    Args:
+        label: Text to display
+        variant: Style variant - semantic (open, closed) or CSS class
+                 (neutral, status-fixing, status-good, status-broken)
+        icon: Optional FontAwesome icon name (without fa- prefix)
+    """
+    return {
+        "label": label,
+        "variant": variant,
+        "icon": icon,
+    }
+
+
+# -----------------------------------------------------------------------------
+# Sidebar template tags
+# -----------------------------------------------------------------------------
+
+
+@register.simple_block_tag
+def sidebar(content):
+    """Wrap content in a sticky sidebar card.
+
+    Usage:
+        {% sidebar %}
+          {% sidebar_section title="Stats" %}...{% endsidebar_section %}
+          {% sidebar_section title="Actions" %}...{% endsidebar_section %}
+        {% endsidebar %}
+    """
+    return format_html(
+        '<div class="card card--padded sidebar--sticky">\n{}</div>',
+        content,
+    )
+
+
+@register.simple_block_tag
+def sidebar_section(content, label=""):
+    """Wrap content in a sidebar section with optional label.
+
+    Usage:
+        {% sidebar_section label="Machine" %}
+          <div class="sidebar__title">Ballyhoo</div>
+        {% endsidebar_section %}
+    """
+    label_html = ""
+    if label:
+        label_html = f'<div class="sidebar__label">{label}</div>\n'
+    return format_html(
+        '<div class="sidebar__section">\n{}{}</div>',
+        mark_safe(label_html),  # noqa: S308 - label is from template, not user input
+        content,
+    )
+
+
+# -----------------------------------------------------------------------------
 # Timeline template tags
 # -----------------------------------------------------------------------------
 
 
 @register.simple_block_tag
-def timeline(content, id=""):
+def timeline(content, id="", inject_log_entries=True):
     """Wrap content in a timeline container with vertical line.
 
     Usage:
@@ -225,12 +358,21 @@ def timeline(content, id=""):
           {% endfor %}
         {% endtimeline %}
 
-        {% timeline id="log-list" %}...{% endtimeline %}
+        {% timeline id="log-list" inject_log_entries=False %}...{% endtimeline %}
+
+    Args:
+        id: Optional HTML id attribute
+        inject_log_entries: If True (default), AJAX status/location changes will
+                            inject new log entries into this timeline. Set to False
+                            for timelines that shouldn't receive log entries (e.g.,
+                            problem reports list).
     """
     id_attr = f' id="{id}"' if id else ""
+    inject_attr = ' data-inject-log-entries="true"' if inject_log_entries else ""
     return format_html(
-        '<div class="timeline"{}>\n' '  <div class="timeline__line"></div>\n' "{}" "</div>",
+        '<div class="timeline"{}{}>\n' '  <div class="timeline__line"></div>\n' "{}" "</div>",
         mark_safe(id_attr),  # noqa: S308 - id is from template, not user input
+        mark_safe(inject_attr),  # noqa: S308 - data attr is from template, not user input
         content,
     )
 

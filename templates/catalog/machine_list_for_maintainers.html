@@ -1,73 +1,51 @@
-{% extends "base.html" %}
+{% extends "layouts/two_column.html" %}
 {% load static core_extras %}
 {% block title %}Machines · {{ block.super }}{% endblock %}
-{% block content %}
-  <!-- TWO COLUMN LAYOUT: Main Content + Sidebar -->
-  <div class="two-column">
-    <!-- MOBILE ACTION BUTTONS (visible on mobile only) -->
-    <div class="mobile-actions">
-      {% if user.is_superuser %}
-        <a href="{% url 'machine-quick-create' %}" class="btn btn--secondary">
-          <i class="fa-solid fa-plus meta"></i>
-          New Machine
-        </a>
-      {% endif %}
-    </div>
-    <!-- SIDEBAR (desktop only) -->
-    <aside class="two-column__sidebar">
-      <div class="card card--padded sidebar--sticky">
-        <!-- STATS -->
-        <div class="sidebar__section">
-          <div class="sidebar__label">Machines</div>
-          <div class="stat-grid">
-            <div class="stat">
-              <span class="stat__value">{{ total_count }}</span>
-              <span class="stat__label">Total</span>
-            </div>
-            {% for loc in location_counts %}
-              <div class="stat">
-                <span class="stat__value">{{ loc.count }}</span>
-                <span class="stat__label">{{ loc.name }}</span>
-              </div>
-            {% endfor %}
-          </div>
-        </div>
-        <!-- ACTIONS -->
-        <div class="sidebar__section">
-          {% if user.is_superuser %}
-            <a href="{% url 'machine-quick-create' %}"
-               class="btn btn--secondary btn--full">
-              <i class="fa-solid fa-plus meta"></i>
-              New Machine
-            </a>
-          {% endif %}
-        </div>
-      </div>
-    </aside>
-    <!-- MAIN COLUMN -->
-    <div class="two-column__main">
-      <!-- SEARCH BAR -->
-      <div class="filter-bar">
-        <div class="filter-bar__search filter-bar__search--full">
-          <input type="search"
-                 id="machine-search"
-                 placeholder="Search machines..."
-                 class="filter-bar__search-input">
-          <i class="fa-solid fa-magnifying-glass filter-bar__search-icon"></i>
-        </div>
-      </div>
-      <!-- MACHINE LIST -->
-      {% if machines %}
-        <div class="machine-list" id="machine-list">
-          {% for machine in machines %}
-            {% include "catalog/partials/machine_list_card.html" with machine=machine %}
-          {% endfor %}
-        </div>
-      {% else %}
-        <p class="text-muted">No machines yet.</p>
-      {% endif %}
+{% block mobile_actions %}
+  {% if user.is_superuser %}
+    <a href="{% url 'machine-quick-create' %}" class="btn btn--secondary">
+      <i class="fa-solid fa-plus meta"></i>
+      New Machine
+    </a>
+  {% endif %}
+{% endblock %}
+{% block sidebar %}
+  {% sidebar %}
+  {% sidebar_section label="Machines" %}
+  {% stat_grid stats=stats %}
+{% endsidebar_section %}
+{% sidebar_section %}
+{% if user.is_superuser %}
+  <a href="{% url 'machine-quick-create' %}"
+     class="btn btn--secondary btn--full">
+    <i class="fa-solid fa-plus meta"></i>
+    New Machine
+  </a>
+{% endif %}
+{% endsidebar_section %}
+{% endsidebar %}
+{% endblock %}
+{% block main %}
+  <!-- SEARCH BAR -->
+  <div class="filter-bar">
+    <div class="filter-bar__search filter-bar__search--full">
+      <input type="search"
+             id="machine-search"
+             placeholder="Search machines..."
+             class="filter-bar__search-input">
+      <i class="fa-solid fa-magnifying-glass filter-bar__search-icon"></i>
     </div>
   </div>
+  <!-- MACHINE LIST -->
+  {% if machines %}
+    <div class="machine-list" id="machine-list">
+      {% for machine in machines %}
+        {% include "catalog/partials/machine_list_card.html" with machine=machine %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-muted">No machines yet.</p>
+  {% endif %}
 {% endblock %}
 {% block extra_scripts %}
   <script src="{% static 'core/machine_filter.js' %}" defer></script>

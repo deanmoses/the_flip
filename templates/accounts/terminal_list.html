@@ -1,66 +1,59 @@
-{% extends "base.html" %}
-{% load static %}
+{% extends "layouts/two_column.html" %}
+{% load static core_extras %}
 {% block title %}Shared Terminals · {{ block.super }}{% endblock %}
-{% block content %}
+{% block breadcrumbs %}
   <nav class="breadcrumbs breadcrumbs--responsive">
     <span class="breadcrumbs__current">Shared Terminal Accounts</span>
   </nav>
-  <!-- TWO COLUMN LAYOUT: Main Content + Sidebar -->
-  <div class="two-column">
-    <!-- MOBILE ACTION BUTTONS (visible on mobile only) -->
-    <div class="mobile-actions">
-      <a href="{% url 'terminal-add' %}" class="btn btn--secondary">
-        <i class="fa-solid fa-plus meta"></i>
-        Add Terminal
-      </a>
+{% endblock %}
+{% block mobile_actions %}
+  <a href="{% url 'terminal-add' %}" class="btn btn--secondary">
+    <i class="fa-solid fa-plus meta"></i>
+    Add Terminal
+  </a>
+{% endblock %}
+{% block sidebar %}
+  {% sidebar %}
+  {% sidebar_section label="Shared Terminal Accounts" %}
+  <p class="text-muted text-sm">These user accounts are for shared machines, like in the workshop or floor.</p>
+  <p class="text-muted text-sm">
+    When the system is logged in as a shared account, it requires the user to specify a name when logging work and reporting problems.
+  </p>
+{% endsidebar_section %}
+{% sidebar_section %}
+<a href="{% url 'terminal-add' %}" class="btn btn--secondary btn--full">
+  <i class="fa-solid fa-plus meta"></i>
+  Add Terminal
+</a>
+{% endsidebar_section %}
+{% endsidebar %}
+{% endblock %}
+{% block main %}
+  {% if terminals %}
+    <div class="terminal-list">
+      {% for terminal in terminals %}
+        <div class="terminal-card">
+          <div class="terminal-card__info">
+            <a href="{% url 'terminal-edit' terminal.pk %}"
+               class="terminal-card__name">{{ terminal.display_name }}</a>
+            {% if not terminal.user.is_active %}
+              {% pill label="Deactivated" variant="neutral" %}
+            {% endif %}
+          </div>
+          <div class="terminal-card__actions">
+            <a href="{% url 'terminal-edit' terminal.pk %}"
+               class="btn btn--secondary btn--sm">Edit</a>
+            {% if terminal.user.is_active %}
+              <form method="post" action="{% url 'terminal-login' terminal.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn--primary btn--sm">Login</button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
     </div>
-    <!-- SIDEBAR (desktop only) -->
-    <aside class="two-column__sidebar">
-      <div class="card card--padded sidebar--sticky">
-        <!-- HEADING -->
-        <div class="sidebar__section">
-          <div class="sidebar__label">Shared Terminal Accounts</div>
-          <p class="text-muted text-sm">These user accounts are for shared machines, like in the workshop or floor.</p>
-          <p class="text-muted text-sm">
-            When the system is logged in as a shared account, it requires the user to specify a name when logging work and reporting problems.
-          </p>
-        </div>
-        <!-- ACTIONS -->
-        <div class="sidebar__section">
-          <a href="{% url 'terminal-add' %}" class="btn btn--secondary btn--full">
-            <i class="fa-solid fa-plus meta"></i>
-            Add Terminal
-          </a>
-        </div>
-      </div>
-    </aside>
-    <!-- MAIN COLUMN -->
-    <div class="two-column__main">
-      {% if terminals %}
-        <div class="terminal-list">
-          {% for terminal in terminals %}
-            <div class="terminal-card">
-              <div class="terminal-card__info">
-                <a href="{% url 'terminal-edit' terminal.pk %}"
-                   class="terminal-card__name">{{ terminal.display_name }}</a>
-                {% if not terminal.user.is_active %}<span class="pill pill--neutral">Deactivated</span>{% endif %}
-              </div>
-              <div class="terminal-card__actions">
-                <a href="{% url 'terminal-edit' terminal.pk %}"
-                   class="btn btn--secondary btn--sm">Edit</a>
-                {% if terminal.user.is_active %}
-                  <form method="post" action="{% url 'terminal-login' terminal.pk %}">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn--primary btn--sm">Login</button>
-                  </form>
-                {% endif %}
-              </div>
-            </div>
-          {% endfor %}
-        </div>
-      {% else %}
-        <p class="text-muted">No shared terminal accounts yet.</p>
-      {% endif %}
-    </div>
-  </div>
+  {% else %}
+    <p class="text-muted">No shared terminal accounts yet.</p>
+  {% endif %}
 {% endblock %}
