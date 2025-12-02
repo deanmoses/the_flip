@@ -4,8 +4,8 @@
 # exit on error
 set -o errexit
 
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies (web + worker for full production deployment)
+pip install -r requirements.web.txt -r requirements.worker.txt
 
 # Create directories if they don't exist
 mkdir -p media

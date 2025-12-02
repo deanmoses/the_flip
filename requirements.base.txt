@@ -1,0 +1,22 @@
+# Base dependencies shared by all services (web, worker, dev)
+
+# Django Web Framework
+Django==5.2.8
+
+# Configuration Management
+python-decouple==3.8
+django-constance[database]==4.3.4
+
+# Database
+psycopg2-binary==2.9.10
+dj-database-url==2.3.0
+
+# Image Processing (used by both web for QR codes and worker for thumbnails)
+Pillow==11.0.0
+pillow-heif==0.18.0
+
+# Task Queue (web enqueues tasks, worker processes them)
+django-q2==1.8.0
+
+# Audit Logging
+django-simple-history==3.10.1
