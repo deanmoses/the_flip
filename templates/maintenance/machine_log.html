@@ -6,23 +6,20 @@
 {% endblock %}
 {% block feed_content %}
   {% if log_entries %}
-    <div class="timeline">
-      <div class="timeline__line"></div>
-      <div id="log-list">
-        {% for entry in log_entries %}
-          {% include "maintenance/partials/log_entry.html" with entry=entry %}
-        {% endfor %}
-      </div>
-    </div>
-    <div id="log-pagination"
-         data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}0{% endif %}"></div>
-  {% else %}
-    <p class="text-muted">
-      {% if search_form.q.value %}
-        No log entries match your search.
-      {% else %}
-        No log entries yet.
-      {% endif %}
-    </p>
-  {% endif %}
+    {% timeline id="log-list" %}
+    {% for entry in log_entries %}
+      {% include "maintenance/partials/log_entry.html" with entry=entry %}
+    {% endfor %}
+  {% endtimeline %}
+  <div id="log-pagination"
+       data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}0{% endif %}"></div>
+{% else %}
+  <p class="text-muted">
+    {% if search_form.q.value %}
+      No log entries match your search.
+    {% else %}
+      No log entries yet.
+    {% endif %}
+  </p>
+{% endif %}
 {% endblock %}

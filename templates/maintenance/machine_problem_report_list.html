@@ -4,22 +4,19 @@
 {% block infinite_scroll_url %}{% endblock %}
 {% block feed_content %}
   {% if reports %}
-    <div class="timeline">
-      <div class="timeline__line"></div>
-      <div id="log-list">
-        {% for entry in reports %}
-          {% include "maintenance/partials/problem_report_entry.html" with entry=entry %}
-        {% endfor %}
-      </div>
-    </div>
-    <div id="log-pagination" data-next-page="0"></div>
-  {% else %}
-    <p class="text-muted">
-      {% if search_form.q.value %}
-        No problem reports match your search.
-      {% else %}
-        No problem reports yet.
-      {% endif %}
-    </p>
-  {% endif %}
+    {% timeline id="log-list" inject_log_entries=False %}
+    {% for entry in reports %}
+      {% include "maintenance/partials/problem_report_entry.html" with entry=entry %}
+    {% endfor %}
+  {% endtimeline %}
+  <div id="log-pagination" data-next-page="0"></div>
+{% else %}
+  <p class="text-muted">
+    {% if search_form.q.value %}
+      No problem reports match your search.
+    {% else %}
+      No problem reports yet.
+    {% endif %}
+  </p>
+{% endif %}
 {% endblock %}

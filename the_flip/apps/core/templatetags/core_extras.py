@@ -329,7 +329,7 @@ def sidebar_section(content, label=""):
 
 
 @register.simple_block_tag
-def timeline(content, id=""):
+def timeline(content, id="", inject_log_entries=True):
     """Wrap content in a timeline container with vertical line.
 
     Usage:
@@ -339,12 +339,21 @@ def timeline(content, id=""):
           {% endfor %}
         {% endtimeline %}
 
-        {% timeline id="log-list" %}...{% endtimeline %}
+        {% timeline id="log-list" inject_log_entries=False %}...{% endtimeline %}
+
+    Args:
+        id: Optional HTML id attribute
+        inject_log_entries: If True (default), AJAX status/location changes will
+                            inject new log entries into this timeline. Set to False
+                            for timelines that shouldn't receive log entries (e.g.,
+                            problem reports list).
     """
     id_attr = f' id="{id}"' if id else ""
+    inject_attr = ' data-inject-log-entries="true"' if inject_log_entries else ""
     return format_html(
-        '<div class="timeline"{}>\n' '  <div class="timeline__line"></div>\n' "{}" "</div>",
+        '<div class="timeline"{}{}>\n' '  <div class="timeline__line"></div>\n' "{}" "</div>",
         mark_safe(id_attr),  # noqa: S308 - id is from template, not user input
+        mark_safe(inject_attr),  # noqa: S308 - data attr is from template, not user input
         content,
     )
 
