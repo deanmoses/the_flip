@@ -18,6 +18,44 @@ Focus on clean, modern, lightweight mobile-friendly pages that rely on a single 
 - **Never Use Inline `style=` Attributes**. Inline styles (`style="..."`) are prohibited.  Always use CSS classes instead.
 
 
+## Page Layout
+
+The default page layout is `layouts/two_column.html`. Most pages should extend this template:
+
+```django
+{% extends "layouts/two_column.html" %}
+{% load core_extras %}
+
+{% block title %}Page Title · {{ block.super }}{% endblock %}
+
+{% block mobile_actions %}
+  {# Buttons shown on mobile above the main content #}
+{% endblock %}
+
+{% block sidebar %}
+  {% sidebar %}
+    {% sidebar_section title="Stats" %}
+      {% stat_grid stats=stats %}
+    {% endsidebar_section %}
+    {% sidebar_section %}
+      {# Action buttons #}
+    {% endsidebar_section %}
+  {% endsidebar %}
+{% endblock %}
+
+{% block main %}
+  {# Main page content #}
+{% endblock %}
+```
+
+The layout provides:
+- Two-column responsive layout (sidebar hidden on mobile)
+- Mobile action buttons slot
+- Sidebar with sticky positioning
+- Main content area
+
+For list pages with search and infinite scroll, extend `maintenance/global_list_base.html` instead, which builds on `two_column.html`.
+
 ## Component Expectations
 
 The project establishes component patterns in [the_flip/static/core/styles.css](../the_flip/static/core/styles.css). Before creating new components, review existing patterns:
