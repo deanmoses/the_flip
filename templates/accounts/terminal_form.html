@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "layouts/two_column.html" %}
 {% block title %}
   {% if is_create %}
     Add Terminal
@@ -7,7 +7,7 @@
   {% endif %}
   · {{ block.super }}
 {% endblock %}
-{% block content %}
+{% block breadcrumbs %}
   <nav class="breadcrumbs breadcrumbs--responsive">
     <a href="{% url 'terminal-list' %}" class="breadcrumbs__link">Shared Terminal Accounts</a>
     <span>/</span>
@@ -21,10 +21,46 @@
       {% endif %}
     </span>
   </nav>
-  <div class="two-column">
-    <!-- Mobile actions -->
+{% endblock %}
+{% block mobile_actions %}
+  {% if not is_create %}
+    {% if terminal.user.is_active %}
+      <form method="post" action="{% url 'terminal-deactivate' terminal.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn--danger btn--full">
+          <i class="fa-solid fa-ban meta"></i>
+          Deactivate
+        </button>
+      </form>
+    {% else %}
+      <form method="post" action="{% url 'terminal-reactivate' terminal.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn--success btn--full">
+          <i class="fa-solid fa-rotate-left meta"></i>
+          Reactivate
+        </button>
+      </form>
+    {% endif %}
+  {% endif %}
+{% endblock %}
+{% block sidebar %}
+  <div class="card card--padded sidebar--sticky">
+    <div class="sidebar__section">
+      <div class="sidebar__label">Shared Terminal</div>
+      {% if not is_create %}
+        <div class="sidebar__title">
+          {% if terminal.user.first_name or terminal.user.last_name %}
+            {{ terminal.user.first_name }} {{ terminal.user.last_name }} ({{ terminal.user.username }})
+          {% else %}
+            {{ terminal.user.username }}
+          {% endif %}
+        </div>
+      {% else %}
+        <div class="sidebar__title text-muted">New terminal</div>
+      {% endif %}
+    </div>
     {% if not is_create %}
-      <div class="mobile-actions">
+      <div class="sidebar__section">
         {% if terminal.user.is_active %}
           <form method="post" action="{% url 'terminal-deactivate' terminal.pk %}">
             {% csrf_token %}
@@ -44,80 +80,39 @@
         {% endif %}
       </div>
     {% endif %}
-    <!-- Sidebar -->
-    <aside class="two-column__sidebar">
-      <div class="card card--padded sidebar--sticky">
-        <div class="sidebar__section">
-          <div class="sidebar__label">Shared Terminal</div>
-          {% if not is_create %}
-            <div class="sidebar__title">
-              {% if terminal.user.first_name or terminal.user.last_name %}
-                {{ terminal.user.first_name }} {{ terminal.user.last_name }} ({{ terminal.user.username }})
-              {% else %}
-                {{ terminal.user.username }}
-              {% endif %}
-            </div>
-          {% else %}
-            <div class="sidebar__title text-muted">New terminal</div>
-          {% endif %}
+  </div>
+{% endblock %}
+{% block main %}
+  <div class="card card--padded">
+    <form method="post" autocomplete="off" class="form-main">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="text-problem body-small">
+          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
         </div>
-        {% if not is_create %}
-          <div class="sidebar__section">
-            {% if terminal.user.is_active %}
-              <form method="post" action="{% url 'terminal-deactivate' terminal.pk %}">
-                {% csrf_token %}
-                <button type="submit" class="btn btn--danger btn--full">
-                  <i class="fa-solid fa-ban meta"></i>
-                  Deactivate
-                </button>
-              </form>
-            {% else %}
-              <form method="post" action="{% url 'terminal-reactivate' terminal.pk %}">
-                {% csrf_token %}
-                <button type="submit" class="btn btn--success btn--full">
-                  <i class="fa-solid fa-rotate-left meta"></i>
-                  Reactivate
-                </button>
-              </form>
-            {% endif %}
-          </div>
-        {% endif %}
-      </div>
-    </aside>
-    <!-- Main -->
-    <div class="two-column__main">
-      <div class="card card--padded">
-        <form method="post" autocomplete="off" class="form-main">
-          {% csrf_token %}
-          {% if form.non_field_errors %}
-            <div class="text-problem body-small">
-              {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-            </div>
+      {% endif %}
+      {% for field in form %}
+        <div class="form-field">
+          {{ field.label_tag }}
+          {{ field }}
+          {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
+          {% for error in field.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+        </div>
+      {% endfor %}
+      <div class="form-actions">
+        <a href="{% url 'terminal-list' %}" class="btn btn--secondary">
+          <i class="fa-solid fa-circle-xmark meta"></i>
+          Cancel
+        </a>
+        <button type="submit" class="btn btn--log">
+          <i class="fa-solid fa-floppy-disk meta"></i>
+          {% if is_create %}
+            Create Terminal
+          {% else %}
+            Save Changes
           {% endif %}
-          {% for field in form %}
-            <div class="form-field">
-              {{ field.label_tag }}
-              {{ field }}
-              {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
-              {% for error in field.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-            </div>
-          {% endfor %}
-          <div class="form-actions">
-            <a href="{% url 'terminal-list' %}" class="btn btn--secondary">
-              <i class="fa-solid fa-circle-xmark meta"></i>
-              Cancel
-            </a>
-            <button type="submit" class="btn btn--log">
-              <i class="fa-solid fa-floppy-disk meta"></i>
-              {% if is_create %}
-                Create Terminal
-              {% else %}
-                Save Changes
-              {% endif %}
-            </button>
-          </div>
-        </form>
+        </button>
       </div>
-    </div>
+    </form>
   </div>
 {% endblock %}
