@@ -1,68 +1,65 @@
-{% extends "base.html" %}
+{% extends "layouts/two_column.html" %}
+{% load core_extras %}
 {% block title %}Profile · {{ block.super }}{% endblock %}
-{% block content %}
+{% block breadcrumbs %}
   <nav class="breadcrumbs breadcrumbs--responsive">
     <span class="breadcrumbs__current">Profile</span>
   </nav>
-  <div class="two-column">
-    <!-- Mobile actions -->
-    <div class="mobile-actions">
-      <a href="{% url 'password_change' %}"
-         class="btn btn--secondary btn--full">
-        <i class="fa-solid fa-key meta"></i>
-        Change Password
-      </a>
-    </div>
-    <!-- Sidebar -->
-    <aside class="two-column__sidebar">
-      <div class="card card--padded sidebar--sticky">
-        <div class="sidebar__section">
-          <div class="sidebar__label">Profile</div>
-          <div class="sidebar__title">
-            {% if user.first_name or user.last_name %}
-              {{ user.first_name }} {{ user.last_name }} ({{ user.username }})
-            {% else %}
-              {{ user.username }}
-            {% endif %}
-          </div>
+{% endblock %}
+{% block mobile_actions %}
+  <a href="{% url 'password_change' %}"
+     class="btn btn--secondary btn--full">
+    <i class="fa-solid fa-key meta"></i>
+    Change Password
+  </a>
+{% endblock %}
+{% block sidebar %}
+  {% sidebar %}
+  {% sidebar_section label="Profile" %}
+  <div class="sidebar__title">
+    {% if user.first_name or user.last_name %}
+      {{ user.first_name }} {{ user.last_name }} ({{ user.username }})
+    {% else %}
+      {{ user.username }}
+    {% endif %}
+  </div>
+{% endsidebar_section %}
+{% sidebar_section %}
+<a href="{% url 'password_change' %}"
+   class="btn btn--secondary btn--full">
+  <i class="fa-solid fa-key meta"></i>
+  Change Password
+</a>
+{% endsidebar_section %}
+{% endsidebar %}
+{% endblock %}
+{% block main %}
+  <div class="card card--padded">
+    <form method="post" class="form-main">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="text-problem body-small">
+          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
         </div>
-        <a href="{% url 'password_change' %}"
-           class="btn btn--secondary btn--full">
-          <i class="fa-solid fa-key meta"></i>
-          Change Password
+      {% endif %}
+      {% for field in form %}
+        <div class="form-field">
+          {{ field.label_tag }}
+          {{ field }}
+          {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
+          {% for error in field.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+        </div>
+      {% endfor %}
+      <div class="form-actions">
+        <a href="{% url 'home' %}" class="btn btn--secondary">
+          <i class="fa-solid fa-circle-xmark meta"></i>
+          Cancel
         </a>
+        <button type="submit" class="btn btn--log">
+          <i class="fa-solid fa-floppy-disk meta"></i>
+          Save Changes
+        </button>
       </div>
-    </aside>
-    <!-- Main -->
-    <div class="two-column__main">
-      <div class="card card--padded">
-        <form method="post" class="form-main">
-          {% csrf_token %}
-          {% if form.non_field_errors %}
-            <div class="text-problem body-small">
-              {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-            </div>
-          {% endif %}
-          {% for field in form %}
-            <div class="form-field">
-              {{ field.label_tag }}
-              {{ field }}
-              {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
-              {% for error in field.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-            </div>
-          {% endfor %}
-          <div class="form-actions">
-            <a href="{% url 'home' %}" class="btn btn--secondary">
-              <i class="fa-solid fa-circle-xmark meta"></i>
-              Cancel
-            </a>
-            <button type="submit" class="btn btn--log">
-              <i class="fa-solid fa-floppy-disk meta"></i>
-              Save Changes
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    </form>
   </div>
 {% endblock %}
