@@ -31,27 +31,7 @@
         {% if part_request.machine %}
           <div class="sidebar__section">
             <div class="sidebar__label">Machine</div>
-            <a href="{% url 'maintainer-machine-detail' part_request.machine.slug %}"
-               class="sidebar-card sidebar-card--neutral">
-              <div class="sidebar-card__header">{{ part_request.machine.display_name }}</div>
-              <p class="sidebar-card__meta">
-                {% if part_request.machine.model.manufacturer %}{{ part_request.machine.model.manufacturer }}{% endif %}
-                {% if part_request.machine.model.manufacturer and part_request.machine.model.year %}·{% endif %}
-                {% if part_request.machine.model.year %}{{ part_request.machine.model.year }}{% endif %}
-              </p>
-              <div class="sidebar-card__badges">
-                <span class="pill {% if part_request.machine.operational_status == 'good' %}pill--status-good{% elif part_request.machine.operational_status == 'fixing' %}pill--status-fixing{% elif part_request.machine.operational_status == 'broken' %}pill--status-broken{% else %}pill--neutral{% endif %}">
-                  <i class="fa-solid {% if part_request.machine.operational_status == 'fixing' %}fa-wrench{% elif part_request.machine.operational_status == 'good' %}fa-check{% elif part_request.machine.operational_status == 'broken' %}fa-circle-xmark{% else %}fa-circle-question{% endif %} meta"></i>
-                  {{ part_request.machine.get_operational_status_display }}
-                </span>
-                {% if part_request.machine.location %}
-                  <span class="pill pill--neutral">
-                    <i class="fa-solid fa-location-dot meta"></i>
-                    {{ part_request.machine.location.name }}
-                  </span>
-                {% endif %}
-              </div>
-            </a>
+            {% include "components/machine_sidebar_card.html" with machine=part_request.machine %}
           </div>
         {% endif %}
         <!-- WHEN -->

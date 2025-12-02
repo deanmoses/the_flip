@@ -29,27 +29,7 @@
         <!-- MACHINE -->
         <div class="sidebar__section">
           <div class="sidebar__label">Machine</div>
-          <a href="{% url 'maintainer-machine-detail' entry.machine.slug %}"
-             class="sidebar-card sidebar-card--neutral">
-            <div class="sidebar-card__header">{{ entry.machine.display_name }}</div>
-            <p class="sidebar-card__meta">
-              {% if entry.machine.model.manufacturer %}{{ entry.machine.model.manufacturer }}{% endif %}
-              {% if entry.machine.model.manufacturer and entry.machine.model.year %}·{% endif %}
-              {% if entry.machine.model.year %}{{ entry.machine.model.year }}{% endif %}
-            </p>
-            <div class="sidebar-card__badges">
-              <span class="pill {% if entry.machine.operational_status == 'good' %}pill--status-good{% elif entry.machine.operational_status == 'fixing' %}pill--status-fixing{% elif entry.machine.operational_status == 'broken' %}pill--status-broken{% else %}pill--neutral{% endif %}">
-                <i class="fa-solid {% if entry.machine.operational_status == 'fixing' %}fa-wrench{% elif entry.machine.operational_status == 'good' %}fa-check{% elif entry.machine.operational_status == 'broken' %}fa-circle-xmark{% else %}fa-circle-question{% endif %} meta"></i>
-                {{ entry.machine.get_operational_status_display }}
-              </span>
-              {% if entry.machine.location %}
-                <span class="pill pill--neutral">
-                  <i class="fa-solid fa-location-dot meta"></i>
-                  {{ entry.machine.location.name }}
-                </span>
-              {% endif %}
-            </div>
-          </a>
+          {% include "components/machine_sidebar_card.html" with machine=entry.machine %}
         </div>
         <!-- LINKED PROBLEM -->
         {% if entry.problem_report %}
