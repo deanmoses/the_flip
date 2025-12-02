@@ -42,13 +42,13 @@
           <div class="sidebar__section">
             <div class="sidebar__label">Problem</div>
             <a href="{% url 'problem-report-detail' entry.problem_report.pk %}"
-               class="linked-problem-card">
-              <div class="linked-problem-card__header">
-                <i class="fa-solid fa-bug text-problem"></i>
-                <span class="linked-problem-card__number">#{{ entry.problem_report.pk }}</span>
+               class="sidebar-card sidebar-card--problem">
+              <div class="sidebar-card__header sidebar-card__header--problem">
+                <i class="fa-solid fa-bug"></i>
+                <span>#{{ entry.problem_report.pk }}</span>
               </div>
-              <p class="linked-problem-card__text">{{ entry.problem_report|problem_report_summary }}</p>
-              <p class="linked-problem-card__meta">
+              <p class="sidebar-card__text">{{ entry.problem_report|problem_report_summary }}</p>
+              <p class="sidebar-card__meta">
                 {% if entry.problem_report.reporter_display %}{{ entry.problem_report.reporter_display }} ·{% endif %}
                 {{ entry.problem_report.created_at|smart_date }}
               </p>
