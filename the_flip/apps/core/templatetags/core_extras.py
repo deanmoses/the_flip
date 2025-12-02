@@ -261,6 +261,28 @@ def stat_grid(stats: list):
     return {"stats": stats}
 
 
+@register.inclusion_tag("components/pill.html")
+def pill(label: str, variant: str = "neutral", icon: str = ""):
+    """Render a pill/badge component.
+
+    Usage:
+        {% pill label="Open" variant="open" %}
+        {% pill label="Closed" variant="closed" %}
+        {% pill label="Fixing" variant="status-fixing" icon="wrench" %}
+
+    Args:
+        label: Text to display
+        variant: Style variant - semantic (open, closed) or CSS class
+                 (neutral, status-fixing, status-good, status-broken)
+        icon: Optional FontAwesome icon name (without fa- prefix)
+    """
+    return {
+        "label": label,
+        "variant": variant,
+        "icon": icon,
+    }
+
+
 # -----------------------------------------------------------------------------
 # Sidebar template tags
 # -----------------------------------------------------------------------------

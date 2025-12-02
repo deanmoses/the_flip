@@ -6,9 +6,7 @@
     <div class="timeline__header">
       <div class="flex items-center stack-tight">
         <span class="timeline__title timeline__title--problem">{{ entry.machine.display_name }}</span>
-        <span class="badge {% if entry.status == 'open' %}badge--warning{% else %}badge--success{% endif %}">
-          {{ entry.get_status_display }}
-        </span>
+        {% pill label=entry.get_status_display variant=entry.status %}
       </div>
       <span class="timeline__meta">{{ entry|problem_report_meta }}</span>
     </div>

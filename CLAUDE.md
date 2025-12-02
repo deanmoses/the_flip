@@ -106,11 +106,16 @@ Load with `{% load core_extras %}`, then use:
 | `stat_grid` | Inclusion tag | `{% stat_grid stats=stats_list %}` where stats is list of `{value, label, variant}` dicts |
 | `timeline` | Block tag | `{% timeline %}...{% endtimeline %}` - Timeline container with vertical line |
 | `timeline_entry` | Block tag | `{% timeline_entry icon="bug" variant="problem" %}...{% endtimeline_entry %}` |
+| `pill` | Inclusion tag | `{% pill label="Open" variant="open" %}` - Status pill/badge |
 
 ### Button Variants
 - `secondary` (default), `primary`, `report`, `log`
 - Add `full_width=True` for full-width buttons
 - Add `icon_only=True` for icon-only buttons (label becomes aria-label)
+
+### Pill Variants
+- `neutral` (default), `open`, `closed`, `status-fixing`, `status-good`, `status-broken`
+- `open` and `closed` are semantic aliases (open=broken styling, closed=good styling)
 
 ### Creating New Components
 
