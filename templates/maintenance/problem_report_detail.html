@@ -69,12 +69,26 @@
         <div class="sidebar__section">
           <div class="sidebar__label">Machine</div>
           <a href="{% url 'maintainer-machine-detail' machine.slug %}"
-             class="sidebar__title sidebar__link">{{ machine.display_name }}</a>
-          <div class="sidebar__subtitle">
-            {% if machine.model.manufacturer %}{{ machine.model.manufacturer }}{% endif %}
-            {% if machine.model.manufacturer and machine.model.year %}·{% endif %}
-            {% if machine.model.year %}{{ machine.model.year }}{% endif %}
-          </div>
+             class="sidebar-card sidebar-card--neutral">
+            <div class="sidebar-card__header">{{ machine.display_name }}</div>
+            <p class="sidebar-card__meta">
+              {% if machine.model.manufacturer %}{{ machine.model.manufacturer }}{% endif %}
+              {% if machine.model.manufacturer and machine.model.year %}·{% endif %}
+              {% if machine.model.year %}{{ machine.model.year }}{% endif %}
+            </p>
+            <div class="sidebar-card__badges">
+              <span class="pill {% if machine.operational_status == 'good' %}pill--status-good{% elif machine.operational_status == 'fixing' %}pill--status-fixing{% elif machine.operational_status == 'broken' %}pill--status-broken{% else %}pill--neutral{% endif %}">
+                <i class="fa-solid {% if machine.operational_status == 'fixing' %}fa-wrench{% elif machine.operational_status == 'good' %}fa-check{% elif machine.operational_status == 'broken' %}fa-circle-xmark{% else %}fa-circle-question{% endif %} meta"></i>
+                {{ machine.get_operational_status_display }}
+              </span>
+              {% if machine.location %}
+                <span class="pill pill--neutral">
+                  <i class="fa-solid fa-location-dot meta"></i>
+                  {{ machine.location.name }}
+                </span>
+              {% endif %}
+            </div>
+          </a>
         </div>
         <!-- ACTIONS -->
         <div class="sidebar__section">
