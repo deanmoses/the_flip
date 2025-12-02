@@ -27,7 +27,9 @@
     {% endblock %}
   </nav>
   <!-- TWO COLUMN LAYOUT: Main Form + Sidebar -->
-  <form method="post" class="two-column">
+  <form method="post"
+        {% block form_enctype %}{% endblock %}
+        class="two-column">
     {% csrf_token %}
     {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
     <!-- MAIN COLUMN: Primary form fields -->
@@ -55,6 +57,7 @@
                   class="form-input form-textarea"
                   placeholder="Describe the problem...">{{ form.description.value|default:'' }}</textarea>
         {% for error in form.description.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+        {% block media_upload %}{% endblock %}
       </div>
       <!-- FORM ACTIONS -->
       <div class="form-actions">
