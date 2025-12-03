@@ -35,25 +35,23 @@ def deliver_webhooks(event_type: str, object_id: int, model_name: str) -> dict:
 
     This runs asynchronously via Django Q.
     """
-    from the_flip.apps.discord.models import (
-        WebhookEventSubscription,
-        WebhookSettings,
-    )
+    from constance import config
+
+    from the_flip.apps.discord.models import WebhookEventSubscription
 
     # Check global settings
-    webhook_settings = WebhookSettings.get_settings()
-    if not webhook_settings.webhooks_enabled:
+    if not config.DISCORD_WEBHOOKS_ENABLED:
         return {"status": "skipped", "reason": "webhooks globally disabled"}
 
     # Check per-event-type settings
     if event_type.startswith("problem_report"):
-        if not webhook_settings.problem_reports_enabled:
+        if not config.DISCORD_WEBHOOKS_PROBLEM_REPORTS:
             return {"status": "skipped", "reason": "problem report webhooks disabled"}
     elif event_type == "log_entry_created":
-        if not webhook_settings.log_entries_enabled:
+        if not config.DISCORD_WEBHOOKS_LOG_ENTRIES:
             return {"status": "skipped", "reason": "log entry webhooks disabled"}
     elif event_type.startswith("part_request"):
-        if not webhook_settings.parts_enabled:
+        if not config.DISCORD_WEBHOOKS_PARTS:
             return {"status": "skipped", "reason": "parts webhooks disabled"}
 
     # Get all enabled subscriptions for this event type

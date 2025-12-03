@@ -126,17 +126,28 @@ CONSTANCE_BACKEND = "constance.backends.database.DatabaseBackend"
 
 CONSTANCE_CONFIG = {
     "PARTS_ENABLED": (True, "Enable the parts request feature", bool),
-    # Discord Bot settings
+    # Discord Bot settings (inbound - listening to Discord messages)
     "DISCORD_BOT_ENABLED": (False, "Enable the Discord bot for message processing", bool),
     "DISCORD_BOT_TOKEN": ("", "Discord bot token (keep secret!)", str),
     "DISCORD_GUILD_ID": ("", "Discord server (guild) ID", str),
+    # Discord Webhook settings (outbound - posting to Discord)
+    "DISCORD_WEBHOOKS_ENABLED": (True, "Master switch for all Discord webhook notifications", bool),
+    "DISCORD_WEBHOOKS_PROBLEM_REPORTS": (True, "Send webhooks for problem report events", bool),
+    "DISCORD_WEBHOOKS_LOG_ENTRIES": (True, "Send webhooks for log entry events", bool),
+    "DISCORD_WEBHOOKS_PARTS": (True, "Send webhooks for part request events", bool),
 }
 
 CONSTANCE_CONFIG_FIELDSETS = {
     "Feature Flags": ("PARTS_ENABLED",),
-    "Discord Bot": (
+    "Discord Bot (Inbound)": (
         "DISCORD_BOT_ENABLED",
         "DISCORD_BOT_TOKEN",
         "DISCORD_GUILD_ID",
+    ),
+    "Discord Webhooks (Outbound)": (
+        "DISCORD_WEBHOOKS_ENABLED",
+        "DISCORD_WEBHOOKS_PROBLEM_REPORTS",
+        "DISCORD_WEBHOOKS_LOG_ENTRIES",
+        "DISCORD_WEBHOOKS_PARTS",
     ),
 }

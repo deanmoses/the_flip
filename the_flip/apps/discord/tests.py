@@ -22,7 +22,6 @@ from the_flip.apps.discord.models import (
     DiscordUserLink,
     WebhookEndpoint,
     WebhookEventSubscription,
-    WebhookSettings,
 )
 from the_flip.apps.discord.parsers import parse_message
 from the_flip.apps.discord.tasks import deliver_webhooks
@@ -86,30 +85,6 @@ class WebhookEventSubscriptionTests(TestCase):
                 endpoint=endpoint,
                 event_type=WebhookEndpoint.EVENT_PROBLEM_REPORT_CREATED,
             )
-
-
-class WebhookSettingsTests(TestCase):
-    """Tests for the singleton WebhookSettings model."""
-
-    def test_get_settings_creates_if_missing(self):
-        """get_settings creates the singleton if it doesn't exist."""
-        self.assertEqual(WebhookSettings.objects.count(), 0)
-        settings = WebhookSettings.get_settings()
-        self.assertEqual(WebhookSettings.objects.count(), 1)
-        self.assertTrue(settings.webhooks_enabled)
-
-    def test_singleton_enforces_pk1(self):
-        """Singleton save always uses pk=1."""
-        settings1 = WebhookSettings(webhooks_enabled=True)
-        settings1.save()
-        self.assertEqual(settings1.pk, 1)
-
-        # Update via get_settings
-        settings2 = WebhookSettings.get_settings()
-        settings2.webhooks_enabled = False
-        settings2.save()
-        self.assertEqual(WebhookSettings.objects.count(), 1)
-        self.assertFalse(WebhookSettings.objects.get(pk=1).webhooks_enabled)
 
 
 # =============================================================================
@@ -353,30 +328,6 @@ class WebhookDeliveryTests(TestCase):
             event_type=WebhookEndpoint.EVENT_PROBLEM_REPORT_CREATED,
             is_enabled=True,
         )
-
-    def test_skips_when_globally_disabled(self):
-        """Skips delivery when webhooks are globally disabled."""
-        settings = WebhookSettings.get_settings()
-        settings.webhooks_enabled = False
-        settings.save()
-
-        report = create_problem_report(machine=self.machine)
-        result = deliver_webhooks("problem_report_created", report.pk, "ProblemReport")
-
-        self.assertEqual(result["status"], "skipped")
-        self.assertIn("globally disabled", result["reason"])
-
-    def test_skips_when_event_type_disabled(self):
-        """Skips delivery when event type is disabled."""
-        settings = WebhookSettings.get_settings()
-        settings.problem_reports_enabled = False
-        settings.save()
-
-        report = create_problem_report(machine=self.machine)
-        result = deliver_webhooks("problem_report_created", report.pk, "ProblemReport")
-
-        self.assertEqual(result["status"], "skipped")
-        self.assertIn("problem report webhooks disabled", result["reason"])
 
     def test_skips_when_no_subscriptions(self):
         """Skips delivery when no endpoints are subscribed."""

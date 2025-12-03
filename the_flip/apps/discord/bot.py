@@ -5,11 +5,24 @@ from __future__ import annotations
 import logging
 
 import discord
+import httpx
 from asgiref.sync import sync_to_async
 from constance import config
+from django.core.files.base import ContentFile
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
+
+# Image content types we accept from Discord
+ALLOWED_IMAGE_TYPES = {
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+}
+
+# Maximum file size (10MB)
+MAX_IMAGE_SIZE = 10 * 1024 * 1024
 
 
 class MaintenanceBot(discord.Client):
@@ -179,19 +192,94 @@ class MaintenanceBot(discord.Client):
                 ]
             )
 
-    @sync_to_async
-    def _create_log_entry(self, message: discord.Message, result, user_link):
-        """Create a LogEntry from a Discord message."""
-        from the_flip.apps.maintenance.models import LogEntry
+    async def _download_image_attachments(
+        self, attachments: list[discord.Attachment]
+    ) -> list[tuple[str, bytes]]:
+        """Download image attachments from Discord.
 
-        log_entry = LogEntry.objects.create(
-            machine=result.machine,
-            problem_report=result.problem_report,
-            text=message.content,
-            work_date=timezone.now(),
-            created_by=user_link.maintainer.user,
-        )
-        log_entry.maintainers.add(user_link.maintainer)
+        Returns list of (filename, content) tuples for valid images.
+        """
+        results = []
+
+        async with httpx.AsyncClient() as client:
+            for attachment in attachments:
+                # Skip non-images
+                if attachment.content_type not in ALLOWED_IMAGE_TYPES:
+                    logger.debug(
+                        "discord_attachment_skipped",
+                        extra={
+                            "filename": attachment.filename,
+                            "content_type": attachment.content_type,
+                            "reason": "not an image",
+                        },
+                    )
+                    continue
+
+                # Skip oversized files
+                if attachment.size > MAX_IMAGE_SIZE:
+                    logger.warning(
+                        "discord_attachment_skipped",
+                        extra={
+                            "filename": attachment.filename,
+                            "size": attachment.size,
+                            "reason": "too large",
+                        },
+                    )
+                    continue
+
+                try:
+                    response = await client.get(attachment.url)
+                    response.raise_for_status()
+                    results.append((attachment.filename, response.content))
+                    logger.debug(
+                        "discord_attachment_downloaded",
+                        extra={
+                            "filename": attachment.filename,
+                            "size": len(response.content),
+                        },
+                    )
+                except httpx.HTTPError as e:
+                    logger.warning(
+                        "discord_attachment_download_failed",
+                        extra={
+                            "filename": attachment.filename,
+                            "error": str(e),
+                        },
+                    )
+
+        return results
+
+    async def _create_log_entry(self, message: discord.Message, result, user_link):
+        """Create a LogEntry from a Discord message."""
+        # Download attachments first (async)
+        image_data = await self._download_image_attachments(list(message.attachments))
+
+        @sync_to_async
+        def create_entry():
+            from the_flip.apps.maintenance.models import LogEntry, LogEntryMedia
+
+            log_entry = LogEntry.objects.create(
+                machine=result.machine,
+                problem_report=result.problem_report,
+                text=message.content,
+                work_date=timezone.now(),
+                created_by=user_link.maintainer.user,
+            )
+            log_entry.maintainers.add(user_link.maintainer)
+
+            # Create media records for downloaded images
+            media_count = 0
+            for filename, content in image_data:
+                LogEntryMedia.objects.create(
+                    log_entry=log_entry,
+                    media_type=LogEntryMedia.TYPE_PHOTO,
+                    file=ContentFile(content, name=filename),
+                )
+                media_count += 1
+
+            return log_entry, media_count
+
+        log_entry, media_count = await create_entry()
 
         logger.info(
             "discord_log_entry_created",
@@ -201,20 +289,39 @@ class MaintenanceBot(discord.Client):
                 "machine": result.machine.display_name if result.machine else None,
                 "problem_report_id": result.problem_report.pk if result.problem_report else None,
                 "author": message.author.name,
+                "media_count": media_count,
             },
         )
 
-    @sync_to_async
-    def _create_problem_report(self, message: discord.Message, result, user_link):
+    async def _create_problem_report(self, message: discord.Message, result, user_link):
         """Create a ProblemReport from a Discord message."""
-        from the_flip.apps.maintenance.models import ProblemReport
+        # Download attachments first (async)
+        image_data = await self._download_image_attachments(list(message.attachments))
 
-        report = ProblemReport.objects.create(
-            machine=result.machine,
-            problem_type="other",
-            description=message.content,
-            reported_by_user=user_link.maintainer.user,
-        )
+        @sync_to_async
+        def create_report():
+            from the_flip.apps.maintenance.models import ProblemReport, ProblemReportMedia
+
+            report = ProblemReport.objects.create(
+                machine=result.machine,
+                problem_type="other",
+                description=message.content,
+                reported_by_user=user_link.maintainer.user,
+            )
+
+            # Create media records for downloaded images
+            media_count = 0
+            for filename, content in image_data:
+                ProblemReportMedia.objects.create(
+                    problem_report=report,
+                    media_type=ProblemReportMedia.TYPE_PHOTO,
+                    file=ContentFile(content, name=filename),
+                )
+                media_count += 1
+
+            return report, media_count
+
+        report, media_count = await create_report()
 
         logger.info(
             "discord_problem_report_created",
@@ -223,6 +330,7 @@ class MaintenanceBot(discord.Client):
                 "problem_report_id": report.pk,
                 "machine": result.machine.display_name if result.machine else None,
                 "author": message.author.name,
+                "media_count": media_count,
             },
         )
 

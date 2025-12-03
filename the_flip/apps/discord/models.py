@@ -73,53 +73,6 @@ class WebhookEventSubscription(TimeStampedModel):
         return f"{self.endpoint.name} → {self.get_event_type_display()}"
 
 
-class WebhookSettings(models.Model):
-    """Singleton model for global webhook settings."""
-
-    # Global master switch
-    webhooks_enabled = models.BooleanField(
-        default=True,
-        help_text="Master switch to enable/disable all webhook notifications.",
-    )
-
-    # Per-event-type switches
-    problem_reports_enabled = models.BooleanField(
-        default=True,
-        help_text="Enable webhooks for problem report events.",
-    )
-    log_entries_enabled = models.BooleanField(
-        default=True,
-        help_text="Enable webhooks for log entry events.",
-    )
-    parts_enabled = models.BooleanField(
-        default=True,
-        help_text="Enable webhooks for part request events.",
-    )
-
-    class Meta:
-        verbose_name = "Webhook settings"
-        verbose_name_plural = "Webhook settings"
-
-    def __str__(self) -> str:
-        status = "enabled" if self.webhooks_enabled else "disabled"
-        return f"Webhook Settings ({status})"
-
-    def save(self, *args, **kwargs):
-        # Ensure only one instance exists (singleton pattern)
-        self.pk = 1
-        super().save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        # Prevent deletion of the singleton
-        pass
-
-    @classmethod
-    def get_settings(cls) -> "WebhookSettings":
-        """Get or create the singleton settings instance."""
-        obj, _ = cls.objects.get_or_create(pk=1)
-        return obj
-
-
 # =============================================================================
 # Discord Bot Models (inbound message processing)
 # =============================================================================
