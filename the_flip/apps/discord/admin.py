@@ -12,7 +12,6 @@ from .models import (
     DiscordUserLink,
     WebhookEndpoint,
     WebhookEventSubscription,
-    WebhookSettings,
 )
 from .tasks import send_test_webhook
 
@@ -94,47 +93,6 @@ class WebhookEndpointAdmin(admin.ModelAdmin):
             json.dumps(payload, indent=2),
             content_type="application/json",
         )
-
-
-@admin.register(WebhookSettings)
-class WebhookSettingsAdmin(admin.ModelAdmin):
-    """Admin for the singleton webhook settings."""
-
-    list_display = (
-        "webhooks_enabled",
-        "problem_reports_enabled",
-        "log_entries_enabled",
-        "parts_enabled",
-    )
-    fieldsets = (
-        (
-            "Global Settings",
-            {
-                "fields": ("webhooks_enabled",),
-                "description": "Turn all webhooks on/off for the site. When off, no webhook deliveries or tests are sent.",
-            },
-        ),
-        (
-            "Event Type Settings",
-            {
-                "fields": ("problem_reports_enabled", "log_entries_enabled", "parts_enabled"),
-                "description": "Choose which event categories can send webhooks. These take effect only if the global switch is on.",
-            },
-        ),
-    )
-
-    def has_add_permission(self, request):
-        # Only allow one instance (singleton)
-        return not WebhookSettings.objects.exists()
-
-    def has_delete_permission(self, request, obj=None):
-        # Prevent deletion of the singleton
-        return False
-
-    def changelist_view(self, request, extra_context=None):
-        # Always redirect to the singleton instance instead of showing a list.
-        obj = WebhookSettings.get_settings()
-        return HttpResponseRedirect(reverse("admin:discord_webhooksettings_change", args=[obj.pk]))
 
 
 # =============================================================================
