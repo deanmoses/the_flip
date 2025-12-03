@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import logging
+from io import BytesIO
 
 import discord
 import httpx
 from asgiref.sync import sync_to_async
 from constance import config
 from discord.ext import tasks
-from django.core.files.base import ContentFile
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
@@ -207,10 +208,11 @@ class MaintenanceBot(discord.Client):
 
     async def _download_image_attachments(
         self, attachments: list[discord.Attachment]
-    ) -> list[tuple[str, bytes]]:
+    ) -> list[InMemoryUploadedFile]:
         """Download image attachments from Discord.
 
-        Returns list of (filename, content) tuples for valid images.
+        Returns list of InMemoryUploadedFile objects for valid images.
+        These trigger Django's thumbnail generation in AbstractMedia.save().
         """
         results = []
 
@@ -243,7 +245,19 @@ class MaintenanceBot(discord.Client):
                 try:
                     response = await client.get(attachment.url)
                     response.raise_for_status()
-                    results.append((attachment.filename, response.content))
+
+                    # Create InMemoryUploadedFile to trigger thumbnail generation
+                    buffer = BytesIO(response.content)
+                    uploaded_file = InMemoryUploadedFile(
+                        file=buffer,
+                        field_name="file",
+                        name=attachment.filename,
+                        content_type=attachment.content_type,
+                        size=len(response.content),
+                        charset=None,
+                    )
+                    results.append(uploaded_file)
+
                     logger.debug(
                         "discord_attachment_downloaded",
                         extra={
@@ -265,7 +279,7 @@ class MaintenanceBot(discord.Client):
     async def _create_log_entry(self, message: discord.Message, result, user_link):
         """Create a LogEntry from a Discord message."""
         # Download attachments first (async)
-        image_data = await self._download_image_attachments(list(message.attachments))
+        image_files = await self._download_image_attachments(list(message.attachments))
 
         @sync_to_async
         def create_entry():
@@ -284,16 +298,15 @@ class MaintenanceBot(discord.Client):
                 log_entry.maintainers.add(user_link.maintainer)
 
                 # Create media records for downloaded images
-                media_count = 0
-                for filename, content in image_data:
+                # Using InMemoryUploadedFile triggers thumbnail generation in save()
+                for uploaded_file in image_files:
                     LogEntryMedia.objects.create(
                         log_entry=log_entry,
                         media_type=LogEntryMedia.TYPE_PHOTO,
-                        file=ContentFile(content, name=filename),
+                        file=uploaded_file,
                     )
-                    media_count += 1
 
-            return log_entry, media_count
+            return log_entry, len(image_files)
 
         log_entry, media_count = await create_entry()
 
@@ -312,7 +325,7 @@ class MaintenanceBot(discord.Client):
     async def _create_problem_report(self, message: discord.Message, result, user_link):
         """Create a ProblemReport from a Discord message."""
         # Download attachments first (async)
-        image_data = await self._download_image_attachments(list(message.attachments))
+        image_files = await self._download_image_attachments(list(message.attachments))
 
         @sync_to_async
         def create_report():
@@ -329,16 +342,15 @@ class MaintenanceBot(discord.Client):
                 )
 
                 # Create media records for downloaded images
-                media_count = 0
-                for filename, content in image_data:
+                # Using InMemoryUploadedFile triggers thumbnail generation in save()
+                for uploaded_file in image_files:
                     ProblemReportMedia.objects.create(
                         problem_report=report,
                         media_type=ProblemReportMedia.TYPE_PHOTO,
-                        file=ContentFile(content, name=filename),
+                        file=uploaded_file,
                     )
-                    media_count += 1
 
-            return report, media_count
+            return report, len(image_files)
 
         report, media_count = await create_report()
 
