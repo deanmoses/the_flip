@@ -9,8 +9,8 @@ from .base import *  # noqa
 
 DEBUG = False
 
-# Base URL for webhook links (primary domain)
-SITE_URL = "https://flipfix.theflip.museum"
+# Base URL for webhook links (env var for staging, defaults to production)
+SITE_URL = os.environ.get("SITE_URL", "https://flipfix.theflip.museum")
 
 # Production domains - override base.py's env-var-based ALLOWED_HOSTS
 ALLOWED_HOSTS = [
