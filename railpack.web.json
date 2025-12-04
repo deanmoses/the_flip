@@ -14,6 +14,6 @@
     "inputs": [
       { "step": "build", "include": ["."] }
     ],
-    "startCommand": "DJANGO_SETTINGS_MODULE=the_flip.settings.web gunicorn the_flip.wsgi:application"
+    "startCommand": "DJANGO_SETTINGS_MODULE=the_flip.settings.web python -m gunicorn the_flip.wsgi:application"
   }
 }
