@@ -4,16 +4,14 @@
   "steps": {
     "build": {
       "commands": [
-        "chmod +x ./build.web.sh",
-        "./build.web.sh"
+        "...",
+        "mkdir -p media static_collected",
+        "DJANGO_SETTINGS_MODULE=the_flip.settings.web python manage.py collectstatic --no-input"
       ]
     }
   },
   "deploy": {
     "aptPackages": ["libheif1"],
-    "inputs": [
-      { "step": "build", "include": ["."] }
-    ],
-    "startCommand": "DJANGO_SETTINGS_MODULE=the_flip.settings.web python -m gunicorn the_flip.wsgi:application"
+    "startCommand": "DJANGO_SETTINGS_MODULE=the_flip.settings.web python manage.py migrate && gunicorn --bind 0.0.0.0:${PORT:-8000} the_flip.wsgi:application"
   }
 }

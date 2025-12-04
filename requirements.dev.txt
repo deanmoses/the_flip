@@ -1,7 +1,6 @@
 # Development dependencies
 # Includes all production dependencies for full type checking support
--r requirements.web.txt
--r requirements.worker.txt
+-r requirements.txt
 
 # Code formatting and linting
 ruff==0.8.4
