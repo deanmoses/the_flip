@@ -179,6 +179,13 @@ class MaintenanceBot(discord.Client):
         # Update cached Discord user info if changed
         await self._update_user_info(user_link, message.author)
 
+        # In shadow mode, log what would happen but don't create anything
+        if config.DISCORD_BOT_SHADOW_MODE:
+            log_extra["machine"] = result.machine.display_name if result.machine else None
+            log_extra["maintainer"] = user_link.maintainer.user.username
+            logger.info("discord_shadow_would_create", extra=log_extra)
+            return
+
         # Create the appropriate record
         if result.action == "log_entry":
             await self._create_log_entry(message, result, user_link)
