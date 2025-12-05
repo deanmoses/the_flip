@@ -28,8 +28,8 @@ User right-clicks any message → "📋 Record to Flipfix"
     ↓
 Bot gathers context:
   - The clicked message
-  - Surrounding messages (configurable window)
-  - Thread context if in a thread
+  - Surrounding messages (configurable window of time)
+  - Thread context, if in a thread
   - Any Flipfix URLs found in embeds (webhook posts)
     ↓
 LLM analyzes and returns structured suggestions:
@@ -44,6 +44,8 @@ Ephemeral response with checkboxes:
   [Confirm] [Cancel]
     ↓
 User confirms → Records created
+    ↓
+Ephemeral response updated with links to created records
 ```
 
 ### Key Design Decisions
@@ -157,12 +159,35 @@ New settings (via constance or environment):
 - `DISCORD_CONTEXT_WINDOW` - How many messages to gather (default: 10)
 - `DISCORD_BOT_ENABLED` - Keep existing toggle
 
-## Migration Path
+## Implementation Phases
 
-1. Build new bot alongside existing code
-2. Test with shadow mode (log what would be created)
-3. Deploy new bot, disable old `on_message` handler
-4. Remove deprecated keyword classifier code
+### Phase 1: UI Prototype (No LLM, No Record Creation)
+
+Goal: Get the Discord interaction working end-to-end as fast as possible.
+
+- Context menu command "📋 Record to Flipfix" appears on messages
+- Gathers surrounding messages and displays them in ephemeral response
+- Shows mock suggestions with hardcoded/placeholder data
+- Confirm button shows "success" message with link to Flipfix home page
+- No LLM calls, no database writes
+
+### Phase 2: LLM Integration
+
+- Replace mock suggestions with real LLM analysis
+- Build prompt with machine list, message context, Flipfix URLs
+- Parse structured output into suggestions
+
+### Phase 3: Record Creation
+
+- Wire up Confirm button to actually create records in Flipfix
+- Show real links to created records
+- Handle errors gracefully
+
+### Phase 4: Polish & Cleanup
+
+- Remove old keyword classifier code
+- Add rate limiting for LLM calls
+- Handle edge cases (no suggestions, LLM errors, etc.)
 
 ## Open Questions
 
