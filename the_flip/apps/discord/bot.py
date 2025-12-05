@@ -1,40 +1,86 @@
-"""Discord bot for processing maintenance messages."""
+"""Discord bot: Context menu + LLM architecture."""
 
 from __future__ import annotations
 
 import logging
-from io import BytesIO
+import traceback
 
 import discord
-import httpx
-from asgiref.sync import sync_to_async
 from constance import config
-from discord.ext import tasks
-from django.core.files.uploadedfile import InMemoryUploadedFile
-from django.utils import timezone
+from discord import app_commands
+
+from the_flip.apps.discord.llm import MessageContext, RecordSuggestion, analyze_messages
 
 logger = logging.getLogger(__name__)
 
-# How often to refresh the channel list (in minutes)
-CHANNEL_REFRESH_MINUTES = 5
-
-# Image content types we accept from Discord
-ALLOWED_IMAGE_TYPES = {
-    "image/jpeg",
-    "image/png",
-    "image/gif",
-    "image/webp",
-}
-
-# Maximum file size (10MB)
-MAX_IMAGE_SIZE = 10 * 1024 * 1024
+# Flipfix base URL
+FLIPFIX_URL = "https://theflip.app"
 
 
-class MaintenanceBot(discord.Client):
-    """Discord bot that listens for maintenance messages and creates tickets."""
+class RecordConfirmationView(discord.ui.View):
+    """View with checkboxes and confirm/cancel buttons."""
+
+    def __init__(self, suggestions: list[RecordSuggestion], context_summary: str):
+        super().__init__(timeout=300)  # 5 minute timeout
+        self.suggestions = suggestions
+        self.context_summary = context_summary
+
+    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.green)
+    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Handle confirm button click."""
+        try:
+            # Phase 2: Just show success message with link to home page
+            # Phase 3 will wire up actual record creation
+            embed = discord.Embed(
+                title="Records Created",
+                description="The following records were created in Flipfix:",
+                color=discord.Color.green(),
+            )
+
+            for suggestion in self.suggestions:
+                if suggestion.selected:
+                    record_type_display = suggestion.record_type.replace("_", " ").title()
+                    embed.add_field(
+                        name=f"{record_type_display} - {suggestion.machine_name}",
+                        value=f"[View in Flipfix]({FLIPFIX_URL})",
+                        inline=False,
+                    )
+
+            # Disable all buttons after confirmation
+            for item in self.children:
+                if isinstance(item, discord.ui.Button):
+                    item.disabled = True
+
+            await interaction.response.edit_message(embed=embed, view=self)
+        except Exception as e:
+            logger.exception("discord_confirm_error: %s", e)
+            await _send_error_response(interaction, "Failed to confirm records.")
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.gray)
+    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Handle cancel button click."""
+        try:
+            embed = discord.Embed(
+                title="Cancelled",
+                description="No records were created.",
+                color=discord.Color.greyple(),
+            )
+
+            # Disable all buttons after cancellation
+            for item in self.children:
+                if isinstance(item, discord.ui.Button):
+                    item.disabled = True
+
+            await interaction.response.edit_message(embed=embed, view=self)
+        except Exception as e:
+            logger.exception("discord_cancel_error: %s", e)
+            await _send_error_response(interaction, "Failed to cancel.")
+
+
+class FlipfixBot(discord.Client):
+    """Discord bot with context menu command for recording to Flipfix."""
 
     def __init__(self):
-        # We need message content intent to read messages
         intents = discord.Intents.default()
         intents.message_content = True
         intents.messages = True
@@ -42,7 +88,41 @@ class MaintenanceBot(discord.Client):
 
         super().__init__(intents=intents)
 
-        self._enabled_channel_ids: set[str] = set()
+        # Command tree for app commands (slash commands, context menus)
+        self.tree = app_commands.CommandTree(self)
+        self.tree.on_error = self._on_tree_error
+
+    async def _on_tree_error(
+        self, interaction: discord.Interaction, error: app_commands.AppCommandError
+    ):
+        """Global error handler for app commands."""
+        # Unwrap the CommandInvokeError to get the original exception
+        original = error.__cause__ if isinstance(error, app_commands.CommandInvokeError) else error
+
+        logger.exception(
+            "discord_command_error",
+            extra={
+                "command": interaction.command.name if interaction.command else "unknown",
+                "error": str(original),
+                "traceback": traceback.format_exc(),
+            },
+        )
+
+        await _send_error_response(
+            interaction,
+            "Something went wrong. Please try again or contact support if the problem persists.",
+        )
+
+    async def setup_hook(self):
+        """Called when the bot is starting up."""
+
+        @self.tree.context_menu(name="Record to Flipfix")
+        async def record_to_flipfix(interaction: discord.Interaction, message: discord.Message):
+            await self._handle_record_command(interaction, message)
+
+        # Sync commands with Discord
+        await self.tree.sync()
+        logger.info("discord_bot_commands_synced")
 
     async def on_ready(self):
         """Called when the bot has connected to Discord."""
@@ -54,394 +134,127 @@ class MaintenanceBot(discord.Client):
             },
         )
 
-        # Load enabled channels from database
-        await self._refresh_channels()
+    async def _handle_record_command(
+        self, interaction: discord.Interaction, message: discord.Message
+    ):
+        """Handle the 'Record to Flipfix' context menu command."""
+        # MUST defer immediately - Discord only gives 3 seconds to respond
+        await interaction.response.defer(ephemeral=True)
 
-        # Start periodic channel refresh
-        if not self._periodic_channel_refresh.is_running():
-            self._periodic_channel_refresh.start()
+        try:
+            # Gather context around the clicked message
+            context = await self._gather_context(message)
 
-    @tasks.loop(minutes=CHANNEL_REFRESH_MINUTES)
-    async def _periodic_channel_refresh(self):
-        """Periodically refresh the channel list from the database."""
-        await self._refresh_channels()
+            # Analyze with LLM
+            suggestions = await analyze_messages(context)
 
-    async def _refresh_channels(self):
-        """Refresh the list of enabled channels from the database."""
-        from the_flip.apps.discord.models import DiscordChannel
-
-        @sync_to_async
-        def get_channels():
-            return set(
-                DiscordChannel.objects.filter(is_enabled=True).values_list("channel_id", flat=True)
-            )
-
-        self._enabled_channel_ids = await get_channels()
-        logger.info(
-            "discord_bot_channels_loaded",
-            extra={"channel_count": len(self._enabled_channel_ids)},
-        )
-
-    async def on_message(self, message: discord.Message):
-        """Called when a message is received."""
-        # Ignore our own messages
-        if message.author == self.user:
-            return
-
-        # Ignore messages from bots
-        if message.author.bot:
-            return
-
-        # Check if this channel is enabled
-        if str(message.channel.id) not in self._enabled_channel_ids:
-            return
-
-        # Process the message
-        await self._process_message(message)
-
-    async def _process_message(self, message: discord.Message):
-        """Process a message from an enabled channel."""
-        from the_flip.apps.discord.models import DiscordMessageMapping, DiscordUserLink
-        from the_flip.apps.discord.parsers import RecordType, parse_message
-
-        # Check for duplicate message (Discord can redeliver on network issues)
-        @sync_to_async
-        def check_duplicate():
-            return DiscordMessageMapping.is_processed(message.id)
-
-        if await check_duplicate():
-            logger.debug(
-                "discord_message_duplicate",
-                extra={"message_id": str(message.id)},
-            )
-            return
-
-        # Get the reply context if this is a reply
-        reply_embed_url = None
-        if message.reference and message.reference.message_id:
-            try:
-                ref_message = await message.channel.fetch_message(message.reference.message_id)
-                # If the referenced message has embeds with URLs, extract them
-                if ref_message.embeds:
-                    for embed in ref_message.embeds:
-                        if embed.url:
-                            reply_embed_url = embed.url
-                            break
-            except discord.NotFound:
-                pass
-            except discord.HTTPException as e:
-                logger.warning(
-                    "discord_fetch_reference_failed",
-                    extra={"message_id": message.id, "error": str(e)},
+            # Build the confirmation embed
+            if suggestions:
+                embed = discord.Embed(
+                    title="Record to Flipfix",
+                    description="Review the suggested records below:",
+                    color=discord.Color.blue(),
                 )
 
-        # Parse the message
-        @sync_to_async
-        def do_parse():
-            return parse_message(
-                content=message.content,
-                reply_to_embed_url=reply_embed_url,
-            )
-
-        result = await do_parse()
-
-        # Log the parse result
-        log_extra = {
-            "message_id": str(message.id),
-            "author_id": str(message.author.id),
-            "author_name": message.author.name,
-            "record_type": result.record_type.value if result.record_type else None,
-            "reason": result.reason,
-            "content_preview": message.content[:100],
-        }
-
-        if result.record_type is None:
-            logger.info("discord_message_ignored", extra=log_extra)
-            return
-
-        # Look up the Discord user link
-        @sync_to_async
-        def get_user_link():
-            return (
-                DiscordUserLink.objects.select_related("maintainer__user")
-                .filter(discord_user_id=str(message.author.id))
-                .first()
-            )
-
-        user_link = await get_user_link()
-
-        if not user_link:
-            log_extra["ignore_reason"] = "no_user_link"
-            logger.info("discord_message_ignored", extra=log_extra)
-            return
-
-        # Update cached Discord user info if changed
-        await self._update_user_info(user_link, message.author)
-
-        # In shadow mode, log what would happen but don't create anything
-        if config.DISCORD_BOT_SHADOW_MODE:
-            log_extra["machine"] = result.machine.display_name if result.machine else None
-            log_extra["maintainer"] = user_link.maintainer.user.username
-            logger.info("discord_shadow_would_create", extra=log_extra)
-            return
-
-        # Create the appropriate record
-        if result.record_type == RecordType.LOG_ENTRY:
-            await self._create_log_entry(message, result, user_link)
-        elif result.record_type == RecordType.PROBLEM_REPORT:
-            await self._create_problem_report(message, result, user_link)
-        elif result.record_type == RecordType.PART_REQUEST:
-            await self._create_part_request(message, result, user_link)
-        elif result.record_type == RecordType.PART_REQUEST_UPDATE:
-            await self._create_part_request_update(message, result, user_link)
-
-    @sync_to_async
-    def _update_user_info(self, user_link, author: discord.Member | discord.User):
-        """Update cached Discord user info if it has changed."""
-        changed = False
-
-        if user_link.discord_username != author.name:
-            user_link.discord_username = author.name
-            changed = True
-
-        display_name = getattr(author, "display_name", author.name)
-        if user_link.discord_display_name != display_name:
-            user_link.discord_display_name = display_name
-            changed = True
-
-        avatar_url = str(author.display_avatar.url) if author.display_avatar else ""
-        if user_link.discord_avatar_url != avatar_url:
-            user_link.discord_avatar_url = avatar_url
-            changed = True
-
-        if changed:
-            user_link.save(
-                update_fields=[
-                    "discord_username",
-                    "discord_display_name",
-                    "discord_avatar_url",
-                    "updated_at",
-                ]
-            )
-
-    async def _download_image_attachments(
-        self, attachments: list[discord.Attachment]
-    ) -> list[InMemoryUploadedFile]:
-        """Download image attachments from Discord.
-
-        Returns list of InMemoryUploadedFile objects for valid images.
-        These trigger Django's thumbnail generation in AbstractMedia.save().
-        """
-        results = []
-
-        async with httpx.AsyncClient() as client:
-            for attachment in attachments:
-                # Skip non-images
-                if attachment.content_type not in ALLOWED_IMAGE_TYPES:
-                    logger.debug(
-                        "discord_attachment_skipped",
-                        extra={
-                            "filename": attachment.filename,
-                            "content_type": attachment.content_type,
-                            "reason": "not an image",
-                        },
-                    )
-                    continue
-
-                # Skip oversized files
-                if attachment.size > MAX_IMAGE_SIZE:
-                    logger.warning(
-                        "discord_attachment_skipped",
-                        extra={
-                            "filename": attachment.filename,
-                            "size": attachment.size,
-                            "reason": "too large",
-                        },
-                    )
-                    continue
-
-                try:
-                    response = await client.get(attachment.url)
-                    response.raise_for_status()
-
-                    # Create InMemoryUploadedFile to trigger thumbnail generation
-                    buffer = BytesIO(response.content)
-                    uploaded_file = InMemoryUploadedFile(
-                        file=buffer,
-                        field_name="file",
-                        name=attachment.filename,
-                        content_type=attachment.content_type,
-                        size=len(response.content),
-                        charset=None,
-                    )
-                    results.append(uploaded_file)
-
-                    logger.debug(
-                        "discord_attachment_downloaded",
-                        extra={
-                            "filename": attachment.filename,
-                            "size": len(response.content),
-                        },
-                    )
-                except httpx.HTTPError as e:
-                    logger.warning(
-                        "discord_attachment_download_failed",
-                        extra={
-                            "filename": attachment.filename,
-                            "error": str(e),
-                        },
-                    )
-
-        return results
-
-    async def _create_log_entry(self, message: discord.Message, result, user_link):
-        """Create a LogEntry from a Discord message."""
-        # Download attachments first (async)
-        image_files = await self._download_image_attachments(list(message.attachments))
-
-        @sync_to_async
-        def create_entry():
-            from django.db import transaction
-
-            from the_flip.apps.discord.models import DiscordMessageMapping
-            from the_flip.apps.maintenance.models import LogEntry, LogEntryMedia
-
-            with transaction.atomic():
-                log_entry = LogEntry.objects.create(
-                    machine=result.machine,
-                    problem_report=result.problem_report,
-                    text=message.content,
-                    work_date=timezone.now(),
-                    created_by=user_link.maintainer.user,
-                )
-                log_entry.maintainers.add(user_link.maintainer)
-
-                # Create media records for downloaded images
-                # Using InMemoryUploadedFile triggers thumbnail generation in save()
-                for uploaded_file in image_files:
-                    LogEntryMedia.objects.create(
-                        log_entry=log_entry,
-                        media_type=LogEntryMedia.TYPE_PHOTO,
-                        file=uploaded_file,
-                    )
-
-                # Mark message as processed to prevent duplicates
-                DiscordMessageMapping.mark_processed(message.id, log_entry)
-
-            return log_entry, len(image_files)
-
-        log_entry, media_count = await create_entry()
-
-        logger.info(
-            "discord_log_entry_created",
-            extra={
-                "message_id": str(message.id),
-                "log_entry_id": log_entry.pk,
-                "machine": result.machine.display_name if result.machine else None,
-                "problem_report_id": result.problem_report.pk if result.problem_report else None,
-                "author": message.author.name,
-                "media_count": media_count,
-            },
-        )
-
-    async def _create_problem_report(self, message: discord.Message, result, user_link):
-        """Create a ProblemReport from a Discord message."""
-        # Download attachments first (async)
-        image_files = await self._download_image_attachments(list(message.attachments))
-
-        @sync_to_async
-        def create_report():
-            from django.db import transaction
-
-            from the_flip.apps.discord.models import DiscordMessageMapping
-            from the_flip.apps.maintenance.models import ProblemReport, ProblemReportMedia
-
-            with transaction.atomic():
-                report = ProblemReport.objects.create(
-                    machine=result.machine,
-                    problem_type="other",
-                    description=message.content,
-                    reported_by_user=user_link.maintainer.user,
+                embed.add_field(
+                    name="Context",
+                    value=f"Analyzed {len(context.messages)} messages.",
+                    inline=False,
                 )
 
-                # Create media records for downloaded images
-                # Using InMemoryUploadedFile triggers thumbnail generation in save()
-                for uploaded_file in image_files:
-                    ProblemReportMedia.objects.create(
-                        problem_report=report,
-                        media_type=ProblemReportMedia.TYPE_PHOTO,
-                        file=uploaded_file,
+                for suggestion in suggestions:
+                    record_type_display = suggestion.record_type.replace("_", " ").title()
+                    checkbox = "☑" if suggestion.selected else "☐"
+                    embed.add_field(
+                        name=f"{checkbox} {record_type_display} - {suggestion.machine_name}",
+                        value=suggestion.description[:100] + "..."
+                        if len(suggestion.description) > 100
+                        else suggestion.description,
+                        inline=False,
                     )
 
-                # Mark message as processed to prevent duplicates
-                DiscordMessageMapping.mark_processed(message.id, report)
+                view = RecordConfirmationView(
+                    suggestions, f"Analyzed {len(context.messages)} messages."
+                )
+                await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+            else:
+                embed = discord.Embed(
+                    title="No Records Suggested",
+                    description="No maintenance records were identified in these messages.",
+                    color=discord.Color.light_grey(),
+                )
+                embed.add_field(
+                    name="Context",
+                    value=f"Analyzed {len(context.messages)} messages.",
+                    inline=False,
+                )
+                await interaction.followup.send(embed=embed, ephemeral=True)
 
-            return report, len(image_files)
-
-        report, media_count = await create_report()
-
-        logger.info(
-            "discord_problem_report_created",
-            extra={
-                "message_id": str(message.id),
-                "problem_report_id": report.pk,
-                "machine": result.machine.display_name if result.machine else None,
-                "author": message.author.name,
-                "media_count": media_count,
-            },
-        )
-
-    @sync_to_async
-    def _create_part_request(self, message: discord.Message, result, user_link):
-        """Create a PartRequest from a Discord message."""
-        from django.db import transaction
-
-        from the_flip.apps.discord.models import DiscordMessageMapping
-        from the_flip.apps.parts.models import PartRequest
-
-        with transaction.atomic():
-            part_request = PartRequest.objects.create(
-                machine=result.machine,
-                text=message.content,
-                requested_by=user_link.maintainer,
+        except Exception as e:
+            logger.exception("discord_handle_record_error: %s", e)
+            await interaction.followup.send(
+                embed=discord.Embed(
+                    title="Error",
+                    description="Failed to analyze messages. Please try again.",
+                    color=discord.Color.red(),
+                ),
+                ephemeral=True,
             )
-            DiscordMessageMapping.mark_processed(message.id, part_request)
 
-        logger.info(
-            "discord_part_request_created",
-            extra={
-                "message_id": str(message.id),
-                "part_request_id": part_request.pk,
-                "machine": result.machine.display_name if result.machine else None,
-                "author": message.author.name,
-            },
-        )
+    async def _gather_context(self, message: discord.Message) -> MessageContext:
+        """Gather context around the clicked message."""
+        messages = []
+        flipfix_urls = []
 
-    @sync_to_async
-    def _create_part_request_update(self, message: discord.Message, result, user_link):
-        """Create a PartRequestUpdate from a Discord message."""
-        from django.db import transaction
+        try:
+            async for msg in message.channel.history(limit=10, around=message):
+                messages.append(msg)
 
-        from the_flip.apps.discord.models import DiscordMessageMapping
-        from the_flip.apps.parts.models import PartRequestUpdate
-
-        with transaction.atomic():
-            update = PartRequestUpdate.objects.create(
-                part_request=result.part_request,
-                text=message.content,
-                posted_by=user_link.maintainer,
+                for embed in msg.embeds:
+                    if embed.url and "theflip.app" in embed.url:
+                        flipfix_urls.append(embed.url)
+        except discord.HTTPException as e:
+            logger.warning(
+                "discord_gather_context_failed",
+                extra={"message_id": message.id, "error": str(e)},
             )
-            DiscordMessageMapping.mark_processed(message.id, update)
 
-        logger.info(
-            "discord_part_request_update_created",
-            extra={
-                "message_id": str(message.id),
-                "part_request_update_id": update.pk,
-                "part_request_id": result.part_request.pk,
-                "author": message.author.name,
-            },
+        messages.sort(key=lambda m: m.created_at)
+
+        message_dicts = []
+        for msg in messages:
+            message_dicts.append(
+                {
+                    "author": msg.author.display_name,
+                    "content": msg.content,
+                    "timestamp": msg.created_at.strftime("%Y-%m-%d %H:%M"),
+                    "is_target": msg.id == message.id,
+                }
+            )
+
+        return MessageContext(
+            messages=message_dicts,
+            target_message_id=message.id,
+            flipfix_urls=flipfix_urls,
         )
+
+
+async def _send_error_response(interaction: discord.Interaction, message: str):
+    """Send an error response, handling both deferred and non-deferred states."""
+    embed = discord.Embed(
+        title="Error",
+        description=message,
+        color=discord.Color.red(),
+    )
+
+    try:
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=embed, ephemeral=True)
+        else:
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+    except discord.HTTPException as e:
+        # Interaction may have expired - just log it
+        logger.warning("discord_error_response_failed: %s", e)
 
 
 def run_bot():
@@ -455,7 +268,7 @@ def run_bot():
         logger.error("Discord bot token not configured")
         return
 
-    bot = MaintenanceBot()
+    bot = FlipfixBot()
 
     try:
         bot.run(token)

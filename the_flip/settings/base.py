@@ -135,6 +135,8 @@ CONSTANCE_CONFIG = {
     ),
     "DISCORD_BOT_TOKEN": ("", "Discord bot token (keep secret!)", str),
     "DISCORD_GUILD_ID": ("", "Discord server (guild) ID", str),
+    # LLM settings
+    "ANTHROPIC_API_KEY": ("", "Anthropic API key for Claude (keep secret!)", str),
     # Discord Webhook settings (outbound - posting to Discord)
     "DISCORD_WEBHOOKS_ENABLED": (True, "Master switch for all Discord webhook notifications", bool),
     "DISCORD_WEBHOOKS_PROBLEM_REPORTS": (True, "Send webhooks for problem report events", bool),
@@ -149,6 +151,7 @@ CONSTANCE_CONFIG_FIELDSETS = {
         "DISCORD_BOT_SHADOW_MODE",
         "DISCORD_BOT_TOKEN",
         "DISCORD_GUILD_ID",
+        "ANTHROPIC_API_KEY",
     ),
     "Discord Webhooks (Outbound)": (
         "DISCORD_WEBHOOKS_ENABLED",
