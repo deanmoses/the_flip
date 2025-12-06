@@ -73,10 +73,12 @@ superuser:
 
 .PHONY: runq
 runq:
+	@pkill -f "manage.py qcluster" 2>/dev/null || true
 	.venv/bin/python manage.py qcluster
 
 .PHONY: runbot
 runbot:
+	@pkill -f "manage.py run_discord_bot" 2>/dev/null || true
 	.venv/bin/python manage.py run_discord_bot
 
 .PHONY: reset-db
