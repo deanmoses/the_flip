@@ -35,8 +35,11 @@ class MessageContext:
     flipfix_urls: list[str]
 
 
-SYSTEM_PROMPT = """You are analyzing Discord messages from a pinball museum's maintenance channel.
+SYSTEM_PROMPT = """You are analyzing a Discord message from a pinball museum's maintenance channel.
 Your job is to identify what maintenance records should be created in Flipfix (the maintenance tracking system).
+
+IMPORTANT: Only analyze the TARGET MESSAGE (marked with **). The surrounding messages are provided
+only for context to help you understand the conversation. Do NOT create records for other messages.
 
 Record types:
 - log_entry: Work that was done on a machine (repairs, adjustments, cleaning)
@@ -44,12 +47,12 @@ Record types:
 - part_request: Parts that need to be ordered
 
 Guidelines:
-- Only suggest records for messages that clearly relate to machine maintenance
+- ONLY suggest records for the target message, not for context messages
 - Match machine names to the provided list (use the slug for machine_slug, display name for machine_name)
-- If a message mentions multiple machines, create separate suggestions for each
-- If the conversation shows a problem was already fixed, suggest a log_entry not a problem_report
+- If the target message mentions multiple machines, create separate suggestions for each
+- Use context to understand if a problem was already fixed (then suggest log_entry, not problem_report)
 - Keep descriptions concise but include key details
-- If no maintenance-related content is found, call the tool with an empty suggestions array"""
+- If the target message has no maintenance-related content, call the tool with an empty suggestions array"""
 
 # Tool definition for structured output
 RECORD_SUGGESTIONS_TOOL: ToolParam = {
@@ -184,7 +187,8 @@ def _build_user_message(context: MessageContext, machines: list[dict]) -> str:
 
     parts.append("\n## Task")
     parts.append(
-        "Analyze these messages and use the record_suggestions tool to submit your suggestions."
+        "Analyze ONLY the target message (marked with **) and use the record_suggestions tool to submit your suggestions. "
+        "The other messages are just for context - do not create records for them."
     )
 
     return "\n".join(parts)

@@ -1,9 +1,10 @@
-"""Discord bot: Context menu + LLM architecture."""
+"""Discord bot: Context menu + LLM architecture with sequential wizard UI."""
 
 from __future__ import annotations
 
 import logging
 import traceback
+from dataclasses import dataclass, field
 
 import discord
 from constance import config
@@ -17,68 +18,292 @@ logger = logging.getLogger(__name__)
 FLIPFIX_URL = "https://theflip.app"
 
 
-class RecordConfirmationView(discord.ui.View):
-    """View with checkboxes and confirm/cancel buttons."""
+@dataclass
+class WizardResult:
+    """Result of processing a suggestion in the wizard."""
 
-    def __init__(self, suggestions: list[RecordSuggestion], context_summary: str):
-        super().__init__(timeout=300)  # 5 minute timeout
-        self.suggestions = suggestions
-        self.context_summary = context_summary
+    suggestion: RecordSuggestion
+    action: str  # "created", "skipped"
+    url: str | None = None  # URL to the created record (Phase 3)
 
-    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.green)
-    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
-        """Handle confirm button click."""
+
+@dataclass
+class WizardState:
+    """State for the sequential wizard."""
+
+    suggestions: list[RecordSuggestion]
+    current_index: int = 0
+    results: list[WizardResult] = field(default_factory=list)
+
+    @property
+    def current_suggestion(self) -> RecordSuggestion | None:
+        if 0 <= self.current_index < len(self.suggestions):
+            return self.suggestions[self.current_index]
+        return None
+
+    @property
+    def is_complete(self) -> bool:
+        return self.current_index >= len(self.suggestions)
+
+    @property
+    def total_count(self) -> int:
+        return len(self.suggestions)
+
+    @property
+    def step_number(self) -> int:
+        return self.current_index + 1
+
+    def record_result(self, action: str, url: str | None = None):
+        """Record the result for the current suggestion and advance."""
+        if self.current_suggestion:
+            self.results.append(
+                WizardResult(
+                    suggestion=self.current_suggestion,
+                    action=action,
+                    url=url,
+                )
+            )
+        self.current_index += 1
+
+    @property
+    def created_count(self) -> int:
+        return sum(1 for r in self.results if r.action == "created")
+
+    @property
+    def skipped_count(self) -> int:
+        return sum(1 for r in self.results if r.action == "skipped")
+
+
+class EditAndCreateModal(discord.ui.Modal):
+    """Modal for editing description before creating."""
+
+    description_input: discord.ui.TextInput[discord.ui.Modal] = discord.ui.TextInput(
+        label="Description",
+        style=discord.TextStyle.paragraph,
+        placeholder="Describe the work done, problem found, or parts needed...",
+        max_length=1000,
+    )
+
+    def __init__(self, parent_view: SequentialWizardView):
+        suggestion = parent_view.state.current_suggestion
+        title = f"Edit {_format_record_type(suggestion.record_type)}" if suggestion else "Edit"
+        super().__init__(title=title[:45])  # Discord modal title limit
+        self.parent_view = parent_view
+        if suggestion:
+            self.description_input.default = suggestion.description
+
+    async def on_submit(self, interaction: discord.Interaction):
+        """Handle modal submission - update description and create."""
         try:
-            # Phase 2: Just show success message with link to home page
-            # Phase 3 will wire up actual record creation
-            embed = discord.Embed(
-                title="Records Created",
-                description="The following records were created in Flipfix:",
-                color=discord.Color.green(),
+            state = self.parent_view.state
+            suggestion = state.current_suggestion
+
+            if suggestion:
+                # Update description with edited value
+                suggestion.description = self.description_input.value
+
+                # Phase 2: Mock creation - Phase 3 will actually create records
+                logger.info(
+                    "discord_record_created",
+                    extra={
+                        "record_type": suggestion.record_type,
+                        "machine_slug": suggestion.machine_slug,
+                        "description": suggestion.description[:100],
+                    },
+                )
+
+                state.record_result("created", url=FLIPFIX_URL)
+
+            # Advance to next or show completion
+            if state.is_complete:
+                embed, view = self.parent_view.build_completion_view()
+                await interaction.response.edit_message(embed=embed, view=view)
+            else:
+                embed = self.parent_view.build_step_embed()
+                await interaction.response.edit_message(embed=embed, view=self.parent_view)
+
+        except Exception as e:
+            logger.exception("discord_edit_create_modal_error: %s", e)
+            await _send_error_response(interaction, "Failed to create record.")
+
+
+class CompletionView(discord.ui.View):
+    """Simple view shown after wizard completes with optional link button."""
+
+    def __init__(self, url: str | None):
+        super().__init__(timeout=None)
+        if url:
+            # Link buttons don't need a callback - they open the URL directly
+            self.add_item(
+                discord.ui.Button(
+                    label="View in Flipfix",
+                    style=discord.ButtonStyle.link,
+                    url=url,
+                )
             )
 
-            for suggestion in self.suggestions:
-                if suggestion.selected:
-                    record_type_display = suggestion.record_type.replace("_", " ").title()
-                    embed.add_field(
-                        name=f"{record_type_display} - {suggestion.machine_name}",
-                        value=f"[View in Flipfix]({FLIPFIX_URL})",
-                        inline=False,
-                    )
 
-            # Disable all buttons after confirmation
-            for item in self.children:
-                if isinstance(item, discord.ui.Button):
-                    item.disabled = True
+class SequentialWizardView(discord.ui.View):
+    """Sequential wizard that steps through each suggestion one at a time."""
 
-            await interaction.response.edit_message(embed=embed, view=self)
-        except Exception as e:
-            logger.exception("discord_confirm_error: %s", e)
-            await _send_error_response(interaction, "Failed to confirm records.")
+    def __init__(self, suggestions: list[RecordSuggestion]):
+        super().__init__(timeout=600)  # 10 minute timeout for wizard
+        self.state = WizardState(suggestions=suggestions)
+        self._update_buttons()
 
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.gray)
-    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
-        """Handle cancel button click."""
-        try:
+    def _update_buttons(self):
+        """Update buttons based on state: Cancel for single, Skip for multiple."""
+        is_single = self.state.total_count == 1
+
+        # Show Cancel only for single item, Skip for multiple
+        for item in list(self.children):
+            if isinstance(item, discord.ui.Button):
+                if item.label == "Cancel" and not is_single:
+                    self.remove_item(item)
+                elif item.label == "Skip" and is_single:
+                    self.remove_item(item)
+
+    def build_step_embed(self) -> discord.Embed:
+        """Build the embed for the current step."""
+        suggestion = self.state.current_suggestion
+        if not suggestion:
+            return self.build_completion_view()[0]
+
+        record_type_display = _format_record_type(suggestion.record_type)
+
+        # Title varies based on single vs multiple
+        if self.state.total_count == 1:
+            title = f"{record_type_display} — {suggestion.machine_name}"
+        else:
+            title = (
+                f"Item {self.state.step_number} of {self.state.total_count}: {record_type_display}"
+            )
+
+        # For multiple: show machine name, then description
+        # For single: just show description (machine name is in title)
+        if self.state.total_count > 1:
+            description = f"**{suggestion.machine_name}**\n\n{suggestion.description}"
+        else:
+            description = suggestion.description
+
+        embed = discord.Embed(
+            title=title,
+            description=description,
+            color=discord.Color.blue(),
+        )
+
+        return embed
+
+    def build_completion_view(self) -> tuple[discord.Embed, discord.ui.View]:
+        """Build the completion embed and view."""
+        created = [r for r in self.state.results if r.action == "created"]
+        skipped = [r for r in self.state.results if r.action == "skipped"]
+
+        if len(created) == 1:
+            # Single record: inline link
+            result = created[0]
+            type_display = _format_record_type(result.suggestion.record_type)
+            url = result.url or FLIPFIX_URL
             embed = discord.Embed(
-                title="Cancelled",
-                description="No records were created.",
+                description=f"Created a {type_display} on {result.suggestion.machine_name}. [View in Flipfix ➡️]({url})",
+                color=discord.Color.green(),
+            )
+        elif created:
+            # Multiple records: each with its own link
+            lines = []
+            for result in created:
+                type_display = _format_record_type(result.suggestion.record_type)
+                url = result.url or FLIPFIX_URL
+                lines.append(
+                    f"• {type_display} on {result.suggestion.machine_name} — [View ➡️]({url})"
+                )
+            embed = discord.Embed(
+                description=f"Created {len(created)} records:\n" + "\n".join(lines),
+                color=discord.Color.green(),
+            )
+        else:
+            embed = discord.Embed(
+                description="No records created.",
                 color=discord.Color.greyple(),
             )
 
-            # Disable all buttons after cancellation
-            for item in self.children:
-                if isinstance(item, discord.ui.Button):
-                    item.disabled = True
+        if skipped and created:
+            embed.set_footer(text=f"{len(skipped)} skipped")
 
-            await interaction.response.edit_message(embed=embed, view=self)
+        # No buttons needed - links are inline
+        return embed, discord.ui.View()
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary)
+    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Cancel without creating (single item only)."""
+        try:
+            embed = discord.Embed(
+                description="Cancelled.",
+                color=discord.Color.greyple(),
+            )
+            await interaction.response.edit_message(embed=embed, view=CompletionView(None))
         except Exception as e:
             logger.exception("discord_cancel_error: %s", e)
             await _send_error_response(interaction, "Failed to cancel.")
 
+    @discord.ui.button(label="Skip", style=discord.ButtonStyle.secondary)
+    async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Skip this suggestion (multiple items only)."""
+        try:
+            self.state.record_result("skipped")
+
+            if self.state.is_complete:
+                embed, view = self.build_completion_view()
+                await interaction.response.edit_message(embed=embed, view=view)
+            else:
+                embed = self.build_step_embed()
+                await interaction.response.edit_message(embed=embed, view=self)
+
+        except Exception as e:
+            logger.exception("discord_skip_error: %s", e)
+            await _send_error_response(interaction, "Failed to skip.")
+
+    @discord.ui.button(label="Edit", style=discord.ButtonStyle.secondary)
+    async def edit(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Open modal to edit, then create on submit."""
+        try:
+            modal = EditAndCreateModal(self)
+            await interaction.response.send_modal(modal)
+        except Exception as e:
+            logger.exception("discord_edit_error: %s", e)
+            await _send_error_response(interaction, "Failed to open editor.")
+
+    @discord.ui.button(label="Create", style=discord.ButtonStyle.green)
+    async def create(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Create with current description."""
+        try:
+            suggestion = self.state.current_suggestion
+            if suggestion:
+                # Phase 2: Mock creation
+                logger.info(
+                    "discord_record_created",
+                    extra={
+                        "record_type": suggestion.record_type,
+                        "machine_slug": suggestion.machine_slug,
+                        "description": suggestion.description[:100],
+                    },
+                )
+                self.state.record_result("created", url=FLIPFIX_URL)
+
+            if self.state.is_complete:
+                embed, view = self.build_completion_view()
+                await interaction.response.edit_message(embed=embed, view=view)
+            else:
+                embed = self.build_step_embed()
+                await interaction.response.edit_message(embed=embed, view=self)
+
+        except Exception as e:
+            logger.exception("discord_create_error: %s", e)
+            await _send_error_response(interaction, "Failed to create record.")
+
 
 class FlipfixBot(discord.Client):
-    """Discord bot with context menu command for recording to Flipfix."""
+    """Discord bot with context menu command for adding records to Flipfix."""
 
     def __init__(self):
         intents = discord.Intents.default()
@@ -88,7 +313,6 @@ class FlipfixBot(discord.Client):
 
         super().__init__(intents=intents)
 
-        # Command tree for app commands (slash commands, context menus)
         self.tree = app_commands.CommandTree(self)
         self.tree.on_error = self._on_tree_error
 
@@ -96,7 +320,6 @@ class FlipfixBot(discord.Client):
         self, interaction: discord.Interaction, error: app_commands.AppCommandError
     ):
         """Global error handler for app commands."""
-        # Unwrap the CommandInvokeError to get the original exception
         original = error.__cause__ if isinstance(error, app_commands.CommandInvokeError) else error
 
         logger.exception(
@@ -110,19 +333,53 @@ class FlipfixBot(discord.Client):
 
         await _send_error_response(
             interaction,
-            "Something went wrong. Please try again or contact support if the problem persists.",
+            "Something went wrong. Please try again.",
         )
 
     async def setup_hook(self):
         """Called when the bot is starting up."""
+        logger.info("discord_setup_hook_called")
 
-        @self.tree.context_menu(name="Record to Flipfix")
-        async def record_to_flipfix(interaction: discord.Interaction, message: discord.Message):
-            await self._handle_record_command(interaction, message)
+        try:
 
-        # Sync commands with Discord
-        await self.tree.sync()
-        logger.info("discord_bot_commands_synced")
+            @self.tree.context_menu(name="Save to Flipfix")
+            async def save_to_flipfix(interaction: discord.Interaction, message: discord.Message):
+                await self._handle_add_command(interaction, message)
+
+            # Debug: log what commands are in the tree before sync
+            local_commands = self.tree.get_commands()
+            logger.info(
+                "discord_commands_before_sync",
+                extra={"commands": [c.name for c in local_commands]},
+            )
+
+            # Sync commands - guild-specific is faster and more reliable
+            guild_id = await self._get_guild_id()
+            logger.info("discord_guild_id", extra={"guild_id": guild_id})
+
+            if guild_id:
+                guild = discord.Object(id=int(guild_id))
+                self.tree.copy_global_to(guild=guild)
+                await self.tree.sync(guild=guild)
+
+                # Debug: fetch what Discord actually has registered
+                registered = await self.tree.fetch_commands(guild=guild)
+                logger.info(
+                    "discord_bot_commands_synced",
+                    extra={
+                        "guild_id": guild_id,
+                        "registered_commands": [c.name for c in registered],
+                    },
+                )
+            else:
+                await self.tree.sync()
+                registered = await self.tree.fetch_commands()
+                logger.info(
+                    "discord_bot_commands_synced_globally",
+                    extra={"registered_commands": [c.name for c in registered]},
+                )
+        except Exception as e:
+            logger.exception("discord_setup_hook_error: %s", e)
 
     async def on_ready(self):
         """Called when the bot has connected to Discord."""
@@ -134,10 +391,21 @@ class FlipfixBot(discord.Client):
             },
         )
 
-    async def _handle_record_command(
-        self, interaction: discord.Interaction, message: discord.Message
-    ):
-        """Handle the 'Record to Flipfix' context menu command."""
+    async def _handle_add_command(self, interaction: discord.Interaction, message: discord.Message):
+        """Handle the 'Save to Flipfix' context menu command."""
+        logger.info(
+            "discord_command_received",
+            extra={
+                "interaction_id": interaction.id,
+                "already_responded": interaction.response.is_done(),
+            },
+        )
+
+        # Check if already responded (can happen with duplicate registrations)
+        if interaction.response.is_done():
+            logger.warning("discord_interaction_already_acknowledged")
+            return
+
         # MUST defer immediately - Discord only gives 3 seconds to respond
         await interaction.response.defer(ephemeral=True)
 
@@ -145,53 +413,33 @@ class FlipfixBot(discord.Client):
             # Gather context around the clicked message
             context = await self._gather_context(message)
 
+            logger.info(
+                "discord_analyzing_messages",
+                extra={"message_count": len(context.messages), "target_id": message.id},
+            )
+
             # Analyze with LLM
             suggestions = await analyze_messages(context)
 
-            # Build the confirmation embed
             if suggestions:
-                embed = discord.Embed(
-                    title="Record to Flipfix",
-                    description="Review the suggested records below:",
-                    color=discord.Color.blue(),
+                logger.info(
+                    "discord_suggestions_generated",
+                    extra={"suggestion_count": len(suggestions)},
                 )
 
-                embed.add_field(
-                    name="Context",
-                    value=f"Analyzed {len(context.messages)} messages.",
-                    inline=False,
-                )
-
-                for suggestion in suggestions:
-                    record_type_display = suggestion.record_type.replace("_", " ").title()
-                    checkbox = "☑" if suggestion.selected else "☐"
-                    embed.add_field(
-                        name=f"{checkbox} {record_type_display} - {suggestion.machine_name}",
-                        value=suggestion.description[:100] + "..."
-                        if len(suggestion.description) > 100
-                        else suggestion.description,
-                        inline=False,
-                    )
-
-                view = RecordConfirmationView(
-                    suggestions, f"Analyzed {len(context.messages)} messages."
-                )
+                view = SequentialWizardView(suggestions)
+                embed = view.build_step_embed()
                 await interaction.followup.send(embed=embed, view=view, ephemeral=True)
             else:
                 embed = discord.Embed(
-                    title="No Records Suggested",
-                    description="No maintenance records were identified in these messages.",
+                    title="No Records Found",
+                    description="No maintenance records were identified in these messages.\n\nTry selecting a message that discusses machine repairs, problems, or parts.",
                     color=discord.Color.light_grey(),
-                )
-                embed.add_field(
-                    name="Context",
-                    value=f"Analyzed {len(context.messages)} messages.",
-                    inline=False,
                 )
                 await interaction.followup.send(embed=embed, ephemeral=True)
 
         except Exception as e:
-            logger.exception("discord_handle_record_error: %s", e)
+            logger.exception("discord_add_command_error: %s", e)
             await interaction.followup.send(
                 embed=discord.Embed(
                     title="Error",
@@ -238,6 +486,27 @@ class FlipfixBot(discord.Client):
             flipfix_urls=flipfix_urls,
         )
 
+    @staticmethod
+    async def _get_guild_id() -> str:
+        """Get guild ID from Constance config."""
+        from asgiref.sync import sync_to_async
+
+        @sync_to_async
+        def get_config():
+            return config.DISCORD_GUILD_ID
+
+        return await get_config()
+
+
+def _format_record_type(record_type: str) -> str:
+    """Format record type for display."""
+    type_labels = {
+        "log_entry": "Log Entry",
+        "problem_report": "Problem Report",
+        "part_request": "Part Request",
+    }
+    return type_labels.get(record_type, record_type.replace("_", " ").title())
+
 
 async def _send_error_response(interaction: discord.Interaction, message: str):
     """Send an error response, handling both deferred and non-deferred states."""
@@ -253,7 +522,6 @@ async def _send_error_response(interaction: discord.Interaction, message: str):
         else:
             await interaction.response.send_message(embed=embed, ephemeral=True)
     except discord.HTTPException as e:
-        # Interaction may have expired - just log it
         logger.warning("discord_error_response_failed: %s", e)
 
 
