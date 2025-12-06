@@ -450,17 +450,16 @@ class FlipfixBot(discord.Client):
             )
 
     async def _gather_context(self, message: discord.Message) -> MessageContext:
-        """Gather context around the clicked message."""
+        """Gather context before (and including) the clicked message."""
         messages = []
         flipfix_urls = []
 
         try:
-            async for msg in message.channel.history(limit=10, around=message):
+            # Get messages BEFORE the clicked message (not after)
+            async for msg in message.channel.history(limit=30, before=message):
                 messages.append(msg)
-
-                for embed in msg.embeds:
-                    if embed.url and "theflip.app" in embed.url:
-                        flipfix_urls.append(embed.url)
+            # Always include the target message itself
+            messages.append(message)
         except discord.HTTPException as e:
             logger.warning(
                 "discord_gather_context_failed",
@@ -471,6 +470,11 @@ class FlipfixBot(discord.Client):
 
         message_dicts = []
         for msg in messages:
+            # Check for Flipfix URLs in embeds
+            for embed in msg.embeds:
+                if embed.url and "theflip.app" in embed.url:
+                    flipfix_urls.append(embed.url)
+
             message_dicts.append(
                 {
                     "author": msg.author.display_name,

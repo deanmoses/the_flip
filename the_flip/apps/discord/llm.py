@@ -51,8 +51,20 @@ Guidelines:
 - Match machine names to the provided list (use the slug for machine_slug, display name for machine_name)
 - If the target message mentions multiple machines, create separate suggestions for each
 - Use context to understand if a problem was already fixed (then suggest log_entry, not problem_report)
-- Keep descriptions concise but include key details
-- If the target message has no maintenance-related content, call the tool with an empty suggestions array"""
+- If the target message has no maintenance-related content, call the tool with an empty suggestions array
+
+Description guidelines - BE VERBOSE AND FAITHFUL:
+- Preserve the original wording from relevant messages as much as possible
+- Include ALL specific details: part names, symptoms, what was tried, what worked
+- When context messages add important details, incorporate them into the description
+- It's better to include too much detail than too little
+- Don't summarize or paraphrase - use the actual words from the conversation
+- Example: if the message thread is...
+    - godzilla's right flipper is broken
+    - ok I fixed it
+    - the problem was the flipper pin was bent; we had a spare flipper pin, fortunately
+... then the description should be something like: "Right flipper was broken. Fixed it. The problem was the flipper pin was bent; we had a spare flipper pin, fortunately."
+"""
 
 # Tool definition for structured output
 RECORD_SUGGESTIONS_TOOL: ToolParam = {
@@ -82,7 +94,7 @@ RECORD_SUGGESTIONS_TOOL: ToolParam = {
                         },
                         "description": {
                             "type": "string",
-                            "description": "Concise summary of the work/problem/parts needed",
+                            "description": "Details of the work/problem/parts needed",
                         },
                     },
                     "required": ["record_type", "machine_slug", "machine_name", "description"],
