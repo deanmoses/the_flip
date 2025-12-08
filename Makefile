@@ -5,12 +5,15 @@ help:
 	@echo "Development:"
 	@echo "  make runserver      - Start development web server"
 	@echo "  make runq           - Start development queue worker"
+	@echo "  make runbot         - Start Discord bot"
 	@echo "  make shell          - Start Django shell"
 	@echo ""
 	@echo "Testing:"
 	@echo "  make test           - Run full test suite"
 	@echo "  make test-fast      - Run tests excluding integration"
 	@echo "  make test-models    - Run model tests only"
+	@echo "  make test-classifier - Run classifier unit tests"
+	@echo "  make eval-classifier - Output classifier results to CSV"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make format         - Auto-format code"
@@ -39,6 +42,14 @@ test-fast:
 test-models:
 	DJANGO_SETTINGS_MODULE=the_flip.settings.test .venv/bin/python manage.py test --keepdb --tag=models
 
+.PHONY: test-classifier
+test-classifier:
+	DJANGO_SETTINGS_MODULE=the_flip.settings.test .venv/bin/python manage.py test the_flip.apps.discord.tests.test_classifier_eval --keepdb
+
+.PHONY: eval-classifier
+eval-classifier:
+	.venv/bin/python manage.py evaluate_classifier
+
 .PHONY: runserver
 runserver:
 	@pkill -f "manage.py runserver" 2>/dev/null || true
@@ -62,7 +73,13 @@ superuser:
 
 .PHONY: runq
 runq:
+	@pkill -f "manage.py qcluster" 2>/dev/null || true
 	.venv/bin/python manage.py qcluster
+
+.PHONY: runbot
+runbot:
+	@pkill -f "manage.py run_discord_bot" 2>/dev/null || true
+	.venv/bin/python manage.py run_discord_bot
 
 .PHONY: reset-db
 reset-db:

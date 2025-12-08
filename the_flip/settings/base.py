@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import MutableMapping
 from pathlib import Path
+from typing import Any
 
 from decouple import Csv, config
 
@@ -30,7 +32,7 @@ INSTALLED_APPS = [
     "the_flip.apps.catalog",
     "the_flip.apps.maintenance",
     "the_flip.apps.parts",
-    "the_flip.apps.webhooks",
+    "the_flip.apps.discord",
 ]
 
 MIDDLEWARE = [
@@ -39,6 +41,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "the_flip.middleware.RequestContextMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
@@ -121,13 +124,116 @@ RATE_LIMIT_WINDOW_MINUTES = config("RATE_LIMIT_WINDOW_MINUTES", default=10, cast
 # Transcoding upload authentication token (shared between web and worker services)
 TRANSCODING_UPLOAD_TOKEN = config("TRANSCODING_UPLOAD_TOKEN", default=None)
 
+# Logging levels (env-overridable)
+LOG_LEVEL = config("LOG_LEVEL", default="WARNING").upper()
+APP_LOG_LEVEL = config("APP_LOG_LEVEL", default="INFO").upper()
+DJANGO_LOG_LEVEL = config("DJANGO_LOG_LEVEL", default="WARNING").upper()
+DISCORD_BOT_LOG_LEVEL = config("DISCORD_BOT_LOG_LEVEL", default=None)
+
 # django-constance configuration (admin-editable settings)
 CONSTANCE_BACKEND = "constance.backends.database.DatabaseBackend"
 
 CONSTANCE_CONFIG = {
     "PARTS_ENABLED": (True, "Enable the parts request feature", bool),
+    # Discord Bot settings (inbound - listening to Discord messages)
+    "DISCORD_BOT_ENABLED": (False, "Master switch for Discord bot", bool),
+    "DISCORD_BOT_TOKEN": ("", "Discord bot token (keep secret!)", str),
+    "DISCORD_GUILD_ID": ("", "Discord server (guild) ID", str),
+    # LLM settings
+    "ANTHROPIC_API_KEY": ("", "Anthropic API key for Claude (keep secret!)", str),
+    # Discord Webhook settings (outbound - posting to Discord)
+    "DISCORD_WEBHOOK_URL": ("", "Discord webhook URL to post notifications to", str),
+    "DISCORD_WEBHOOKS_ENABLED": (True, "Master switch for all Discord webhook notifications", bool),
+    "DISCORD_WEBHOOKS_PROBLEM_REPORTS": (True, "Send webhooks for problem report events", bool),
+    "DISCORD_WEBHOOKS_LOG_ENTRIES": (True, "Send webhooks for log entry events", bool),
+    "DISCORD_WEBHOOKS_PARTS": (True, "Send webhooks for part request events", bool),
 }
 
-CONSTANCE_CONFIG_FIELDSETS = {
-    "Feature Flags": ("PARTS_ENABLED",),
+CONSTANCE_CONFIG_FIELDSETS = (
+    ("Feature Flags", ("PARTS_ENABLED",)),
+    (
+        "Discord Webhooks (Outbound)",
+        (
+            "DISCORD_WEBHOOK_URL",
+            "DISCORD_WEBHOOKS_ENABLED",
+            "DISCORD_WEBHOOKS_PROBLEM_REPORTS",
+            "DISCORD_WEBHOOKS_LOG_ENTRIES",
+            "DISCORD_WEBHOOKS_PARTS",
+        ),
+    ),
+    (
+        "Discord Bot (Inbound)",
+        (
+            "DISCORD_BOT_ENABLED",
+            "DISCORD_BOT_TOKEN",
+            "DISCORD_GUILD_ID",
+            "ANTHROPIC_API_KEY",
+        ),
+    ),
+)
+
+# Valid domains for Discord bot URL parsing (to identify links to this app)
+DISCORD_VALID_DOMAINS = ["theflip.app", "localhost", "127.0.0.1"]
+
+# Logging configuration - conservative defaults for production
+# Override in dev.py for more verbose output
+LOGGING: MutableMapping[str, Any] = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "request_context": {
+            "()": "the_flip.logging.RequestContextFilter",
+        },
+    },
+    "formatters": {
+        "dev": {
+            "()": "the_flip.logging.DevFormatter",
+        },
+        "json": {
+            "()": "the_flip.logging.JsonFormatter",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "json",
+            "filters": ["request_context"],
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": LOG_LEVEL,
+    },
+    "loggers": {
+        "the_flip": {
+            "handlers": ["console"],
+            "level": APP_LOG_LEVEL,
+            "propagate": False,
+        },
+        "the_flip.apps.discord": {
+            "handlers": ["console"],
+            "level": (DISCORD_BOT_LOG_LEVEL or APP_LOG_LEVEL),
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console"],
+            "level": DJANGO_LOG_LEVEL,
+            "propagate": False,
+        },
+        "django.server": {
+            "handlers": ["console"],
+            "level": DJANGO_LOG_LEVEL,
+            "propagate": False,
+        },
+        "django.security": {
+            "handlers": ["console"],
+            "level": DJANGO_LOG_LEVEL,
+            "propagate": False,
+        },
+        "django_q": {
+            "handlers": ["console"],
+            "level": DJANGO_LOG_LEVEL,
+            "propagate": False,
+        },
+    },
 }
