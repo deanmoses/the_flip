@@ -143,7 +143,11 @@ CONSTANCE_CONFIG = {
     "ANTHROPIC_API_KEY": ("", "Anthropic API key for Claude (keep secret!)", str),
     # Discord Webhook settings (outbound - posting to Discord)
     "DISCORD_WEBHOOK_URL": ("", "Discord webhook URL to post notifications to", str),
-    "DISCORD_WEBHOOKS_ENABLED": (True, "Master switch for all Discord webhook notifications", bool),
+    "DISCORD_WEBHOOKS_ENABLED": (
+        False,
+        "Master switch for all Discord webhook notifications",
+        bool,
+    ),
     "DISCORD_WEBHOOKS_PROBLEM_REPORTS": (True, "Send webhooks for problem report events", bool),
     "DISCORD_WEBHOOKS_LOG_ENTRIES": (True, "Send webhooks for log entry events", bool),
     "DISCORD_WEBHOOKS_PARTS": (True, "Send webhooks for part request events", bool),
@@ -173,7 +177,8 @@ CONSTANCE_CONFIG_FIELDSETS = (
 )
 
 # Valid domains for Discord bot URL parsing (to identify links to this app)
-DISCORD_VALID_DOMAINS = ["theflip.app", "localhost", "127.0.0.1"]
+# Production domain is derived from SITE_URL; localhost entries are for dev/test
+DISCORD_VALID_DOMAINS = config("DISCORD_VALID_DOMAINS", default="localhost,127.0.0.1", cast=Csv())
 
 # Logging configuration - conservative defaults for production
 # Override in dev.py for more verbose output
