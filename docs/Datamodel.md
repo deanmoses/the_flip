@@ -46,17 +46,11 @@ Photos/videos attached to part request updates.
 
 ## Discord app
 
-### Webhook Endpoint ([`WebhookEndpoint`](../the_flip/apps/discord/models.py))
-External URL that receives notifications (Discord webhook URL).
-
-### Webhook Event Subscription ([`WebhookEventSubscription`](../the_flip/apps/discord/models.py))
-Links an endpoint to specific event types it should receive.
-
-### Webhook Settings ([`WebhookSettings`](../the_flip/apps/discord/models.py))
-Singleton model for global webhook enable/disable switches.
-
 ### Discord Channel ([`DiscordChannel`](../the_flip/apps/discord/models.py))
 A Discord channel the bot listens to for messages.
 
 ### Discord User Link ([`DiscordUserLink`](../the_flip/apps/discord/models.py))
 Links a Discord user to a Maintainer account for attribution.
+
+### Discord Message Mapping ([`DiscordMessageMapping`](../the_flip/apps/discord/models.py))
+Tracks which Discord messages have been processed to prevent duplicates.

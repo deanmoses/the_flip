@@ -68,8 +68,8 @@ Do not audit models that are admin-only or cannot be changed by maintainers.  Th
 | Model | Reason |
 |-------|--------|
 | Location | Admin-only; maintainers can only select existing locations |
-| WebhookEndpoint | Admin-only; webhook configuration |
-| WebhookSettings | Admin-only; singleton settings |
+| DiscordChannel | Admin-only; Discord configuration |
+| DiscordUserLink | Admin-only; Discord user mapping |
 | Maintainer | Admin-only; user profile management |
 | User | Admin-only; Django auth |
 | Invitation | Admin-only; invitation management |

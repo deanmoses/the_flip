@@ -59,12 +59,11 @@ Ephemeral response updated with links to created records
 
 ### What We Keep
 
-- `WebhookEndpoint`, `WebhookEventSubscription` - Outbound notifications still work
 - `DiscordUserLink` - Map Discord users to maintainers
 - `DiscordMessageMapping` - Prevent duplicate processing
 - `DiscordChannel` - Could limit which channels show the context menu
 - `parsers/references.py` - `parse_url()` extracts Flipfix record references
-- `signals.py`, `tasks.py`, `formatters.py` - Outbound webhook system
+- `signals.py`, `tasks.py`, `formatters.py` - Outbound notification system
 
 ### What We Remove/Replace
 

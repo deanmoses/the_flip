@@ -29,7 +29,6 @@ Key files:
 - [signals.py](../../the_flip/apps/discord/signals.py) - Signal handlers that trigger webhooks
 - [tasks.py](../../the_flip/apps/discord/tasks.py) - Async task queue logic
 - [formatters.py](../../the_flip/apps/discord/formatters.py) - Build Discord embed payloads
-- [models.py](../../the_flip/apps/discord/models.py) - `WebhookEndpoint`, `WebhookEventSubscription`
 
 ## New Architecture
 
@@ -87,12 +86,11 @@ Ensure bot posting matches webhook capabilities:
 
 ### Phase 3: Cleanup
 
-Remove webhook code:
+Remove remaining webhook code:
 
-1. **Remove webhook models** - `WebhookEndpoint`, `WebhookEventSubscription`
-2. **Remove webhook admin UI** - Endpoint management pages
-3. **Remove webhook settings** - Old constance config
-4. **Simplify signals** - Remove webhook dispatch code path
+1. **Remove webhook settings** - Old constance config (`DISCORD_WEBHOOK_URL`, `DISCORD_WEBHOOKS_ENABLED`)
+2. **Simplify signals** - Remove webhook dispatch code path
+3. **Remove webhook task** - `deliver_webhook()` and related functions in `tasks.py`
 
 ### Phase 4: Go Live
 
@@ -148,7 +146,6 @@ We can validate in code: if `interaction.channel_id != config.DISCORD_CHANNEL_ID
 - `DISCORD_GUILD_ID` - Already exists for bot
 
 ### Remove (Phase 3)
+- `DISCORD_WEBHOOK_URL` - Replaced by `DISCORD_CHANNEL_ID`
 - `DISCORD_WEBHOOKS_ENABLED` - Replaced by `POST_TO_DISCORD_ENABLED`
 - `DISCORD_BOT_ENABLED` - Replaced by `PULL_FROM_DISCORD_ENABLED`
-- `WebhookEndpoint` model and admin
-- `WebhookEventSubscription` model and admin
