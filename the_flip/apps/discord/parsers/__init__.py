@@ -1,29 +1,18 @@
-"""Discord message parsing for ticket creation.
+"""Discord message reference parsing.
 
-This package provides parsing and classification of Discord messages
-to determine what maintenance records to create.
+This package provides URL parsing for Flipfix references in Discord messages.
 
 Public API:
-- parse_message: Main entry point for parsing Discord messages
-- RecordType: Enum of record types that can be created
-- ReferenceType: Enum of reference types found in messages
-- ParseResult: Result of parsing a message
-- ParsedReference: A reference found in a message
-- find_machine_name: Pure function for matching machine names
-- classify_intent: Pure function for classifying message intent
+- parse_url: Parse a Flipfix URL to extract object references
+- ReferenceType: Enum of reference types found in URLs
+- ParsedReference: A reference found in a URL
 """
 
-from .core import parse_message
-from .intent import classify_intent
-from .machines import find_machine_name
-from .types import ParsedReference, ParseResult, RecordType, ReferenceType
+from .references import parse_url
+from .types import ParsedReference, ReferenceType
 
 __all__ = [
-    "parse_message",
-    "RecordType",
+    "parse_url",
     "ReferenceType",
-    "ParseResult",
     "ParsedReference",
-    "find_machine_name",
-    "classify_intent",
 ]
