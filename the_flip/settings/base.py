@@ -137,11 +137,6 @@ CONSTANCE_CONFIG = {
     "PARTS_ENABLED": (True, "Enable the parts request feature", bool),
     # Discord Bot settings (inbound - listening to Discord messages)
     "DISCORD_BOT_ENABLED": (False, "Master switch for Discord bot", bool),
-    "DISCORD_BOT_SHADOW_MODE": (
-        True,
-        "Shadow mode: log what would happen without creating tickets",
-        bool,
-    ),
     "DISCORD_BOT_TOKEN": ("", "Discord bot token (keep secret!)", str),
     "DISCORD_GUILD_ID": ("", "Discord server (guild) ID", str),
     # LLM settings
@@ -170,7 +165,6 @@ CONSTANCE_CONFIG_FIELDSETS = (
         "Discord Bot (Inbound)",
         (
             "DISCORD_BOT_ENABLED",
-            "DISCORD_BOT_SHADOW_MODE",
             "DISCORD_BOT_TOKEN",
             "DISCORD_GUILD_ID",
             "ANTHROPIC_API_KEY",
