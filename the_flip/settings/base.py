@@ -136,7 +136,7 @@ CONSTANCE_BACKEND = "constance.backends.database.DatabaseBackend"
 CONSTANCE_CONFIG = {
     "PARTS_ENABLED": (True, "Enable the parts request feature", bool),
     # Discord Bot settings (inbound - listening to Discord messages)
-    "DISCORD_BOT_ENABLED": (False, "Enable the Discord bot for message processing", bool),
+    "DISCORD_BOT_ENABLED": (False, "Master switch for Discord bot", bool),
     "DISCORD_BOT_SHADOW_MODE": (
         True,
         "Shadow mode: log what would happen without creating tickets",
@@ -153,22 +153,28 @@ CONSTANCE_CONFIG = {
     "DISCORD_WEBHOOKS_PARTS": (True, "Send webhooks for part request events", bool),
 }
 
-CONSTANCE_CONFIG_FIELDSETS = {
-    "Feature Flags": ("PARTS_ENABLED",),
-    "Discord Bot (Inbound)": (
-        "DISCORD_BOT_ENABLED",
-        "DISCORD_BOT_SHADOW_MODE",
-        "DISCORD_BOT_TOKEN",
-        "DISCORD_GUILD_ID",
-        "ANTHROPIC_API_KEY",
+CONSTANCE_CONFIG_FIELDSETS = (
+    ("Feature Flags", ("PARTS_ENABLED",)),
+    (
+        "Discord Webhooks (Outbound)",
+        (
+            "DISCORD_WEBHOOKS_ENABLED",
+            "DISCORD_WEBHOOKS_PROBLEM_REPORTS",
+            "DISCORD_WEBHOOKS_LOG_ENTRIES",
+            "DISCORD_WEBHOOKS_PARTS",
+        ),
     ),
-    "Discord Webhooks (Outbound)": (
-        "DISCORD_WEBHOOKS_ENABLED",
-        "DISCORD_WEBHOOKS_PROBLEM_REPORTS",
-        "DISCORD_WEBHOOKS_LOG_ENTRIES",
-        "DISCORD_WEBHOOKS_PARTS",
+    (
+        "Discord Bot (Inbound)",
+        (
+            "DISCORD_BOT_ENABLED",
+            "DISCORD_BOT_SHADOW_MODE",
+            "DISCORD_BOT_TOKEN",
+            "DISCORD_GUILD_ID",
+            "ANTHROPIC_API_KEY",
+        ),
     ),
-}
+)
 
 # Valid domains for Discord bot URL parsing (to identify links to this app)
 DISCORD_VALID_DOMAINS = ["theflip.app", "localhost", "127.0.0.1"]
