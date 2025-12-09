@@ -7,10 +7,10 @@ from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.core.test_utils import (
     create_log_entry,
     create_machine,
+    create_maintainer_user,
     create_part_request,
     create_part_request_update,
     create_problem_report,
-    create_staff_user,
 )
 from the_flip.apps.discord.formatters import format_discord_message, format_test_message
 from the_flip.apps.discord.models import DiscordUserLink
@@ -27,7 +27,7 @@ class DiscordFormatterTests(TestCase):
 
     def setUp(self):
         self.machine = create_machine()
-        self.staff_user = create_staff_user()
+        self.maintainer_user = create_maintainer_user()
 
     def test_format_problem_report_created(self):
         """Format a new problem report message."""
@@ -53,7 +53,7 @@ class DiscordFormatterTests(TestCase):
 
     def test_format_log_entry_created(self):
         """Format a new log entry message."""
-        log_entry = create_log_entry(machine=self.machine, created_by=self.staff_user)
+        log_entry = create_log_entry(machine=self.machine, created_by=self.maintainer_user)
         message = format_discord_message("log_entry_created", log_entry)
 
         embed = message["embeds"][0]
@@ -78,7 +78,7 @@ class DiscordFormatterTests(TestCase):
         report = create_problem_report(machine=self.machine)
         log_entry = create_log_entry(
             machine=self.machine,
-            created_by=self.staff_user,
+            created_by=self.maintainer_user,
             problem_report=report,
         )
         message = format_discord_message("log_entry_created", log_entry)
@@ -90,7 +90,7 @@ class DiscordFormatterTests(TestCase):
 
     def test_format_log_entry_with_photos(self):
         """Format a log entry with photos creates multiple embeds for gallery."""
-        log_entry = create_log_entry(machine=self.machine, created_by=self.staff_user)
+        log_entry = create_log_entry(machine=self.machine, created_by=self.maintainer_user)
 
         # Create mock photos
         for i in range(3):
@@ -118,7 +118,7 @@ class DiscordFormatterTests(TestCase):
 
     def test_format_log_entry_uses_discord_name_when_linked(self):
         """Log entry uses Discord display name when maintainer is linked."""
-        maintainer = Maintainer.objects.get(user=self.staff_user)
+        maintainer = Maintainer.objects.get(user=self.maintainer_user)
 
         # Create Discord link
         DiscordUserLink.objects.create(
@@ -128,7 +128,7 @@ class DiscordFormatterTests(TestCase):
             maintainer=maintainer,
         )
 
-        log_entry = create_log_entry(machine=self.machine, created_by=self.staff_user)
+        log_entry = create_log_entry(machine=self.machine, created_by=self.maintainer_user)
         message = format_discord_message("log_entry_created", log_entry)
 
         embed = message["embeds"][0]
@@ -150,8 +150,8 @@ class PartRequestWebhookFormatterTests(TestCase):
     """Tests for part request Discord webhook formatting."""
 
     def setUp(self):
-        self.staff_user = create_staff_user(username="teststaff")
-        self.maintainer = Maintainer.objects.get(user=self.staff_user)
+        self.maintainer_user = create_maintainer_user(username="maintainer")
+        self.maintainer = Maintainer.objects.get(user=self.maintainer_user)
         self.machine = create_machine()
 
     def test_format_part_request_created(self):

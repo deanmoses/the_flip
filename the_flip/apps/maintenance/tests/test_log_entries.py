@@ -11,8 +11,8 @@ from the_flip.apps.core.test_utils import (
     SuppressRequestLogsMixin,
     TestDataMixin,
     create_log_entry,
+    create_maintainer_user,
     create_problem_report,
-    create_staff_user,
 )
 from the_flip.apps.maintenance.forms import LogEntryQuickForm
 from the_flip.apps.maintenance.models import LogEntry, ProblemReport
@@ -251,7 +251,7 @@ class LogEntryCreatedByTests(TestDataMixin, TestCase):
 
     def test_created_by_can_differ_from_maintainer(self):
         """created_by (who entered data) can differ from maintainers (who did work)."""
-        work_doer = create_staff_user(username="workdoer", first_name="Work", last_name="Doer")
+        work_doer = create_maintainer_user(username="workdoer", first_name="Work", last_name="Doer")
 
         self.client.force_login(self.staff_user)
 

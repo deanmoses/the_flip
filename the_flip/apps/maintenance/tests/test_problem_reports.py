@@ -12,8 +12,8 @@ from the_flip.apps.core.test_utils import (
     SuppressRequestLogsMixin,
     TestDataMixin,
     create_log_entry,
+    create_maintainer_user,
     create_problem_report,
-    create_staff_user,
 )
 from the_flip.apps.maintenance.models import LogEntry, ProblemReport, ProblemReportMedia
 
@@ -67,7 +67,7 @@ class ProblemReportDetailViewTests(SuppressRequestLogsMixin, TestDataMixin, Test
 
     def test_detail_view_with_reported_by_user_hides_device_information(self):
         """If report was submitted by a logged-in user, only show the user."""
-        submitter = create_staff_user(
+        submitter = create_maintainer_user(
             username="reportsubmitter", first_name="Report", last_name="Submitter"
         )
         self.report.reported_by_user = submitter
@@ -200,8 +200,10 @@ class ProblemReportDetailViewTests(SuppressRequestLogsMixin, TestDataMixin, Test
 
     def test_detail_view_search_filters_log_entries_by_maintainer(self):
         """Search should match maintainer names on log entries."""
-        tech = create_staff_user(username="techuser", first_name="Tech", last_name="Person")
-        other = create_staff_user(username="otheruser", first_name="Other", last_name="Maintainer")
+        tech = create_maintainer_user(username="techuser", first_name="Tech", last_name="Person")
+        other = create_maintainer_user(
+            username="otheruser", first_name="Other", last_name="Maintainer"
+        )
 
         log_with_tech = create_log_entry(
             machine=self.machine,
@@ -471,7 +473,7 @@ class ProblemReportCreateViewTests(TestDataMixin, TestCase):
 
     def test_create_problem_report_records_logged_in_user(self):
         """Submitting while authenticated should set reported_by_user."""
-        maintainer = create_staff_user(username="maintainer")
+        maintainer = create_maintainer_user(username="maintainer")
         self.client.force_login(maintainer)
         data = {
             "problem_type": ProblemReport.PROBLEM_STUCK_BALL,

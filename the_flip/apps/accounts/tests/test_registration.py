@@ -7,7 +7,7 @@ from django.urls import reverse
 from the_flip.apps.accounts.models import Invitation, Maintainer
 from the_flip.apps.core.test_utils import (
     AccessControlTestCase,
-    create_staff_user,
+    create_maintainer_user,
     create_superuser,
     create_user,
 )
@@ -167,7 +167,7 @@ class SelfRegistrationViewTests(TestCase):
         self.check_username_url = reverse("check-username")
 
         # Create an unclaimed user (has @example.com email, not admin)
-        self.unclaimed_user = create_staff_user(
+        self.unclaimed_user = create_maintainer_user(
             username="unclaimed",
             email="unclaimed@example.com",
             first_name="Old",
@@ -179,7 +179,7 @@ class SelfRegistrationViewTests(TestCase):
         self.admin_user = create_superuser(username="admin")
 
         # Create a claimed user (has real email, not @example.com)
-        self.claimed_user = create_staff_user(
+        self.claimed_user = create_maintainer_user(
             username="claimed",
             email="claimed@realemail.com",
         )
@@ -327,13 +327,13 @@ class CheckUsernameViewTests(TestCase):
         self.check_url = reverse("check-username")
 
         # Unclaimed user
-        create_staff_user(username="unclaimed", email="unclaimed@example.com")
+        create_maintainer_user(username="unclaimed", email="unclaimed@example.com")
 
         # Admin user
         create_superuser(username="admin")
 
         # Claimed user
-        create_staff_user(username="claimed", email="claimed@realemail.com")
+        create_maintainer_user(username="claimed", email="claimed@realemail.com")
 
     def test_unclaimed_username_is_available(self):
         """Unclaimed usernames should be available."""

@@ -9,8 +9,8 @@ from the_flip.apps.core.test_utils import (
     SuppressRequestLogsMixin,
     TestDataMixin,
     create_log_entry,
+    create_maintainer_user,
     create_shared_terminal,
-    create_staff_user,
     create_user,
 )
 from the_flip.apps.maintenance.models import LogEntryMedia
@@ -22,8 +22,8 @@ class MaintainerAutocompleteViewTests(SuppressRequestLogsMixin, TestCase):
     """Tests for the maintainer autocomplete API endpoint."""
 
     def setUp(self):
-        self.user1 = create_staff_user(username="alice", first_name="Alice", last_name="Smith")
-        self.user2 = create_staff_user(username="bob", first_name="Bob", last_name="Jones")
+        self.user1 = create_maintainer_user(username="alice", first_name="Alice", last_name="Smith")
+        self.user2 = create_maintainer_user(username="bob", first_name="Bob", last_name="Jones")
         self.shared_terminal = create_shared_terminal(username="workshop-terminal")
         self.autocomplete_url = reverse("api-maintainer-autocomplete")
 
