@@ -42,10 +42,10 @@ This is a plan to make this project's access control follow Django best practice
 - Current: Each maintainer view repeats `LoginRequiredMixin` + `UserPassesTestMixin` with `test_func` returning `user.is_staff`; some inline handlers manually check `is_staff`. Terminal management views use `SuperuserRequiredMixin` (role-based naming). `MachineBulkQRCodeView` incorrectly requires superuser when it should only require maintainer access.
 - Goal: Uniform, readable guards using capability-based naming (`Can<Capability>Mixin` pattern) that don't require every view to reimplement `test_func`.
 - Steps:
-  1. Add `CanAccessMaintainerPortalMixin` to `core/mixins.py` that encapsulates the existing rule (for now, still `is_staff` or superuser) and handles the 403 response.
+  1. Add `CanAccessMaintainerPortalMixin` to `core/mixins.py`. It should wrap `LoginRequiredMixin` + `UserPassesTestMixin` internally, encapsulating the existing rule (for now, still `is_staff` or superuser). Behavior: unauthenticated users → redirect to login; authenticated but unauthorized → 403.
   2. Replace per-view `test_func` implementations and manual `if not user.is_staff` checks with the new mixin. This includes `MachineBulkQRCodeView` in `maintenance/views.py`, which will change from superuser-only to maintainer access (intentional fix).
   3. Rename `SuperuserRequiredMixin` (which is only used to manage terminals) to `CanManageTerminalsMixin` (move to `core/mixins.py`); update terminal management views to use it. Behavior unchanged (still checks `is_superuser`). Note: `admin_debug_dashboard` in `core/admin_views.py` will remain as a direct `is_superuser` check (it's an admin-only debug view).
-  4. Update tests to assert the mixin-based access behavior (still using `is_staff`/`is_superuser`), ensuring no regressions.
+  4. Update tests to assert the mixin-based access behavior (still using `is_staff`/`is_superuser`), ensuring no regressions. Add explicit test coverage for `MachineBulkQRCodeView` and terminal management views.
   5. Deploy to production and verify no access regressions.
 - Rationale: Reduces duplication, clarifies intent (capability-based names are clearer than role-based), and concentrates the rules in one place for safer future changes. The `Can<Capability>Mixin` pattern is extensible for future permissions.
 
@@ -61,6 +61,8 @@ This is a plan to make this project's access control follow Django best practice
   - `invitation_register()`: same changes. The invitation admin page itself (`InvitationAdmin`) needs no changes—it's already superuser-only and just creates invitation records.
   - `TerminalCreateView`: create `Maintainer` profile, assign to Maintainers group; stop setting `is_staff`.
   - `is_superuser` unchanged.
+- Signal cleanup
+  - Remove `create_maintainer_for_staff` signal in `accounts/signals.py`. Currently it only creates Maintainer profiles when `is_staff=True`, which won't fire for non-staff maintainers. The registration views already explicitly call `Maintainer.objects.get_or_create()`, so the signal is redundant.
 - Discord integration
   - No changes needed. Discord already links by matching usernames to `Maintainer` profiles, with no `is_staff` dependency.
 - Tests and fixtures
