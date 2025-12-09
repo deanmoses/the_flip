@@ -8,9 +8,9 @@ from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.core.test_utils import (
     create_log_entry,
     create_machine,
+    create_maintainer_user,
     create_part_request,
     create_part_request_update,
-    create_staff_user,
 )
 from the_flip.apps.maintenance.models import ProblemReport
 from the_flip.apps.parts.models import PartRequest
@@ -38,8 +38,8 @@ class WebhookSignalTests(TestCase):
     @patch("the_flip.apps.discord.tasks.async_task")
     def test_signal_fires_on_log_entry_created(self, mock_async):
         """Signal fires when a log entry is created."""
-        staff_user = create_staff_user()
-        log_entry = create_log_entry(machine=self.machine, created_by=staff_user)
+        maintainer_user = create_maintainer_user()
+        log_entry = create_log_entry(machine=self.machine, created_by=maintainer_user)
 
         # Find the log_entry_created call
         calls = [c for c in mock_async.call_args_list if c[0][1] == "log_entry_created"]
@@ -51,8 +51,8 @@ class PartRequestWebhookSignalTests(TestCase):
     """Tests for part request webhook signal triggers."""
 
     def setUp(self):
-        self.staff_user = create_staff_user(username="teststaff")
-        self.maintainer = Maintainer.objects.get(user=self.staff_user)
+        self.maintainer_user = create_maintainer_user()
+        self.maintainer = Maintainer.objects.get(user=self.maintainer_user)
         self.machine = create_machine()
 
     @patch("the_flip.apps.discord.tasks.async_task")

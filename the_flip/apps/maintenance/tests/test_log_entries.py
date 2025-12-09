@@ -8,10 +8,11 @@ from django.utils import timezone
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.core.test_utils import (
+    SuppressRequestLogsMixin,
     TestDataMixin,
     create_log_entry,
+    create_maintainer_user,
     create_problem_report,
-    create_staff_user,
 )
 from the_flip.apps.maintenance.forms import LogEntryQuickForm
 from the_flip.apps.maintenance.models import LogEntry, ProblemReport
@@ -145,7 +146,7 @@ class MachineLogCreateViewWorkDateTests(TestDataMixin, TestCase):
 
 
 @tag("views", "ajax")
-class LogEntryDetailViewWorkDateTests(TestDataMixin, TestCase):
+class LogEntryDetailViewWorkDateTests(SuppressRequestLogsMixin, TestDataMixin, TestCase):
     """Tests for LogEntryDetailView AJAX work_date updates."""
 
     def setUp(self):
@@ -250,7 +251,7 @@ class LogEntryCreatedByTests(TestDataMixin, TestCase):
 
     def test_created_by_can_differ_from_maintainer(self):
         """created_by (who entered data) can differ from maintainers (who did work)."""
-        work_doer = create_staff_user(username="workdoer", first_name="Work", last_name="Doer")
+        work_doer = create_maintainer_user(username="workdoer", first_name="Work", last_name="Doer")
 
         self.client.force_login(self.staff_user)
 
@@ -434,3 +435,40 @@ class LogListSearchTests(TestDataMixin, TestCase):
         self.assertContains(response, "Problem:")
         self.assertContains(response, "Coil stop broken")
         self.assertNotContains(response, "Adjusted flipper alignment")
+
+
+@tag("views", "access-control")
+class MachineBulkQRCodeViewAccessTests(SuppressRequestLogsMixin, TestDataMixin, TestCase):
+    """Tests for MachineBulkQRCodeView access control.
+
+    This view generates bulk QR codes for all machines.
+    It requires maintainer portal access (staff or superuser).
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse("machine-qr-bulk")
+
+    def test_requires_authentication(self):
+        """Anonymous users are redirected to login."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login/", response.url)
+
+    def test_requires_maintainer_access(self):
+        """Regular users (non-maintainers) get 403."""
+        self.client.force_login(self.regular_user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_accessible_to_maintainer(self):
+        """Maintainers (staff users) can access the view."""
+        self.client.force_login(self.maintainer_user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_accessible_to_superuser(self):
+        """Superusers can access the view."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)

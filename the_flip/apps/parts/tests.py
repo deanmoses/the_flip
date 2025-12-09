@@ -5,10 +5,11 @@ from django.urls import reverse
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.core.test_utils import (
+    AccessControlTestCase,
     create_machine,
+    create_maintainer_user,
     create_part_request,
     create_part_request_update,
-    create_staff_user,
     create_user,
 )
 from the_flip.apps.parts.models import (
@@ -21,8 +22,8 @@ class PartRequestModelTests(TestCase):
     """Tests for the PartRequest model."""
 
     def setUp(self):
-        self.staff_user = create_staff_user(username="teststaff")
-        self.maintainer = Maintainer.objects.get(user=self.staff_user)
+        self.maintainer_user = create_maintainer_user()
+        self.maintainer = Maintainer.objects.get(user=self.maintainer_user)
         self.machine = create_machine()
 
     def test_create_part_request(self):
@@ -89,8 +90,8 @@ class PartRequestUpdateModelTests(TestCase):
     """Tests for the PartRequestUpdate model."""
 
     def setUp(self):
-        self.staff_user = create_staff_user(username="teststaff")
-        self.maintainer = Maintainer.objects.get(user=self.staff_user)
+        self.maintainer_user = create_maintainer_user(username="maintainer")
+        self.maintainer = Maintainer.objects.get(user=self.maintainer_user)
         self.part_request = create_part_request(requested_by=self.maintainer)
 
     def test_create_update(self):
@@ -139,13 +140,13 @@ class PartRequestUpdateModelTests(TestCase):
 
 
 @tag("views")
-class PartRequestViewTests(TestCase):
+class PartRequestViewTests(AccessControlTestCase):
     """Tests for part request views."""
 
     def setUp(self):
-        self.staff_user = create_staff_user(username="staffuser")
-        self.maintainer = Maintainer.objects.get(user=self.staff_user)
-        self.regular_user = create_user(username="regularuser")
+        self.maintainer_user = create_maintainer_user()
+        self.maintainer = Maintainer.objects.get(user=self.maintainer_user)
+        self.regular_user = create_user()
         self.machine = create_machine()
 
     def test_list_view_requires_authentication(self):
@@ -162,14 +163,14 @@ class PartRequestViewTests(TestCase):
 
     def test_list_view_accessible_to_staff(self):
         """Staff users should be able to access the list."""
-        self.client.force_login(self.staff_user)
+        self.client.force_login(self.maintainer_user)
         response = self.client.get(reverse("part-request-list"))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "parts/part_list.html")
 
     def test_list_view_shows_part_requests(self):
         """List view shows part requests."""
-        self.client.force_login(self.staff_user)
+        self.client.force_login(self.maintainer_user)
         create_part_request(
             text="Flipper rubbers",
             requested_by=self.maintainer,
@@ -186,13 +187,13 @@ class PartRequestViewTests(TestCase):
 
     def test_create_view_accessible_to_staff(self):
         """Staff can access create view."""
-        self.client.force_login(self.staff_user)
+        self.client.force_login(self.maintainer_user)
         response = self.client.get(reverse("part-request-create"))
         self.assertEqual(response.status_code, 200)
 
     def test_create_part_request(self):
         """Staff can create a part request."""
-        self.client.force_login(self.staff_user)
+        self.client.force_login(self.maintainer_user)
         response = self.client.post(
             reverse("part-request-create"),
             {
@@ -209,7 +210,7 @@ class PartRequestViewTests(TestCase):
 
     def test_create_part_request_without_machine(self):
         """Can create a part request without linking to a machine."""
-        self.client.force_login(self.staff_user)
+        self.client.force_login(self.maintainer_user)
         response = self.client.post(
             reverse("part-request-create"),
             {
@@ -234,7 +235,7 @@ class PartRequestViewTests(TestCase):
             text="Test part request",
             requested_by=self.maintainer,
         )
-        self.client.force_login(self.staff_user)
+        self.client.force_login(self.maintainer_user)
         response = self.client.get(reverse("part-request-detail", kwargs={"pk": part_request.pk}))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Test part request")
@@ -245,13 +246,13 @@ class PartRequestUpdateViewTests(TestCase):
     """Tests for part request update views."""
 
     def setUp(self):
-        self.staff_user = create_staff_user(username="staffuser")
-        self.maintainer = Maintainer.objects.get(user=self.staff_user)
+        self.maintainer_user = create_maintainer_user()
+        self.maintainer = Maintainer.objects.get(user=self.maintainer_user)
         self.part_request = create_part_request(requested_by=self.maintainer)
 
     def test_create_update(self):
         """Staff can create an update on a part request."""
-        self.client.force_login(self.staff_user)
+        self.client.force_login(self.maintainer_user)
         response = self.client.post(
             reverse("part-request-update-create", kwargs={"pk": self.part_request.pk}),
             {
@@ -267,7 +268,7 @@ class PartRequestUpdateViewTests(TestCase):
 
     def test_create_update_with_status_change(self):
         """Can create an update that changes the status."""
-        self.client.force_login(self.staff_user)
+        self.client.force_login(self.maintainer_user)
         response = self.client.post(
             reverse("part-request-update-create", kwargs={"pk": self.part_request.pk}),
             {
@@ -289,8 +290,8 @@ class PartRequestListFilterTests(TestCase):
     """Tests for part request list filtering."""
 
     def setUp(self):
-        self.staff_user = create_staff_user(username="staffuser")
-        self.maintainer = Maintainer.objects.get(user=self.staff_user)
+        self.maintainer_user = create_maintainer_user()
+        self.maintainer = Maintainer.objects.get(user=self.maintainer_user)
         self.machine = create_machine()
 
         # Create part requests with different statuses
@@ -317,7 +318,7 @@ class PartRequestListFilterTests(TestCase):
 
     def test_search_by_status_requested(self):
         """Can search part requests by status 'requested'."""
-        self.client.force_login(self.staff_user)
+        self.client.force_login(self.maintainer_user)
 
         response = self.client.get(reverse("part-request-list") + "?q=requested")
         self.assertContains(response, "Requested part")
@@ -327,7 +328,7 @@ class PartRequestListFilterTests(TestCase):
 
     def test_search_by_status_ordered(self):
         """Can search part requests by status 'ordered'."""
-        self.client.force_login(self.staff_user)
+        self.client.force_login(self.maintainer_user)
 
         response = self.client.get(reverse("part-request-list") + "?q=ordered")
         self.assertContains(response, "Ordered part")
@@ -337,7 +338,7 @@ class PartRequestListFilterTests(TestCase):
 
     def test_search_by_text(self):
         """Can search part requests by text."""
-        self.client.force_login(self.staff_user)
+        self.client.force_login(self.maintainer_user)
 
         response = self.client.get(reverse("part-request-list") + "?q=Ordered")
         self.assertContains(response, "Ordered part")
@@ -352,13 +353,13 @@ class PartsFeatureFlagTests(TestCase):
         from constance.test import override_config
 
         self.override_config = override_config
-        self.staff_user = create_staff_user(username="staffuser")
-        self.maintainer = Maintainer.objects.get(user=self.staff_user)
+        self.maintainer_user = create_maintainer_user()
+        self.maintainer = Maintainer.objects.get(user=self.maintainer_user)
         self.machine = create_machine()
 
     def test_nav_link_hidden_when_disabled(self):
         """Parts nav link is hidden when PARTS_ENABLED is False."""
-        self.client.force_login(self.staff_user)
+        self.client.force_login(self.maintainer_user)
 
         with self.override_config(PARTS_ENABLED=False):
             response = self.client.get(reverse("maintainer-machine-list"))
@@ -367,7 +368,7 @@ class PartsFeatureFlagTests(TestCase):
 
     def test_nav_link_shown_when_enabled(self):
         """Parts nav link is shown when PARTS_ENABLED is True."""
-        self.client.force_login(self.staff_user)
+        self.client.force_login(self.maintainer_user)
 
         with self.override_config(PARTS_ENABLED=True):
             response = self.client.get(reverse("maintainer-machine-list"))

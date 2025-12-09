@@ -3,17 +3,21 @@
 from django.test import TestCase, tag
 
 from the_flip.apps.accounts.models import Invitation
-from the_flip.apps.core.test_utils import create_staff_user, create_superuser
+from the_flip.apps.core.test_utils import (
+    SuppressRequestLogsMixin,
+    create_staff_user,
+    create_superuser,
+)
 
 
 @tag("admin")
-class InvitationAdminTests(TestCase):
+class InvitationAdminTests(SuppressRequestLogsMixin, TestCase):
     """Tests for the Invitation admin interface."""
 
     def setUp(self):
         """Set up test data."""
-        self.superuser = create_superuser(username="admin")
-        self.staff_user = create_staff_user(username="staffuser")
+        self.superuser = create_superuser()
+        self.staff_user = create_staff_user()
         self.admin_url = "/admin/accounts/invitation/"
 
     def test_superuser_can_access_invitation_admin(self):

@@ -6,10 +6,11 @@ from django.test import TestCase, tag
 from django.urls import reverse
 
 from the_flip.apps.core.test_utils import (
+    SuppressRequestLogsMixin,
     TestDataMixin,
     create_log_entry,
+    create_maintainer_user,
     create_shared_terminal,
-    create_staff_user,
     create_user,
 )
 from the_flip.apps.maintenance.models import LogEntryMedia
@@ -17,12 +18,12 @@ from the_flip.apps.maintenance.utils import resize_image_file
 
 
 @tag("api", "ajax")
-class MaintainerAutocompleteViewTests(TestCase):
+class MaintainerAutocompleteViewTests(SuppressRequestLogsMixin, TestCase):
     """Tests for the maintainer autocomplete API endpoint."""
 
     def setUp(self):
-        self.user1 = create_staff_user(username="alice", first_name="Alice", last_name="Smith")
-        self.user2 = create_staff_user(username="bob", first_name="Bob", last_name="Jones")
+        self.user1 = create_maintainer_user(username="alice", first_name="Alice", last_name="Smith")
+        self.user2 = create_maintainer_user(username="bob", first_name="Bob", last_name="Jones")
         self.shared_terminal = create_shared_terminal(username="workshop-terminal")
         self.autocomplete_url = reverse("api-maintainer-autocomplete")
 
@@ -34,7 +35,7 @@ class MaintainerAutocompleteViewTests(TestCase):
 
     def test_requires_staff_permission(self):
         """Non-staff users should be denied access."""
-        regular = create_user(username="regular")
+        regular = create_user()
         self.client.force_login(regular)
         response = self.client.get(self.autocomplete_url)
         self.assertEqual(response.status_code, 403)
@@ -95,7 +96,7 @@ class MaintainerAutocompleteViewTests(TestCase):
 
 
 @tag("api")
-class ReceiveTranscodedMediaViewTests(TestDataMixin, TestCase):
+class ReceiveTranscodedMediaViewTests(SuppressRequestLogsMixin, TestDataMixin, TestCase):
     """Tests for the HTTP API endpoint that receives transcoded media from worker service."""
 
     def setUp(self):
