@@ -110,6 +110,7 @@ Load with `{% load core_extras %}`, then use:
 | `pill` | Inclusion tag | `{% pill label="Open" variant="open" %}` - Status pill/badge |
 | `form_field` | Inclusion tag | `{% form_field field %}` - Renders field with label, input, help text, errors |
 | `form_fields` | Inclusion tag | `{% form_fields form %}` - Renders all visible fields in a form |
+| `form_non_field_errors` | Inclusion tag | `{% form_non_field_errors form %}` - Renders non-field errors if any |
 
 ### Button Variants
 - `secondary` (default), `primary`, `report`, `log`

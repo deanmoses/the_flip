@@ -1,11 +1,12 @@
 {% extends "base_public_minimal.html" %}
+{% load core_extras %}
 {% block title %}Report a Problem with {{ machine.display_name }} · {{ block.super }}{% endblock %}
 {% block content %}
   <div class="card card--padded">
     <h2 class="space-below-md">Report a Problem with {{ machine.display_name }}</h2>
     <form method="post" class="form-main">
       {% csrf_token %}
-      {% if form.non_field_errors %}<div class="field-error">{{ form.non_field_errors }}</div>{% endif %}
+      {% form_non_field_errors form %}
       <div class="form-field">
         <label class="form-label">What's wrong?</label>
         <div class="radio-group">

@@ -31,7 +31,7 @@
         {% block form_enctype %}{% endblock %}
         class="two-column">
     {% csrf_token %}
-    {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+    {% form_non_field_errors form %}
     <!-- MAIN COLUMN: Primary form fields -->
     <div class="two-column__main form-main">
       {% block problem_type_field %}

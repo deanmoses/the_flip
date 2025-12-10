@@ -109,11 +109,7 @@
   <div class="card card--padded">
     <form method="post" class="form-main">
       {% csrf_token %}
-      {% if form.non_field_errors %}
-        <div class="text-problem body-small">
-          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-        </div>
-      {% endif %}
+      {% form_non_field_errors form %}
       {% for fieldset_title, field_names in form.fieldsets %}
         <fieldset class="form-section">
           <legend>{{ fieldset_title }}</legend>

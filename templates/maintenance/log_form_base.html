@@ -28,7 +28,7 @@
   <!-- TWO COLUMN LAYOUT: Main Form + Sidebar -->
   <form method="post" enctype="multipart/form-data" class="two-column">
     {% csrf_token %}
-    {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+    {% form_non_field_errors form %}
     <input type="hidden" name="tz_offset" id="tz-offset">
     <!-- MAIN COLUMN: Primary form fields -->
     <div class="two-column__main form-main">

@@ -1,4 +1,5 @@
 {% extends "layouts/minimal_centered.html" %}
+{% load core_extras %}
 {% block title %}Complete Registration · The Flip{% endblock %}
 {% block centered_content %}
   <div class="card card--padded">
@@ -6,11 +7,7 @@
     <p class="text-muted">You've been invited to join The Flip as a maintainer.</p>
     <form method="post" class="form-main">
       {% csrf_token %}
-      {% if form.non_field_errors %}
-        <div class="text-problem body-small">
-          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-        </div>
-      {% endif %}
+      {% form_non_field_errors form %}
       <div class="form-field">
         <label for="id_username" class="form-label">Username</label>
         <input type="text"

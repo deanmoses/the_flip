@@ -32,11 +32,7 @@
   <div class="card card--padded">
     <form method="post" class="form-main">
       {% csrf_token %}
-      {% if form.non_field_errors %}
-        <div class="text-problem body-small">
-          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-        </div>
-      {% endif %}
+      {% form_non_field_errors form %}
       <fieldset class="form-section">
         <legend>Machine Information</legend>
         <div class="form-field">

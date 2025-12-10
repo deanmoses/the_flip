@@ -31,11 +31,7 @@
   <div class="card card--padded">
     <form method="post" class="form-main">
       {% csrf_token %}
-      {% if form.non_field_errors %}
-        <div class="text-problem body-small">
-          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-        </div>
-      {% endif %}
+      {% form_non_field_errors form %}
       {% for field in form %}
         <div class="form-field">
           {{ field.label_tag }}

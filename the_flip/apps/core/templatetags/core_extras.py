@@ -356,6 +356,22 @@ def form_fields(form):
     return {"form": form}
 
 
+@register.inclusion_tag("components/form_non_field_errors.html")
+def form_non_field_errors(form):
+    """Render non-field errors for a form.
+
+    Only outputs content if there are non-field errors. Renders each error
+    in a paragraph with consistent styling.
+
+    Usage:
+        {% form_non_field_errors form %}
+
+    Args:
+        form: A Django form instance
+    """
+    return {"form": form}
+
+
 # -----------------------------------------------------------------------------
 # Sidebar template tags
 # -----------------------------------------------------------------------------
