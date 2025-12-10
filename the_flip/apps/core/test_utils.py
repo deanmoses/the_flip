@@ -14,10 +14,13 @@ Usage:
 
 from __future__ import annotations
 
+import shutil
+import tempfile
+import uuid
 from typing import TYPE_CHECKING, cast
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import MachineInstance, MachineModel
@@ -33,14 +36,9 @@ UserModel = cast("type[User]", get_user_model())
 TEST_PASSWORD = "testpass123"  # noqa: S105
 
 
-# Counter for unique names
-_counter = {"user": 0, "machine": 0, "report": 0, "log": 0, "part": 0}
-
-
-def _next_id(key: str) -> int:
-    """Get next unique ID for a given key."""
-    _counter[key] += 1
-    return _counter[key]
+def _unique_suffix() -> str:
+    """Return a short unique suffix for test data."""
+    return uuid.uuid4().hex[:8]
 
 
 # =============================================================================
@@ -74,7 +72,7 @@ def create_user(
         Created User instance
     """
     if username is None:
-        username = f"testuser{_next_id('user')}"
+        username = f"testuser-{_unique_suffix()}"
     if email is None:
         email = f"{username}@example.com"
 
@@ -154,7 +152,7 @@ def create_machine_model(
         Created MachineModel instance
     """
     if name is None:
-        name = f"Test Machine {_next_id('machine')}"
+        name = f"Test Machine {_unique_suffix()}"
     return MachineModel.objects.create(
         name=name,
         manufacturer=manufacturer,
@@ -186,7 +184,7 @@ def create_machine(
     if model is None:
         model = create_machine_model()
     if slug is None:
-        slug = f"test-machine-{_next_id('machine')}"
+        slug = f"test-machine-{_unique_suffix()}"
 
     instance = MachineInstance(
         model=model,
@@ -222,7 +220,7 @@ def create_problem_report(
     if machine is None:
         machine = create_machine()
     if description is None:
-        description = f"Test problem report {_next_id('report')}"
+        description = f"Test problem report {_unique_suffix()}"
     return ProblemReport.objects.create(
         machine=machine,
         status=status,
@@ -252,7 +250,7 @@ def create_log_entry(
     if machine is None:
         machine = create_machine()
     if text is None:
-        text = f"Test log entry {_next_id('log')}"
+        text = f"Test log entry {_unique_suffix()}"
     return LogEntry.objects.create(
         machine=machine,
         text=text,
@@ -277,7 +275,7 @@ def create_shared_terminal(
         Maintainer instance with is_shared_account=True
     """
     if username is None:
-        username = f"terminal-{_next_id('user')}"
+        username = f"terminal-{_unique_suffix()}"
     user = create_maintainer_user(
         username=username,
         first_name=first_name,
@@ -309,7 +307,7 @@ def create_part_request(
         Created PartRequest instance
     """
     if text is None:
-        text = f"Test part request {_next_id('part')}"
+        text = f"Test part request {_unique_suffix()}"
     if requested_by is None:
         user = create_maintainer_user()
         requested_by = Maintainer.objects.get(user=user)
@@ -347,7 +345,7 @@ def create_part_request_update(
         user = create_maintainer_user()
         posted_by = Maintainer.objects.get(user=user)
     if text is None:
-        text = f"Test part update {_next_id('part')}"
+        text = f"Test part update {_unique_suffix()}"
     return PartRequestUpdate.objects.create(
         part_request=part_request,
         posted_by=posted_by,
@@ -414,6 +412,23 @@ class AccessControlTestCase(SuppressRequestLogsMixin, TestCase):
     """
 
     pass
+
+
+class TemporaryMediaMixin:
+    """Mixin to isolate MEDIA_ROOT per test class and clean up files."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls._temp_media_dir = tempfile.mkdtemp()
+        cls._override_media_root = override_settings(MEDIA_ROOT=cls._temp_media_dir)
+        cls._override_media_root.enable()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._override_media_root.disable()
+        shutil.rmtree(cls._temp_media_dir, ignore_errors=True)
+        super().tearDownClass()
 
 
 class TestDataMixin:

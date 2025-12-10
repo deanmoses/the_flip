@@ -5,6 +5,7 @@ from django.test import TestCase
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.core.test_utils import (
+    TemporaryMediaMixin,
     create_log_entry,
     create_machine,
     create_maintainer_user,
@@ -18,7 +19,7 @@ from the_flip.apps.maintenance.models import LogEntryMedia
 from the_flip.apps.parts.models import PartRequest
 
 
-class DiscordFormatterTests(TestCase):
+class DiscordFormatterTests(TemporaryMediaMixin, TestCase):
     """Tests for Discord message formatting.
 
     These tests verify the structure of webhook messages, not exact wording.
