@@ -408,6 +408,12 @@ def editable_sidebar_card(
         "  </button>\n"
         "  {content}\n"
         '  <div class="sidebar-card-edit-dropdown hidden" data-dropdown>\n'
+        '    <div class="sidebar-card-edit-dropdown__header">\n'
+        '      <span class="sidebar-card-edit-dropdown__title">{label}</span>\n'
+        '      <button type="button" class="sidebar-card-edit-dropdown__close" data-edit-btn aria-label="Close">\n'
+        '        <i class="fa-solid fa-xmark"></i>\n'
+        "      </button>\n"
+        "    </div>\n"
         '    <div class="sidebar-card-edit-dropdown__search">\n'
         '      <input type="text" class="form-input form-input--sm" placeholder="{placeholder}" autocomplete="off" data-search>\n'
         "    </div>\n"
