@@ -1159,7 +1159,7 @@ body {
   border: 1px solid var(--color-gray-300);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
-  z-index: 10;
+  z-index: 100;
   max-height: 300px;
   overflow-y: auto;
 }
