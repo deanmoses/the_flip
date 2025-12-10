@@ -356,6 +356,20 @@ class LogEntryProblemReportUpdateTests(SuppressRequestLogsMixin, TestDataMixin, 
         result = response.json()
         self.assertFalse(result["success"])
 
+    def test_update_problem_report_requires_maintainer_permission(self):
+        """Regular users (non-maintainers) cannot update problem report."""
+        self.client.force_login(self.regular_user)
+
+        response = self.client.post(
+            self.detail_url,
+            {
+                "action": "update_problem_report",
+                "problem_report_id": str(self.other_problem_report.pk),
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+
 
 @tag("views")
 class LogEntryMachineUpdateTests(SuppressRequestLogsMixin, TestDataMixin, TestCase):
@@ -423,6 +437,43 @@ class LogEntryMachineUpdateTests(SuppressRequestLogsMixin, TestDataMixin, TestCa
         self.assertEqual(response.status_code, 404)
         result = response.json()
         self.assertFalse(result["success"])
+
+    def test_update_machine_rejected_for_linked_entry(self):
+        """Updating machine directly on a linked log entry returns error."""
+        linked_entry = create_log_entry(
+            machine=self.machine,
+            problem_report=create_problem_report(machine=self.machine),
+            text="Linked log entry",
+        )
+        detail_url = reverse("log-detail", kwargs={"pk": linked_entry.pk})
+
+        self.client.force_login(self.staff_user)
+        response = self.client.post(
+            detail_url,
+            {
+                "action": "update_machine",
+                "machine_slug": self.other_machine.slug,
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        result = response.json()
+        self.assertFalse(result["success"])
+        self.assertIn("problem report", result["error"].lower())
+
+    def test_update_machine_requires_maintainer_permission(self):
+        """Regular users (non-maintainers) cannot update machine."""
+        self.client.force_login(self.regular_user)
+
+        response = self.client.post(
+            self.detail_url,
+            {
+                "action": "update_machine",
+                "machine_slug": self.other_machine.slug,
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
 
 
 @tag("models")

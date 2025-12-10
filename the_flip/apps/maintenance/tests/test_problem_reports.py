@@ -324,6 +324,20 @@ class ProblemReportMachineUpdateTests(SuppressRequestLogsMixin, TestDataMixin, T
         self.assertEqual(response.status_code, 302)
         self.assertIn("/login/", response.url)
 
+    def test_update_machine_requires_maintainer_permission(self):
+        """Regular users (non-maintainers) cannot update machine."""
+        self.client.force_login(self.regular_user)
+
+        response = self.client.post(
+            self.detail_url,
+            {
+                "action": "update_machine",
+                "machine_slug": self.other_machine.slug,
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+
 
 @tag("views")
 class ProblemReportListViewTests(SuppressRequestLogsMixin, TestDataMixin, TestCase):
@@ -1125,3 +1139,27 @@ class ProblemReportAutocompleteViewTests(SuppressRequestLogsMixin, TestDataMixin
         report = next(r for r in all_reports if r["id"] == self.report1.pk)
         self.assertIn("summary", report)
         self.assertIn("machine_name", report)
+
+    def test_excludes_closed_reports(self):
+        """Closed problem reports are not included in autocomplete."""
+        # Close one of the reports
+        self.report1.status = ProblemReport.STATUS_CLOSED
+        self.report1.save()
+
+        self.client.force_login(self.staff_user)
+        response = self.client.get(self.api_url)
+
+        data = response.json()
+        all_report_ids = []
+        for group in data["groups"]:
+            all_report_ids.extend(r["id"] for r in group["reports"])
+
+        self.assertNotIn(self.report1.pk, all_report_ids)
+        self.assertIn(self.report2.pk, all_report_ids)  # Still open
+        self.assertIn(self.report3.pk, all_report_ids)  # Still open
+
+    def test_requires_maintainer_permission(self):
+        """Regular users (non-maintainers) cannot access autocomplete API."""
+        self.client.force_login(self.regular_user)
+        response = self.client.get(self.api_url)
+        self.assertEqual(response.status_code, 403)
