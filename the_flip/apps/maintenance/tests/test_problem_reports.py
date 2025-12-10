@@ -10,6 +10,7 @@ from django.utils import timezone
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.core.test_utils import (
     SuppressRequestLogsMixin,
+    TemporaryMediaMixin,
     TestDataMixin,
     create_log_entry,
     create_maintainer_user,
@@ -780,7 +781,7 @@ class ProblemReportLogEntriesPartialViewTests(SuppressRequestLogsMixin, TestData
 
 
 @tag("views", "media")
-class ProblemReportMediaCreateTests(TestDataMixin, TestCase):
+class ProblemReportMediaCreateTests(TemporaryMediaMixin, TestDataMixin, TestCase):
     """Tests for media upload on problem report create page (maintainer)."""
 
     def setUp(self):
@@ -845,7 +846,9 @@ class ProblemReportMediaCreateTests(TestDataMixin, TestCase):
 
 
 @tag("views", "ajax", "media")
-class ProblemReportMediaUploadTests(SuppressRequestLogsMixin, TestDataMixin, TestCase):
+class ProblemReportMediaUploadTests(
+    TemporaryMediaMixin, SuppressRequestLogsMixin, TestDataMixin, TestCase
+):
     """Tests for AJAX media upload on problem report detail page."""
 
     def setUp(self):
@@ -911,7 +914,9 @@ class ProblemReportMediaUploadTests(SuppressRequestLogsMixin, TestDataMixin, Tes
 
 
 @tag("views", "ajax", "media")
-class ProblemReportMediaDeleteTests(SuppressRequestLogsMixin, TestDataMixin, TestCase):
+class ProblemReportMediaDeleteTests(
+    TemporaryMediaMixin, SuppressRequestLogsMixin, TestDataMixin, TestCase
+):
     """Tests for AJAX media delete on problem report detail page."""
 
     def setUp(self):
@@ -1005,7 +1010,7 @@ class ProblemReportMediaDeleteTests(SuppressRequestLogsMixin, TestDataMixin, Tes
 
 
 @tag("views", "media")
-class ProblemReportDetailMediaDisplayTests(TestDataMixin, TestCase):
+class ProblemReportDetailMediaDisplayTests(TemporaryMediaMixin, TestDataMixin, TestCase):
     """Tests for media display on problem report detail page."""
 
     def setUp(self):
