@@ -303,6 +303,38 @@ def pill(label: str, variant: str = "neutral", icon: str = ""):
 
 
 # -----------------------------------------------------------------------------
+# Form field template tags
+# -----------------------------------------------------------------------------
+
+
+@register.inclusion_tag("components/form_field.html")
+def form_field(field):
+    """Render a form field with label, input, help text, and errors.
+
+    Usage:
+        {% form_field form.username %}
+        {% form_field field %}
+
+    Args:
+        field: A Django form field (BoundField)
+    """
+    return {"field": field}
+
+
+@register.inclusion_tag("components/form_fields.html")
+def form_fields(form):
+    """Render all visible fields in a form.
+
+    Usage:
+        {% form_fields form %}
+
+    Args:
+        form: A Django form instance
+    """
+    return {"form": form}
+
+
+# -----------------------------------------------------------------------------
 # Sidebar template tags
 # -----------------------------------------------------------------------------
 
