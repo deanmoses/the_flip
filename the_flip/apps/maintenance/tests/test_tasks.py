@@ -7,12 +7,12 @@ from unittest.mock import patch
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, tag
 
-from the_flip.apps.core.test_utils import create_machine
+from the_flip.apps.core.test_utils import TemporaryMediaMixin, create_machine
 from the_flip.apps.maintenance.models import LogEntry, LogEntryMedia
 
 
 @tag("tasks", "unit")
-class TranscodeVideoJobTests(TestCase):
+class TranscodeVideoJobTests(TemporaryMediaMixin, TestCase):
     """Tests for transcode_video_job task."""
 
     def setUp(self):
@@ -78,7 +78,7 @@ class TranscodeVideoJobTests(TestCase):
 
 
 @tag("tasks", "unit")
-class TranscodeVideoErrorHandlingTests(TestCase):
+class TranscodeVideoErrorHandlingTests(TemporaryMediaMixin, TestCase):
     """Tests for transcode error handling."""
 
     def setUp(self):
@@ -151,7 +151,7 @@ class TranscodeVideoErrorHandlingTests(TestCase):
 
 
 @tag("tasks", "unit")
-class EnqueueTranscodeTests(TestCase):
+class EnqueueTranscodeTests(TemporaryMediaMixin, TestCase):
     """Tests for enqueue_transcode helper."""
 
     @patch("the_flip.apps.core.tasks.async_task")

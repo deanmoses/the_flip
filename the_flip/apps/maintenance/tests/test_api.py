@@ -7,6 +7,7 @@ from django.urls import reverse
 
 from the_flip.apps.core.test_utils import (
     SuppressRequestLogsMixin,
+    TemporaryMediaMixin,
     TestDataMixin,
     create_log_entry,
     create_maintainer_user,
@@ -96,7 +97,9 @@ class MaintainerAutocompleteViewTests(SuppressRequestLogsMixin, TestCase):
 
 
 @tag("api")
-class ReceiveTranscodedMediaViewTests(SuppressRequestLogsMixin, TestDataMixin, TestCase):
+class ReceiveTranscodedMediaViewTests(
+    TemporaryMediaMixin, SuppressRequestLogsMixin, TestDataMixin, TestCase
+):
     """Tests for the HTTP API endpoint that receives transcoded media from worker service."""
 
     def setUp(self):
@@ -250,7 +253,7 @@ class ReceiveTranscodedMediaViewTests(SuppressRequestLogsMixin, TestDataMixin, T
 
 
 @tag("api")
-class DeleteMediaTests(TestDataMixin, TestCase):
+class DeleteMediaTests(TemporaryMediaMixin, TestDataMixin, TestCase):
     """Ensure deleting media removes associated files (file and thumbnail)."""
 
     def setUp(self):
