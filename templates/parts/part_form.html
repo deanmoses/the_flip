@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "layouts/two_column.html" %}
 {% load static core_extras %}
 {% block title %}
   {% if is_edit %}
@@ -8,8 +8,7 @@
   {% endif %}
   Parts Request · {{ block.super }}
 {% endblock %}
-{% block content %}
-  <!-- BREADCRUMBS -->
+{% block breadcrumbs %}
   <nav class="breadcrumbs breadcrumbs--responsive">
     <a href="{% url 'part-request-list' %}" class="breadcrumbs__link">Parts</a>
     <span>/</span>
@@ -22,104 +21,90 @@
       <span class="breadcrumbs__current">New Request</span>
     {% endif %}
   </nav>
-  <!-- TWO COLUMN LAYOUT -->
-  <div class="two-column">
-    <!-- SIDEBAR -->
-    <aside class="two-column__sidebar">
-      <div class="card card--padded sidebar--sticky">
-        <div class="sidebar__section">
-          <div class="sidebar__label">
-            {% if is_edit %}
-              Edit
-            {% else %}
-              New
-            {% endif %}
-            Parts Request
+{% endblock %}
+{% block sidebar %}
+  {% sidebar %}
+  {% sidebar_section label="Parts Request" %}
+  <p class="text-muted text-sm">
+    {% if is_edit %}
+      Update the parts request details.
+    {% else %}
+      Request a part needed for maintenance.
+    {% endif %}
+  </p>
+{% endsidebar_section %}
+{% if machine %}
+  {% sidebar_section label="Machine" %}
+  <a href="{% url 'maintainer-machine-detail' machine.slug %}"
+     class="sidebar__title sidebar__link">{{ machine.display_name }}</a>
+{% endsidebar_section %}
+{% endif %}
+{% endsidebar %}
+{% endblock %}
+{% block main %}
+  <div class="card card--padded">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <!-- Machine selector (if not pre-selected) -->
+      {% if not machine %}
+        <div class="form-field">
+          <label class="form-label">Machine (optional)</label>
+          <div class="autocomplete"
+               data-machine-autocomplete
+               data-autocomplete-url="{% url 'api-machine-autocomplete' %}">
+            <input type="search"
+                   placeholder="Search machines..."
+                   class="form-input"
+                   autocomplete="off"
+                   data-1p-ignore="true"
+                   data-lpignore="true"
+                   data-machine-search
+                   {% if selected_machine %}value="{{ selected_machine.display_name }}"{% endif %}>
+            <input type="hidden"
+                   name="{{ form.machine_slug.html_name }}"
+                   id="{{ form.machine_slug.id_for_label }}"
+                   value="{{ form.machine_slug.value|default_if_none:'' }}"
+                   data-machine-slug-input>
+            <div class="autocomplete__dropdown hidden"></div>
           </div>
-          <p class="text-muted text-sm">
-            {% if is_edit %}
-              Update the parts request details.
-            {% else %}
-              Request a part needed for maintenance.
-            {% endif %}
-          </p>
+          {% if form.machine_slug.errors %}<p class="text-problem body-small">{{ form.machine_slug.errors.0 }}</p>{% endif %}
         </div>
-        {% if machine %}
-          <div class="sidebar__section">
-            <div class="sidebar__label">Machine</div>
-            <a href="{% url 'maintainer-machine-detail' machine.slug %}"
-               class="sidebar__title sidebar__link">{{ machine.display_name }}</a>
-          </div>
-        {% endif %}
+      {% endif %}
+      <!-- Description -->
+      <div class="form-field">
+        <label for="id_text" class="form-label">Description</label>
+        {{ form.text }}
+        {% if form.text.errors %}<p class="text-problem body-small">{{ form.text.errors.0 }}</p>{% endif %}
+        <!-- File upload link (GitHub-style) -->
+        <div class="form-hint space-above-sm">
+          <input type="file"
+                 id="file-input"
+                 name="{{ form.media_file.html_name }}"
+                 class="hidden"
+                 multiple
+                 accept="image/*,video/*,.heic,.heif">
+          <a href="#" id="file-upload-link" class="file-upload-link">
+            <i class="fa-solid fa-paperclip space-right-xs"></i>Paste, drop, or click to add photos
+          </a>
+        </div>
+        {% if form.media_file.errors %}<p class="text-problem body-small">{{ form.media_file.errors.0 }}</p>{% endif %}
+        <!-- Uploaded files preview -->
+        <div class="file-preview-row" id="file-preview-row"></div>
       </div>
-    </aside>
-    <!-- MAIN COLUMN -->
-    <div class="two-column__main">
-      <div class="card card--padded">
-        <form method="post" enctype="multipart/form-data">
-          {% csrf_token %}
-          <!-- Machine selector (if not pre-selected) -->
-          {% if not machine %}
-            <div class="form-field">
-              <label class="form-label">Machine (optional)</label>
-              <div class="autocomplete"
-                   data-machine-autocomplete
-                   data-autocomplete-url="{% url 'api-machine-autocomplete' %}">
-                <input type="search"
-                       placeholder="Search machines..."
-                       class="form-input"
-                       autocomplete="off"
-                       data-1p-ignore="true"
-                       data-lpignore="true"
-                       data-machine-search
-                       {% if selected_machine %}value="{{ selected_machine.display_name }}"{% endif %}>
-                <input type="hidden"
-                       name="{{ form.machine_slug.html_name }}"
-                       id="{{ form.machine_slug.id_for_label }}"
-                       value="{{ form.machine_slug.value|default_if_none:'' }}"
-                       data-machine-slug-input>
-                <div class="autocomplete__dropdown hidden"></div>
-              </div>
-              {% if form.machine_slug.errors %}<div class="form-error">{{ form.machine_slug.errors.0 }}</div>{% endif %}
-            </div>
+      <!-- Submit -->
+      <div class="form-actions">
+        <a href="{% if is_edit %}{% url 'part-request-detail' part_request.pk %}{% else %}{% url 'part-request-list' %}{% endif %}"
+           class="btn btn--secondary">Cancel</a>
+        <button type="submit" class="btn btn--log">
+          <i class="fa-solid fa-box-open meta"></i>
+          {% if is_edit %}
+            Save Changes
+          {% else %}
+            Create Request
           {% endif %}
-          <!-- Description -->
-          <div class="form-field">
-            <label for="id_text" class="form-label">Description</label>
-            {{ form.text }}
-            {% if form.text.errors %}<div class="form-error">{{ form.text.errors.0 }}</div>{% endif %}
-            <!-- File upload link (GitHub-style) -->
-            <div class="form-hint space-above-sm">
-              <input type="file"
-                     id="file-input"
-                     name="{{ form.media_file.html_name }}"
-                     class="hidden"
-                     multiple
-                     accept="image/*,video/*,.heic,.heif">
-              <a href="#" id="file-upload-link" class="file-upload-link">
-                <i class="fa-solid fa-paperclip space-right-xs"></i>Paste, drop, or click to add photos
-              </a>
-            </div>
-            {% if form.media_file.errors %}<div class="form-error">{{ form.media_file.errors.0 }}</div>{% endif %}
-            <!-- Uploaded files preview -->
-            <div class="file-preview-row" id="file-preview-row"></div>
-          </div>
-          <!-- Submit -->
-          <div class="form-actions">
-            <a href="{% if is_edit %}{% url 'part-request-detail' part_request.pk %}{% else %}{% url 'part-request-list' %}{% endif %}"
-               class="btn btn--secondary">Cancel</a>
-            <button type="submit" class="btn btn--log">
-              <i class="fa-solid fa-box-open meta"></i>
-              {% if is_edit %}
-                Save Changes
-              {% else %}
-                Create Request
-              {% endif %}
-            </button>
-          </div>
-        </form>
+        </button>
       </div>
-    </div>
+    </form>
   </div>
 {% endblock %}
 {% block extra_scripts %}
