@@ -890,7 +890,8 @@ body {
 }
 
 .autocomplete__item:hover,
-.autocomplete__item-active {
+.autocomplete__item-active,
+.autocomplete__item.dropdown-active {
   background-color: var(--color-gray-100);
 }
 
@@ -1193,7 +1194,8 @@ body {
   color: var(--color-gray-700);
 }
 
-.sidebar-card-edit-dropdown__item:hover {
+.sidebar-card-edit-dropdown__item:hover,
+.sidebar-card-edit-dropdown__item.dropdown-active {
   background: var(--color-gray-100);
 }
 

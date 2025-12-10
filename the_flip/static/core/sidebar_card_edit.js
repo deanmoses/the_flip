@@ -4,6 +4,8 @@
  * Provides editable dropdowns for sidebar cards (machine selection, problem report selection).
  * Uses data attributes for configuration, auto-initializes on DOMContentLoaded.
  *
+ * Requires: dropdown_keyboard.js (for keyboard navigation)
+ *
  * Usage:
  *   <div data-sidebar-machine-edit
  *        data-api-url="/api/machines/"
@@ -34,6 +36,15 @@ function initSidebarMachineEdit(wrapper) {
   if (!editBtn || !dropdown || !searchInput || !listContainer || !apiUrl) return;
 
   let machines = [];
+
+  // Keyboard navigation
+  const keyboardNav = attachDropdownKeyboard({
+    searchInput,
+    listContainer,
+    getSelectableItems: () => listContainer.querySelectorAll("[data-value]"),
+    onSelect: (item) => select(item.dataset.value),
+    onEscape: hide,
+  });
 
   function hide() {
     dropdown.classList.add("hidden");
@@ -75,6 +86,7 @@ function initSidebarMachineEdit(wrapper) {
     if (!filtered.length) {
       listContainer.innerHTML =
         '<div class="sidebar-card-edit-dropdown__item sidebar-card-edit-dropdown__item--none">No machines found</div>';
+      keyboardNav.reset();
       return;
     }
 
@@ -94,6 +106,8 @@ function initSidebarMachineEdit(wrapper) {
     listContainer.querySelectorAll("[data-value]").forEach((item) => {
       item.addEventListener("click", () => select(item.dataset.value));
     });
+
+    keyboardNav.reset();
   }
 
   async function select(slug) {
@@ -141,10 +155,6 @@ function initSidebarMachineEdit(wrapper) {
     render(e.target.value);
   });
 
-  searchInput.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") hide();
-  });
-
   document.addEventListener("click", (e) => {
     if (!wrapper.contains(e.target)) {
       hide();
@@ -163,13 +173,25 @@ function initSidebarProblemEdit(wrapper) {
   const listContainer = wrapper.querySelector("[data-list]");
 
   const apiUrl = wrapper.dataset.apiUrl;
-  const currentId = wrapper.dataset.currentId === "null" ? null : parseInt(wrapper.dataset.currentId, 10);
+  const currentId =
+    wrapper.dataset.currentId === "null"
+      ? null
+      : parseInt(wrapper.dataset.currentId, 10);
   const currentMachineSlug = wrapper.dataset.currentMachineSlug;
   const csrfToken = wrapper.dataset.csrfToken;
 
   if (!editBtn || !dropdown || !searchInput || !listContainer || !apiUrl) return;
 
   let groups = [];
+
+  // Keyboard navigation
+  const keyboardNav = attachDropdownKeyboard({
+    searchInput,
+    listContainer,
+    getSelectableItems: () => listContainer.querySelectorAll("[data-value]"),
+    onSelect: (item) => select(item.dataset.value),
+    onEscape: hide,
+  });
 
   function hide() {
     dropdown.classList.add("hidden");
@@ -246,6 +268,8 @@ function initSidebarProblemEdit(wrapper) {
     listContainer.querySelectorAll("[data-value]").forEach((item) => {
       item.addEventListener("click", () => select(item.dataset.value));
     });
+
+    keyboardNav.reset();
   }
 
   async function select(idOrNone) {
@@ -288,10 +312,6 @@ function initSidebarProblemEdit(wrapper) {
     render(e.target.value);
   });
 
-  searchInput.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") hide();
-  });
-
   document.addEventListener("click", (e) => {
     if (!wrapper.contains(e.target)) {
       hide();
@@ -304,6 +324,10 @@ function initSidebarProblemEdit(wrapper) {
 // ============================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll("[data-sidebar-machine-edit]").forEach(initSidebarMachineEdit);
-  document.querySelectorAll("[data-sidebar-problem-edit]").forEach(initSidebarProblemEdit);
+  document
+    .querySelectorAll("[data-sidebar-machine-edit]")
+    .forEach(initSidebarMachineEdit);
+  document
+    .querySelectorAll("[data-sidebar-problem-edit]")
+    .forEach(initSidebarProblemEdit);
 });

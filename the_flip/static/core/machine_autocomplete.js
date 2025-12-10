@@ -1,3 +1,19 @@
+/**
+ * Machine Autocomplete
+ *
+ * Provides autocomplete functionality for machine selection in forms.
+ * Uses data attributes for configuration, auto-initializes on DOMContentLoaded.
+ *
+ * Requires: dropdown_keyboard.js (for keyboard navigation)
+ *
+ * Usage:
+ *   <div data-machine-autocomplete data-autocomplete-url="/api/machines/">
+ *     <input type="text" data-machine-search placeholder="Search machines...">
+ *     <input type="hidden" data-machine-slug-input name="machine_slug">
+ *     <div class="autocomplete__dropdown hidden"></div>
+ *   </div>
+ */
+
 function initMachineAutocomplete(container) {
   const input = container.querySelector("[data-machine-search]");
   const hiddenInput = container.querySelector("[data-machine-slug-input]");
@@ -7,14 +23,24 @@ function initMachineAutocomplete(container) {
   if (!input || !hiddenInput || !dropdown || !endpoint) return;
 
   let results = [];
-  let activeIndex = -1;
   let fetchTimeout = null;
   let abortController = null;
+
+  // Keyboard navigation
+  const keyboardNav = attachDropdownKeyboard({
+    searchInput: input,
+    listContainer: dropdown,
+    getSelectableItems: () => dropdown.querySelectorAll("[data-slug]"),
+    onSelect: (item) => {
+      const machine = results.find((m) => m.slug === item.dataset.slug);
+      if (machine) selectMachine(machine);
+    },
+    onEscape: hideDropdown,
+  });
 
   function hideDropdown() {
     dropdown.classList.add("hidden");
     dropdown.innerHTML = "";
-    activeIndex = -1;
   }
 
   function selectMachine(machine) {
@@ -34,13 +60,9 @@ function initMachineAutocomplete(container) {
     }
     dropdown.innerHTML = "";
 
-    list.forEach((machine, index) => {
+    list.forEach((machine) => {
       const item = document.createElement("div");
       item.className = "autocomplete__item";
-      if (index === activeIndex) {
-        item.classList.add("autocomplete__item-active");
-      }
-      item.dataset.index = index;
       item.dataset.slug = machine.slug;
 
       const line = document.createElement("div");
@@ -68,6 +90,7 @@ function initMachineAutocomplete(container) {
     });
 
     dropdown.classList.remove("hidden");
+    keyboardNav.reset();
   }
 
   function fetchMachines(query) {
@@ -91,7 +114,6 @@ function initMachineAutocomplete(container) {
         .then((response) => (response.ok ? response.json() : Promise.reject()))
         .then((data) => {
           results = data.machines || [];
-          activeIndex = -1;
           renderDropdown(results);
         })
         .catch((error) => {
@@ -108,27 +130,6 @@ function initMachineAutocomplete(container) {
   input.addEventListener("input", () => {
     hiddenInput.value = "";
     fetchMachines(input.value.trim());
-  });
-
-  input.addEventListener("keydown", (event) => {
-    if (dropdown.classList.contains("hidden") || !results.length) return;
-
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      activeIndex = Math.min(activeIndex + 1, results.length - 1);
-      renderDropdown(results);
-    } else if (event.key === "ArrowUp") {
-      event.preventDefault();
-      activeIndex = Math.max(activeIndex - 1, 0);
-      renderDropdown(results);
-    } else if (event.key === "Enter") {
-      if (activeIndex >= 0 && activeIndex < results.length) {
-        event.preventDefault();
-        selectMachine(results[activeIndex]);
-      }
-    } else if (event.key === "Escape") {
-      hideDropdown();
-    }
   });
 
   document.addEventListener("click", (event) => {
