@@ -23,6 +23,7 @@ from django.db.models import (
     Value,
     When,
 )
+from django.db import transaction
 from django.db.models.functions import Lower
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -573,8 +574,6 @@ class ProblemReportDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, 
 
             if new_machine.pk == self.report.machine_id:
                 return JsonResponse({"success": True, "status": "noop"})
-
-            from django.db import transaction
 
             with transaction.atomic():
                 self.report.machine = new_machine
@@ -1397,8 +1396,6 @@ class ReceiveTranscodedMediaView(View):
 
         # Save transcoded files and update record
         try:
-            from django.db import transaction
-
             with transaction.atomic():
                 # Delete original file
                 if media.file:
