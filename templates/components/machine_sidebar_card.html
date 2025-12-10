@@ -1,3 +1,5 @@
+{% load core_extras %}
+{% editable_sidebar_card editable=editable edit_type="machine" current_value=machine.slug csrf_token=csrf_token %}
 <a href="{% url 'maintainer-machine-detail' machine.slug %}"
    class="sidebar-card sidebar-card--neutral">
   <div class="sidebar-card__header">{{ machine.display_name }}</div>
@@ -19,3 +21,4 @@
     {% endif %}
   </div>
 </a>
+{% endeditable_sidebar_card %}

@@ -68,7 +68,7 @@
         <!-- MACHINE -->
         <div class="sidebar__section">
           <div class="sidebar__label">Machine</div>
-          {% include "components/machine_sidebar_card.html" %}
+          {% include "components/machine_sidebar_card.html" with editable=True %}
         </div>
         <!-- ACTIONS -->
         <div class="sidebar__section">
@@ -402,4 +402,7 @@
 
     document.querySelectorAll('.media-grid__delete').forEach(attachDeleteHandler);
   </script>
+  <script src="{% static 'core/dropdown_keyboard.js' %}"></script>
+  <script src="{% static 'core/searchable_dropdown.js' %}"></script>
+  <script src="{% static 'core/sidebar_card_edit.js' %}"></script>
 {% endblock %}

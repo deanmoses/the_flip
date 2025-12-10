@@ -208,6 +208,11 @@ urlpatterns = [
         maintenance_views.MachineAutocompleteView.as_view(),
         name="api-machine-autocomplete",
     ),  # AJAX: machine autocomplete for forms
+    path(
+        "api/problem-reports/",
+        maintenance_views.ProblemReportAutocompleteView.as_view(),
+        name="api-problem-report-autocomplete",
+    ),  # AJAX: problem report autocomplete for log entry reassignment
     #
     # Log entries
     #

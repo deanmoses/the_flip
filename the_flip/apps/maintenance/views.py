@@ -12,6 +12,7 @@ from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import (
     Case,
     CharField,
@@ -142,6 +143,88 @@ class MachineAutocompleteView(CanAccessMaintainerPortalMixin, View):
             )
 
         return JsonResponse({"machines": results})
+
+
+class ProblemReportAutocompleteView(CanAccessMaintainerPortalMixin, View):
+    """JSON endpoint for problem report autocomplete (maintainer-only).
+
+    Returns open problem reports grouped by machine, with current machine first.
+    Includes a "None" option for unlinking log entries.
+    """
+
+    def get(self, request, *args, **kwargs):
+        query = request.GET.get("q", "").strip()
+        current_machine_slug = request.GET.get("current_machine", "")
+
+        reports = (
+            ProblemReport.objects.filter(status=ProblemReport.STATUS_OPEN)
+            .select_related("machine", "machine__model", "machine__location")
+            .order_by("-created_at")
+        )
+
+        if query:
+            reports = reports.filter(
+                Q(description__icontains=query)
+                | Q(machine__model__name__icontains=query)
+                | Q(machine__name_override__icontains=query)
+            )
+
+        reports = reports[:100]
+
+        # Group reports by machine
+        grouped: dict[str, list[dict]] = {}
+        current_machine_reports: list[dict] = []
+
+        for report in reports:
+            machine = report.machine
+            report_data = {
+                "id": report.id,
+                "machine_slug": machine.slug,
+                "machine_name": machine.display_name,
+                "summary": self._get_summary(report),
+                "created_at": report.created_at.isoformat(),
+            }
+
+            if machine.slug == current_machine_slug:
+                current_machine_reports.append(report_data)
+            else:
+                machine_key = machine.display_name
+                if machine_key not in grouped:
+                    grouped[machine_key] = []
+                grouped[machine_key].append(report_data)
+
+        # Build result with current machine first
+        result_groups = []
+        if current_machine_reports:
+            # Get machine name from first report
+            machine_name = current_machine_reports[0]["machine_name"]
+            result_groups.append(
+                {"machine_name": f"{machine_name} (current)", "reports": current_machine_reports}
+            )
+
+        # Add other machines sorted alphabetically
+        for machine_name in sorted(grouped.keys()):
+            result_groups.append({"machine_name": machine_name, "reports": grouped[machine_name]})
+
+        return JsonResponse({"groups": result_groups})
+
+    def _get_summary(self, report: ProblemReport) -> str:
+        """Build a concise problem report summary for the dropdown."""
+        if report.problem_type == ProblemReport.PROBLEM_OTHER:
+            if report.description:
+                desc = report.description[:60]
+                if len(report.description) > 60:
+                    desc += "..."
+                return desc
+            return "No description"
+        else:
+            type_label = report.get_problem_type_display()
+            if report.description:
+                desc = report.description[:40]
+                if len(report.description) > 40:
+                    desc += "..."
+                return f"{type_label}: {desc}"
+            return type_label
 
 
 class ProblemReportListView(CanAccessMaintainerPortalMixin, TemplateView):
@@ -476,6 +559,72 @@ class ProblemReportDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, 
             self.report.description = request.POST.get("description", "")
             self.report.save(update_fields=["description", "updated_at"])
             return JsonResponse({"success": True})
+
+        # Handle AJAX machine update (move report to different machine)
+        if action == "update_machine":
+            machine_slug = request.POST.get("machine_slug", "").strip()
+            if not machine_slug:
+                return JsonResponse(
+                    {"success": False, "error": "Machine slug required"}, status=400
+                )
+
+            new_machine = MachineInstance.objects.filter(slug=machine_slug).first()
+            if not new_machine:
+                return JsonResponse({"success": False, "error": "Machine not found"}, status=404)
+
+            if new_machine.pk == self.report.machine_id:
+                return JsonResponse({"success": True, "status": "noop"})
+
+            old_machine = self.report.machine
+
+            with transaction.atomic():
+                self.report.machine = new_machine
+                self.report.save(update_fields=["machine", "updated_at"])
+
+                # Move all child log entries to the new machine
+                child_log_count = LogEntry.objects.filter(problem_report=self.report).update(
+                    machine=new_machine
+                )
+
+            # Build message with hyperlinked machine names
+            old_machine_link = format_html(
+                '<a href="{}">{}</a>',
+                reverse("maintainer-machine-detail", kwargs={"slug": old_machine.slug}),
+                old_machine.display_name,
+            )
+            new_machine_link = format_html(
+                '<a href="{}">{}</a>',
+                reverse("maintainer-machine-detail", kwargs={"slug": new_machine.slug}),
+                new_machine.display_name,
+            )
+            if child_log_count:
+                messages.success(
+                    request,
+                    format_html(
+                        "Problem report moved from {} to {}. Its {} log entries also moved.",
+                        old_machine_link,
+                        new_machine_link,
+                        child_log_count,
+                    ),
+                )
+            else:
+                messages.success(
+                    request,
+                    format_html(
+                        "Problem report moved from {} to {}.",
+                        old_machine_link,
+                        new_machine_link,
+                    ),
+                )
+
+            return JsonResponse(
+                {
+                    "success": True,
+                    "new_machine_slug": new_machine.slug,
+                    "new_machine_name": new_machine.display_name,
+                    "log_entries_moved": child_log_count,
+                }
+            )
 
         # Handle AJAX media upload
         if action == "upload_media":
@@ -954,6 +1103,184 @@ class LogEntryDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, Detai
             self.object.save(update_fields=["maintainer_names", "updated_at"])
             return JsonResponse({"success": True})
 
+        elif action == "update_problem_report":
+            # Change the problem report for this log entry
+            # Also changes the machine to match the new problem report
+            problem_report_id = request.POST.get("problem_report_id", "").strip()
+
+            if not problem_report_id or problem_report_id == "none":
+                # Unlink from problem report (become orphan), keep current machine
+                if self.object.problem_report_id is None:
+                    return JsonResponse({"success": True, "status": "noop"})
+
+                old_report = self.object.problem_report
+                self.object.problem_report = None
+                self.object.save(update_fields=["problem_report", "updated_at"])
+
+                # Message: "Log entry unlinked from problem report #{id}."
+                old_report_link = format_html(
+                    '<a href="{}">#{}</a>',
+                    reverse("problem-report-detail", kwargs={"pk": old_report.pk}),
+                    old_report.pk,
+                )
+                messages.success(
+                    request,
+                    format_html("Log entry unlinked from problem report {}.", old_report_link),
+                )
+
+                return JsonResponse(
+                    {
+                        "success": True,
+                        "problem_report_id": None,
+                        "machine_slug": self.object.machine.slug,
+                        "machine_name": self.object.machine.display_name,
+                    }
+                )
+
+            # Link to a specific problem report
+            new_report = ProblemReport.objects.filter(pk=problem_report_id).first()
+            if not new_report:
+                return JsonResponse(
+                    {"success": False, "error": "Problem report not found"}, status=404
+                )
+
+            if new_report.pk == self.object.problem_report_id:
+                return JsonResponse({"success": True, "status": "noop"})
+
+            # Capture old state before updating
+            old_report = self.object.problem_report
+            old_machine = self.object.machine
+
+            # Update problem report and machine
+            self.object.problem_report = new_report
+            self.object.machine = new_report.machine
+            self.object.save(update_fields=["problem_report", "machine", "updated_at"])
+
+            # Build message based on what changed
+            new_report_link = format_html(
+                '<a href="{}">#{}</a>',
+                reverse("problem-report-detail", kwargs={"pk": new_report.pk}),
+                new_report.pk,
+            )
+            new_machine_link = format_html(
+                '<a href="{}">{}</a>',
+                reverse("maintainer-machine-detail", kwargs={"slug": new_report.machine.slug}),
+                new_report.machine.display_name,
+            )
+
+            if old_report is None:
+                # Was orphan, now linked: "Log entry linked to problem #{id} on {machine}."
+                messages.success(
+                    request,
+                    format_html(
+                        "Log entry linked to problem {} on {}.",
+                        new_report_link,
+                        new_machine_link,
+                    ),
+                )
+            elif old_machine.pk == new_report.machine.pk:
+                # Same machine, different PR: "Log entry moved from problem #{old} to problem #{new}."
+                old_report_link = format_html(
+                    '<a href="{}">#{}</a>',
+                    reverse("problem-report-detail", kwargs={"pk": old_report.pk}),
+                    old_report.pk,
+                )
+                messages.success(
+                    request,
+                    format_html(
+                        "Log entry moved from problem {} to problem {}.",
+                        old_report_link,
+                        new_report_link,
+                    ),
+                )
+            else:
+                # Different machine and PR
+                old_report_link = format_html(
+                    '<a href="{}">#{}</a>',
+                    reverse("problem-report-detail", kwargs={"pk": old_report.pk}),
+                    old_report.pk,
+                )
+                old_machine_link = format_html(
+                    '<a href="{}">{}</a>',
+                    reverse("maintainer-machine-detail", kwargs={"slug": old_machine.slug}),
+                    old_machine.display_name,
+                )
+                messages.success(
+                    request,
+                    format_html(
+                        "Log entry moved from problem {} on {} to problem {} on {}.",
+                        old_report_link,
+                        old_machine_link,
+                        new_report_link,
+                        new_machine_link,
+                    ),
+                )
+
+            return JsonResponse(
+                {
+                    "success": True,
+                    "problem_report_id": new_report.pk,
+                    "machine_slug": new_report.machine.slug,
+                    "machine_name": new_report.machine.display_name,
+                }
+            )
+
+        elif action == "update_machine":
+            # Change the machine for an orphan log entry (not linked to a problem report)
+            if self.object.problem_report_id is not None:
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": "Cannot directly change machine for log entries linked to a problem report. Change the problem report instead.",
+                    },
+                    status=400,
+                )
+
+            machine_slug = request.POST.get("machine_slug", "").strip()
+            if not machine_slug:
+                return JsonResponse(
+                    {"success": False, "error": "Machine slug required"}, status=400
+                )
+
+            new_machine = MachineInstance.objects.filter(slug=machine_slug).first()
+            if not new_machine:
+                return JsonResponse({"success": False, "error": "Machine not found"}, status=404)
+
+            if new_machine.pk == self.object.machine_id:
+                return JsonResponse({"success": True, "status": "noop"})
+
+            old_machine = self.object.machine
+            self.object.machine = new_machine
+            self.object.save(update_fields=["machine", "updated_at"])
+
+            # Build message with hyperlinked machine names
+            old_machine_link = format_html(
+                '<a href="{}">{}</a>',
+                reverse("maintainer-machine-detail", kwargs={"slug": old_machine.slug}),
+                old_machine.display_name,
+            )
+            new_machine_link = format_html(
+                '<a href="{}">{}</a>',
+                reverse("maintainer-machine-detail", kwargs={"slug": new_machine.slug}),
+                new_machine.display_name,
+            )
+            messages.success(
+                request,
+                format_html(
+                    "Log entry moved from {} to {}.",
+                    old_machine_link,
+                    new_machine_link,
+                ),
+            )
+
+            return JsonResponse(
+                {
+                    "success": True,
+                    "new_machine_slug": new_machine.slug,
+                    "new_machine_name": new_machine.display_name,
+                }
+            )
+
         return JsonResponse({"success": False, "error": "Invalid action"}, status=400)
 
     def match_maintainer(self, name: str):
@@ -1201,8 +1528,6 @@ class ReceiveTranscodedMediaView(View):
 
         # Save transcoded files and update record
         try:
-            from django.db import transaction
-
             with transaction.atomic():
                 # Delete original file
                 if media.file:
