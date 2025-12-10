@@ -17,7 +17,7 @@
       <i class="fa-solid fa-paperclip space-right-xs"></i>Paste, drop, or click to add photos
     </a>
   </div>
-  {% for error in form.media_file.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+  {% for error in form.media_file.errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
   <!-- Uploaded files preview -->
   <div class="file-preview-row" id="file-preview-row"></div>
 {% endblock %}

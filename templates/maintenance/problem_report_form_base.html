@@ -48,7 +48,7 @@
               </label>
             {% endfor %}
           </div>
-          {% for error in form.problem_type.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+          {% for error in form.problem_type.errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
         </div>
       {% endblock %}
       <!-- DESCRIPTION -->
@@ -58,7 +58,7 @@
                   name="{{ form.description.html_name }}"
                   class="form-input form-textarea"
                   placeholder="Describe the problem...">{{ form.description.value|default:'' }}</textarea>
-        {% for error in form.description.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+        {% for error in form.description.errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
         {% block media_upload %}{% endblock %}
       </div>
       <!-- FORM ACTIONS -->
@@ -133,7 +133,7 @@
                      data-machine-slug-input>
               <div class="autocomplete__dropdown hidden"></div>
             </div>
-            {% for error in form.machine_slug.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+            {% for error in form.machine_slug.errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
           </div>
         {% endif %}
         {% block sidebar_extra %}{% endblock %}

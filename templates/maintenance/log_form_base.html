@@ -42,7 +42,7 @@
                   class="form-input form-textarea"
                   placeholder="Describe the work performed..."
                   required>{{ form.text.value|default:'' }}</textarea>
-        {% for error in form.text.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+        {% for error in form.text.errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
         <!-- File upload link (GitHub-style) -->
         <div class="form-hint space-above-sm">
           <input type="file"
@@ -55,7 +55,7 @@
             <i class="fa-solid fa-paperclip space-right-xs"></i>Paste, drop, or click to add photos
           </a>
         </div>
-        {% for error in form.media_file.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+        {% for error in form.media_file.errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
         <!-- Uploaded files preview -->
         <div class="file-preview-row" id="file-preview-row"></div>
       </div>
@@ -147,7 +147,7 @@
                      data-machine-slug-input>
               <div class="autocomplete__dropdown hidden"></div>
             </div>
-            {% for error in form.machine_slug.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+            {% for error in form.machine_slug.errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
           </div>
         {% endif %}
         <!-- LINKED PROBLEM -->
@@ -175,7 +175,7 @@
                  id="{{ form.work_date.id_for_label }}"
                  name="{{ form.work_date.html_name }}"
                  class="form-input form-input--sm">
-          {% for error in form.work_date.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+          {% for error in form.work_date.errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
         </div>
         <!-- WHO -->
         <div class="sidebar__section">
@@ -190,7 +190,7 @@
                    autocomplete="off">
             <div class="autocomplete__dropdown hidden" id="submitter-dropdown"></div>
           </div>
-          {% for error in form.submitter_name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+          {% for error in form.submitter_name.errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
         </div>
         {% block sidebar_extra %}{% endblock %}
       </div>
