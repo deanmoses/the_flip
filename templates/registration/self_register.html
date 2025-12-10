@@ -18,8 +18,8 @@
     <!-- MAIN COLUMN -->
     <div class="two-column__main form-main">
       {% if form.non_field_errors %}
-        <div class="form-errors">
-          {% for error in form.non_field_errors %}<p class="error">{{ error }}</p>{% endfor %}
+        <div class="text-problem body-small">
+          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
         </div>
       {% endif %}
       <!-- Username section -->
@@ -41,7 +41,7 @@
         </div>
         <datalist id="username-suggestions"></datalist>
         <small id="username-status"></small>
-        {% for error in form.username.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+        {% for error in form.username.errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
       </div>
       <!-- Profile section (revealed after username check) -->
       <div id="profile-section" class="profile-section" hidden>
@@ -59,7 +59,7 @@
                  class="form-input"
                  value="{{ form.first_name.value|default:'' }}"
                  autocomplete="given-name">
-          {% for error in form.first_name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+          {% for error in form.first_name.errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
         </div>
         <div class="form-field">
           <label for="id_last_name" class="form-label">Last name</label>
@@ -69,7 +69,7 @@
                  class="form-input"
                  value="{{ form.last_name.value|default:'' }}"
                  autocomplete="family-name">
-          {% for error in form.last_name.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+          {% for error in form.last_name.errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
         </div>
         <div class="form-field">
           <label for="id_email" class="form-label">
@@ -81,7 +81,7 @@
                  class="form-input"
                  value="{{ form.email.value|default:'' }}"
                  autocomplete="email">
-          {% for error in form.email.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+          {% for error in form.email.errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
         </div>
         <div class="form-field">
           <label for="id_password" class="form-label">Password</label>
@@ -95,7 +95,7 @@
             <input type="checkbox" id="hide-password" class="checkbox">
             <span>Hide password</span>
           </label>
-          {% for error in form.password.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+          {% for error in form.password.errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
         </div>
         <div class="form-actions">
           <a href="{% url 'home' %}" class="btn btn--secondary">Cancel</a>
