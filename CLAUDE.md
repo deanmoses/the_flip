@@ -112,6 +112,7 @@ Load with `{% load core_extras %}`, then use:
 | `form_fields` | Inclusion tag | `{% form_fields form %}` - Renders all visible fields in a form |
 | `form_non_field_errors` | Inclusion tag | `{% form_non_field_errors form %}` - Renders non-field errors if any |
 | `field_errors` | Inclusion tag | `{% field_errors form.field_name %}` - Renders field errors only (for custom field markup) |
+| `field_help_text` | Inclusion tag | `{% field_help_text form.field_name %}` - Renders field help text only (for custom field markup) |
 
 ### Button Variants
 - `secondary` (default), `primary`, `report`, `log`

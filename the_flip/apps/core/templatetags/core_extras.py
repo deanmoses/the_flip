@@ -389,6 +389,22 @@ def field_errors(field):
     return {"field": field}
 
 
+@register.inclusion_tag("components/field_help_text.html")
+def field_help_text(field):
+    """Render help text for a form field if present.
+
+    Only outputs content if the field has help_text defined.
+
+    Usage:
+        {% field_help_text form.username %}
+        {% field_help_text field %}
+
+    Args:
+        field: A Django form field (BoundField)
+    """
+    return {"field": field}
+
+
 # -----------------------------------------------------------------------------
 # Sidebar template tags
 # -----------------------------------------------------------------------------

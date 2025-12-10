@@ -17,7 +17,7 @@
                value="{{ form.username.value|default:'' }}"
                required
                autocomplete="username">
-        {% if form.username.help_text %}<small class="form-hint">{{ form.username.help_text }}</small>{% endif %}
+        {% field_help_text form.username %}
         {% field_errors form.username %}
       </div>
       <div class="form-field">
@@ -49,7 +49,7 @@
                value="{{ form.email.value|default:'' }}"
                required
                autocomplete="email">
-        {% if form.email.help_text %}<small class="form-hint">{{ form.email.help_text }}</small>{% endif %}
+        {% field_help_text form.email %}
         {% field_errors form.email %}
       </div>
       <div class="form-field">
