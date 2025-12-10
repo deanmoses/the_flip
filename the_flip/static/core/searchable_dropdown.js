@@ -23,12 +23,12 @@
 function createSearchableDropdown(config) {
   const { wrapper, loadData, renderItems, onSelect } = config;
 
-  const editBtn = wrapper.querySelector("[data-edit-btn]");
+  const editBtns = wrapper.querySelectorAll("[data-edit-btn]");
   const dropdown = wrapper.querySelector("[data-dropdown]");
   const searchInput = wrapper.querySelector("[data-search]");
   const listContainer = wrapper.querySelector("[data-list]");
 
-  if (!editBtn || !dropdown || !searchInput || !listContainer) return null;
+  if (!editBtns.length || !dropdown || !searchInput || !listContainer) return null;
 
   let data = null;
   let isVisible = false;
@@ -90,10 +90,12 @@ function createSearchableDropdown(config) {
   }
 
   // Event listeners
-  editBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    isVisible ? hide() : show();
+  editBtns.forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      isVisible ? hide() : show();
+    });
   });
 
   searchInput.addEventListener("input", (e) => {
