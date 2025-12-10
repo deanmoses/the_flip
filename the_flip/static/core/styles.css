@@ -1106,6 +1106,113 @@ body {
   margin-top: var(--space-2);
 }
 
+/* Editable sidebar card wrapper */
+.sidebar-card-wrapper {
+  position: relative;
+}
+
+.sidebar-card-wrapper .sidebar-card__edit {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-gray-100);
+  color: var(--color-gray-500);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  z-index: 1;
+}
+
+.sidebar-card-wrapper:hover .sidebar-card__edit {
+  opacity: 1;
+}
+
+.sidebar-card-wrapper .sidebar-card__edit:hover {
+  background: var(--color-gray-200);
+  color: var(--color-gray-700);
+}
+
+.sidebar-card-wrapper .sidebar-card__edit:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+/* Sidebar card edit dropdown */
+.sidebar-card-edit-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: var(--space-1);
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 10;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.sidebar-card-edit-dropdown__search {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.sidebar-card-edit-dropdown__search input {
+  width: 100%;
+}
+
+.sidebar-card-edit-dropdown__group {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--color-gray-500);
+  background: var(--color-gray-50);
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.sidebar-card-edit-dropdown__item {
+  display: block;
+  width: 100%;
+  padding: var(--space-2);
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--color-gray-700);
+}
+
+.sidebar-card-edit-dropdown__item:hover {
+  background: var(--color-gray-100);
+}
+
+.sidebar-card-edit-dropdown__item--selected {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.sidebar-card-edit-dropdown__item--none {
+  color: var(--color-gray-500);
+  font-style: italic;
+}
+
+.sidebar-card-edit-dropdown__meta {
+  font-size: var(--text-xs);
+  color: var(--color-gray-500);
+  margin-top: 2px;
+}
+
 /* --- Timeline --- */
 .timeline {
   position: relative;
