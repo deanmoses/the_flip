@@ -12,6 +12,7 @@ from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import (
     Case,
     CharField,
@@ -23,7 +24,6 @@ from django.db.models import (
     Value,
     When,
 )
-from django.db import transaction
 from django.db.models.functions import Lower
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect

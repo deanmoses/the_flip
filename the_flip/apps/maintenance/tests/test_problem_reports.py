@@ -1111,9 +1111,7 @@ class ProblemReportAutocompleteViewTests(SuppressRequestLogsMixin, TestDataMixin
     def test_current_machine_appears_first(self):
         """When current_machine is specified, that machine's group appears first."""
         self.client.force_login(self.staff_user)
-        response = self.client.get(
-            self.api_url, {"current_machine": self.other_machine.slug}
-        )
+        response = self.client.get(self.api_url, {"current_machine": self.other_machine.slug})
 
         data = response.json()
         # Current machine group appears first with "(current)" suffix

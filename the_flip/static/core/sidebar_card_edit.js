@@ -4,7 +4,7 @@
  * Provides editable dropdowns for sidebar cards (machine selection, problem report selection).
  * Uses data attributes for configuration, auto-initializes on DOMContentLoaded.
  *
- * Requires: dropdown_keyboard.js (for keyboard navigation)
+ * Requires: dropdown_keyboard.js, searchable_dropdown.js
  *
  * Usage:
  *   <div data-sidebar-machine-edit
@@ -20,145 +20,87 @@
  */
 
 // ============================================================
+// Shared Utilities
+// ============================================================
+
+/**
+ * POST a form action to the current page and reload on success.
+ */
+async function postAction(action, valueKey, value, csrfToken) {
+  const formData = new FormData();
+  formData.append("action", action);
+  formData.append(valueKey, value);
+  formData.append("csrfmiddlewaretoken", csrfToken);
+
+  const response = await fetch(window.location.href, {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await response.json();
+  if (data.success && data.status !== "noop") {
+    window.location.reload();
+  } else if (!data.success) {
+    throw new Error(data.error || "Operation failed");
+  }
+}
+
+/**
+ * Filter items by query against multiple fields.
+ */
+function filterByQuery(items, query, getSearchableText) {
+  if (!query) return items;
+  const q = query.toLowerCase().trim();
+  return items.filter((item) => getSearchableText(item).toLowerCase().includes(q));
+}
+
+// ============================================================
 // Machine Dropdown
 // ============================================================
 
 function initSidebarMachineEdit(wrapper) {
-  const editBtn = wrapper.querySelector("[data-edit-btn]");
-  const dropdown = wrapper.querySelector("[data-dropdown]");
-  const searchInput = wrapper.querySelector("[data-search]");
-  const listContainer = wrapper.querySelector("[data-list]");
-
   const apiUrl = wrapper.dataset.apiUrl;
   const currentSlug = wrapper.dataset.currentSlug;
   const csrfToken = wrapper.dataset.csrfToken;
 
-  if (!editBtn || !dropdown || !searchInput || !listContainer || !apiUrl) return;
+  if (!apiUrl) return;
 
-  let machines = [];
+  createSearchableDropdown({
+    wrapper,
 
-  // Keyboard navigation
-  const keyboardNav = attachDropdownKeyboard({
-    searchInput,
-    listContainer,
-    getSelectableItems: () => listContainer.querySelectorAll("[data-value]"),
-    onSelect: (item) => select(item.dataset.value),
-    onEscape: hide,
-  });
-
-  function hide() {
-    dropdown.classList.add("hidden");
-  }
-
-  function show() {
-    dropdown.classList.remove("hidden");
-    searchInput.value = "";
-    searchInput.focus();
-    if (!machines.length) {
-      load();
-    } else {
-      render("");
-    }
-  }
-
-  async function load() {
-    try {
+    loadData: async () => {
       const response = await fetch(apiUrl);
-      const data = await response.json();
-      machines = data.machines || [];
-      render("");
-    } catch (error) {
-      console.error("Failed to load machines:", error);
-    }
-  }
+      const json = await response.json();
+      return json.machines || [];
+    },
 
-  function render(query) {
-    const q = query.toLowerCase().trim();
-    const filtered = q
-      ? machines.filter(
-          (m) =>
-            m.display_name.toLowerCase().includes(q) ||
-            m.location.toLowerCase().includes(q) ||
-            m.slug.toLowerCase().includes(q)
-        )
-      : machines;
+    renderItems: (machines, query) => {
+      const filtered = filterByQuery(machines, query, (m) =>
+        [m.display_name, m.location, m.slug].join(" ")
+      );
 
-    if (!filtered.length) {
-      listContainer.innerHTML =
-        '<div class="sidebar-card-edit-dropdown__item sidebar-card-edit-dropdown__item--none">No machines found</div>';
-      keyboardNav.reset();
-      return;
-    }
-
-    listContainer.innerHTML = filtered
-      .map(
-        (m) => `
-      <button type="button"
-              class="sidebar-card-edit-dropdown__item${m.slug === currentSlug ? " sidebar-card-edit-dropdown__item--selected" : ""}"
-              data-value="${m.slug}">
-        <div>${m.display_name}</div>
-        ${m.location ? `<div class="sidebar-card-edit-dropdown__meta">${m.location}</div>` : ""}
-      </button>
-    `
-      )
-      .join("");
-
-    listContainer.querySelectorAll("[data-value]").forEach((item) => {
-      item.addEventListener("click", () => select(item.dataset.value));
-    });
-
-    keyboardNav.reset();
-  }
-
-  async function select(slug) {
-    if (slug === currentSlug) {
-      hide();
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("action", "update_machine");
-    formData.append("machine_slug", slug);
-    formData.append("csrfmiddlewaretoken", csrfToken);
-
-    try {
-      const response = await fetch(window.location.href, {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-      if (data.success && data.status !== "noop") {
-        window.location.reload();
-      } else if (!data.success) {
-        alert(data.error || "Failed to update machine");
+      if (!filtered.length) {
+        return '<div class="sidebar-card-edit-dropdown__item sidebar-card-edit-dropdown__item--none">No machines found</div>';
       }
-      hide();
-    } catch (error) {
-      console.error("Failed to update machine:", error);
-      alert("Failed to update machine");
-    }
-  }
 
-  // Event listeners
-  editBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (dropdown.classList.contains("hidden")) {
-      show();
-    } else {
-      hide();
-    }
-  });
+      return filtered
+        .map(
+          (m) => `
+        <button type="button"
+                class="sidebar-card-edit-dropdown__item${m.slug === currentSlug ? " sidebar-card-edit-dropdown__item--selected" : ""}"
+                data-value="${m.slug}">
+          <div>${m.display_name}</div>
+          ${m.location ? `<div class="sidebar-card-edit-dropdown__meta">${m.location}</div>` : ""}
+        </button>
+      `
+        )
+        .join("");
+    },
 
-  searchInput.addEventListener("input", (e) => {
-    render(e.target.value);
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!wrapper.contains(e.target)) {
-      hide();
-    }
+    onSelect: async (slug) => {
+      if (slug === currentSlug) return;
+      await postAction("update_machine", "machine_slug", slug, csrfToken);
+    },
   });
 }
 
@@ -167,11 +109,6 @@ function initSidebarMachineEdit(wrapper) {
 // ============================================================
 
 function initSidebarProblemEdit(wrapper) {
-  const editBtn = wrapper.querySelector("[data-edit-btn]");
-  const dropdown = wrapper.querySelector("[data-dropdown]");
-  const searchInput = wrapper.querySelector("[data-search]");
-  const listContainer = wrapper.querySelector("[data-list]");
-
   const apiUrl = wrapper.dataset.apiUrl;
   const currentId =
     wrapper.dataset.currentId === "null"
@@ -180,142 +117,66 @@ function initSidebarProblemEdit(wrapper) {
   const currentMachineSlug = wrapper.dataset.currentMachineSlug;
   const csrfToken = wrapper.dataset.csrfToken;
 
-  if (!editBtn || !dropdown || !searchInput || !listContainer || !apiUrl) return;
+  if (!apiUrl) return;
 
-  let groups = [];
+  createSearchableDropdown({
+    wrapper,
 
-  // Keyboard navigation
-  const keyboardNav = attachDropdownKeyboard({
-    searchInput,
-    listContainer,
-    getSelectableItems: () => listContainer.querySelectorAll("[data-value]"),
-    onSelect: (item) => select(item.dataset.value),
-    onEscape: hide,
-  });
-
-  function hide() {
-    dropdown.classList.add("hidden");
-  }
-
-  function show() {
-    dropdown.classList.remove("hidden");
-    searchInput.value = "";
-    searchInput.focus();
-    if (!groups.length) {
-      load();
-    } else {
-      render("");
-    }
-  }
-
-  async function load() {
-    try {
+    loadData: async () => {
       const url = new URL(apiUrl, window.location.origin);
       if (currentMachineSlug) {
         url.searchParams.set("current_machine", currentMachineSlug);
       }
       const response = await fetch(url);
-      const data = await response.json();
-      groups = data.groups || [];
-      render("");
-    } catch (error) {
-      console.error("Failed to load problem reports:", error);
-    }
-  }
+      const json = await response.json();
+      return json.groups || [];
+    },
 
-  function render(query) {
-    const q = query.toLowerCase().trim();
-    let html = "";
+    renderItems: (groups, query) => {
+      let html = "";
 
-    // Always show "None" option first
-    html += `
-      <button type="button"
-              class="sidebar-card-edit-dropdown__item sidebar-card-edit-dropdown__item--none${currentId === null ? " sidebar-card-edit-dropdown__item--selected" : ""}"
-              data-value="none">
-        None (unlink from problem)
-      </button>
-    `;
+      // Always show "None" option first
+      html += `
+        <button type="button"
+                class="sidebar-card-edit-dropdown__item sidebar-card-edit-dropdown__item--none${currentId === null ? " sidebar-card-edit-dropdown__item--selected" : ""}"
+                data-value="none">
+          None (unlink from problem)
+        </button>
+      `;
 
-    // Filter and render groups
-    for (const group of groups) {
-      const filteredReports = q
-        ? group.reports.filter(
-            (r) =>
-              r.summary.toLowerCase().includes(q) ||
-              r.machine_name.toLowerCase().includes(q) ||
-              String(r.id).includes(q)
-          )
-        : group.reports;
+      // Filter and render groups
+      for (const group of groups) {
+        const filteredReports = filterByQuery(group.reports, query, (r) =>
+          [r.summary, r.machine_name, String(r.id)].join(" ")
+        );
 
-      if (filteredReports.length === 0) continue;
+        if (filteredReports.length === 0) continue;
 
-      html += `<div class="sidebar-card-edit-dropdown__group">${group.machine_name}</div>`;
+        html += `<div class="sidebar-card-edit-dropdown__group">${group.machine_name}</div>`;
 
-      for (const report of filteredReports) {
-        const isSelected = report.id === currentId;
-        html += `
-          <button type="button"
-                  class="sidebar-card-edit-dropdown__item${isSelected ? " sidebar-card-edit-dropdown__item--selected" : ""}"
-                  data-value="${report.id}">
-            <div>#${report.id}: ${report.summary}</div>
-          </button>
-        `;
+        for (const report of filteredReports) {
+          const isSelected = report.id === currentId;
+          html += `
+            <button type="button"
+                    class="sidebar-card-edit-dropdown__item${isSelected ? " sidebar-card-edit-dropdown__item--selected" : ""}"
+                    data-value="${report.id}">
+              <div>#${report.id}: ${report.summary}</div>
+            </button>
+          `;
+        }
       }
-    }
 
-    listContainer.innerHTML = html;
+      return html;
+    },
 
-    listContainer.querySelectorAll("[data-value]").forEach((item) => {
-      item.addEventListener("click", () => select(item.dataset.value));
-    });
-
-    keyboardNav.reset();
-  }
-
-  async function select(idOrNone) {
-    const formData = new FormData();
-    formData.append("action", "update_problem_report");
-    formData.append("problem_report_id", idOrNone);
-    formData.append("csrfmiddlewaretoken", csrfToken);
-
-    try {
-      const response = await fetch(window.location.href, {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-      if (data.success && data.status !== "noop") {
-        window.location.reload();
-      } else if (!data.success) {
-        alert(data.error || "Failed to update problem report");
-      }
-      hide();
-    } catch (error) {
-      console.error("Failed to update problem report:", error);
-      alert("Failed to update problem report");
-    }
-  }
-
-  // Event listeners
-  editBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (dropdown.classList.contains("hidden")) {
-      show();
-    } else {
-      hide();
-    }
-  });
-
-  searchInput.addEventListener("input", (e) => {
-    render(e.target.value);
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!wrapper.contains(e.target)) {
-      hide();
-    }
+    onSelect: async (idOrNone) => {
+      await postAction(
+        "update_problem_report",
+        "problem_report_id",
+        idOrNone,
+        csrfToken
+      );
+    },
   });
 }
 

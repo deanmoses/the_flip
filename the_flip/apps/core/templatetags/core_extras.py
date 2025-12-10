@@ -393,7 +393,9 @@ def editable_sidebar_card(
         current_id = current_value if current_value else "null"
         data_attr = "data-sidebar-problem-edit"
         api_url = reverse("api-problem-report-autocomplete")
-        value_attrs = f'data-current-id="{current_id}" data-current-machine-slug="{current_machine_slug}"'
+        value_attrs = (
+            f'data-current-id="{current_id}" data-current-machine-slug="{current_machine_slug}"'
+        )
         # Use different default label based on whether linked to a problem report
         if not label:
             label = "Change problem report" if current_value else "Link to problem report"
