@@ -14,10 +14,12 @@ Usage:
 
 from __future__ import annotations
 
+import shutil
+import tempfile
 from typing import TYPE_CHECKING, cast
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import MachineInstance, MachineModel
@@ -414,6 +416,23 @@ class AccessControlTestCase(SuppressRequestLogsMixin, TestCase):
     """
 
     pass
+
+
+class TemporaryMediaMixin:
+    """Mixin to isolate MEDIA_ROOT per test class and clean up files."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls._temp_media_dir = tempfile.mkdtemp()
+        cls._override_media_root = override_settings(MEDIA_ROOT=cls._temp_media_dir)
+        cls._override_media_root.enable()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._override_media_root.disable()
+        shutil.rmtree(cls._temp_media_dir, ignore_errors=True)
+        super().tearDownClass()
 
 
 class TestDataMixin:
