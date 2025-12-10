@@ -575,6 +575,8 @@ class ProblemReportDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, 
             if new_machine.pk == self.report.machine_id:
                 return JsonResponse({"success": True, "status": "noop"})
 
+            old_machine = self.report.machine
+
             with transaction.atomic():
                 self.report.machine = new_machine
                 self.report.save(update_fields=["machine", "updated_at"])
@@ -582,6 +584,37 @@ class ProblemReportDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, 
                 # Move all child log entries to the new machine
                 child_log_count = LogEntry.objects.filter(problem_report=self.report).update(
                     machine=new_machine
+                )
+
+            # Build message with hyperlinked machine names
+            old_machine_link = format_html(
+                '<a href="{}">{}</a>',
+                reverse("maintainer-machine-detail", kwargs={"slug": old_machine.slug}),
+                old_machine.display_name,
+            )
+            new_machine_link = format_html(
+                '<a href="{}">{}</a>',
+                reverse("maintainer-machine-detail", kwargs={"slug": new_machine.slug}),
+                new_machine.display_name,
+            )
+            if child_log_count:
+                messages.success(
+                    request,
+                    format_html(
+                        "Problem report moved from {} to {}. Its {} log entries also moved.",
+                        old_machine_link,
+                        new_machine_link,
+                        child_log_count,
+                    ),
+                )
+            else:
+                messages.success(
+                    request,
+                    format_html(
+                        "Problem report moved from {} to {}.",
+                        old_machine_link,
+                        new_machine_link,
+                    ),
                 )
 
             return JsonResponse(
@@ -1079,8 +1112,22 @@ class LogEntryDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, Detai
                 # Unlink from problem report (become orphan), keep current machine
                 if self.object.problem_report_id is None:
                     return JsonResponse({"success": True, "status": "noop"})
+
+                old_report = self.object.problem_report
                 self.object.problem_report = None
                 self.object.save(update_fields=["problem_report", "updated_at"])
+
+                # Message: "Log entry unlinked from problem report #{id}."
+                old_report_link = format_html(
+                    '<a href="{}">#{}</a>',
+                    reverse("problem-report-detail", kwargs={"pk": old_report.pk}),
+                    old_report.pk,
+                )
+                messages.success(
+                    request,
+                    format_html("Log entry unlinked from problem report {}.", old_report_link),
+                )
+
                 return JsonResponse(
                     {
                         "success": True,
@@ -1100,10 +1147,74 @@ class LogEntryDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, Detai
             if new_report.pk == self.object.problem_report_id:
                 return JsonResponse({"success": True, "status": "noop"})
 
+            # Capture old state before updating
+            old_report = self.object.problem_report
+            old_machine = self.object.machine
+
             # Update problem report and machine
             self.object.problem_report = new_report
             self.object.machine = new_report.machine
             self.object.save(update_fields=["problem_report", "machine", "updated_at"])
+
+            # Build message based on what changed
+            new_report_link = format_html(
+                '<a href="{}">#{}</a>',
+                reverse("problem-report-detail", kwargs={"pk": new_report.pk}),
+                new_report.pk,
+            )
+            new_machine_link = format_html(
+                '<a href="{}">{}</a>',
+                reverse("maintainer-machine-detail", kwargs={"slug": new_report.machine.slug}),
+                new_report.machine.display_name,
+            )
+
+            if old_report is None:
+                # Was orphan, now linked: "Log entry linked to problem #{id} on {machine}."
+                messages.success(
+                    request,
+                    format_html(
+                        "Log entry linked to problem {} on {}.",
+                        new_report_link,
+                        new_machine_link,
+                    ),
+                )
+            elif old_machine.pk == new_report.machine.pk:
+                # Same machine, different PR: "Log entry moved from problem #{old} to problem #{new}."
+                old_report_link = format_html(
+                    '<a href="{}">#{}</a>',
+                    reverse("problem-report-detail", kwargs={"pk": old_report.pk}),
+                    old_report.pk,
+                )
+                messages.success(
+                    request,
+                    format_html(
+                        "Log entry moved from problem {} to problem {}.",
+                        old_report_link,
+                        new_report_link,
+                    ),
+                )
+            else:
+                # Different machine and PR
+                old_report_link = format_html(
+                    '<a href="{}">#{}</a>',
+                    reverse("problem-report-detail", kwargs={"pk": old_report.pk}),
+                    old_report.pk,
+                )
+                old_machine_link = format_html(
+                    '<a href="{}">{}</a>',
+                    reverse("maintainer-machine-detail", kwargs={"slug": old_machine.slug}),
+                    old_machine.display_name,
+                )
+                messages.success(
+                    request,
+                    format_html(
+                        "Log entry moved from problem {} on {} to problem {} on {}.",
+                        old_report_link,
+                        old_machine_link,
+                        new_report_link,
+                        new_machine_link,
+                    ),
+                )
 
             return JsonResponse(
                 {
@@ -1138,8 +1249,29 @@ class LogEntryDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, Detai
             if new_machine.pk == self.object.machine_id:
                 return JsonResponse({"success": True, "status": "noop"})
 
+            old_machine = self.object.machine
             self.object.machine = new_machine
             self.object.save(update_fields=["machine", "updated_at"])
+
+            # Build message with hyperlinked machine names
+            old_machine_link = format_html(
+                '<a href="{}">{}</a>',
+                reverse("maintainer-machine-detail", kwargs={"slug": old_machine.slug}),
+                old_machine.display_name,
+            )
+            new_machine_link = format_html(
+                '<a href="{}">{}</a>',
+                reverse("maintainer-machine-detail", kwargs={"slug": new_machine.slug}),
+                new_machine.display_name,
+            )
+            messages.success(
+                request,
+                format_html(
+                    "Log entry moved from {} to {}.",
+                    old_machine_link,
+                    new_machine_link,
+                ),
+            )
 
             return JsonResponse(
                 {
