@@ -372,6 +372,23 @@ def form_non_field_errors(form):
     return {"form": form}
 
 
+@register.inclusion_tag("components/field_errors.html")
+def field_errors(field):
+    """Render errors for a single form field.
+
+    Only outputs content if there are errors. Renders each error
+    in a paragraph with consistent styling.
+
+    Usage:
+        {% field_errors form.username %}
+        {% field_errors field %}
+
+    Args:
+        field: A Django form field (BoundField)
+    """
+    return {"field": field}
+
+
 # -----------------------------------------------------------------------------
 # Sidebar template tags
 # -----------------------------------------------------------------------------

@@ -39,31 +39,31 @@
           {{ form.model.label_tag }}
           {{ form.model }}
           {% if form.model.help_text %}<small class="help-text">{{ form.model.help_text }}</small>{% endif %}
-          {% for error in form.model.errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
+          {% field_errors form.model %}
         </div>
         <div class="form-field hidden" id="field-model-name">
           {{ form.model_name.label_tag }}
           {{ form.model_name }}
           {% if form.model_name.help_text %}<small class="help-text">{{ form.model_name.help_text }}</small>{% endif %}
-          {% for error in form.model_name.errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
+          {% field_errors form.model_name %}
         </div>
         <div class="form-field hidden" id="field-manufacturer">
           {{ form.manufacturer.label_tag }}
           {{ form.manufacturer }}
           {% if form.manufacturer.help_text %}<small class="help-text">{{ form.manufacturer.help_text }}</small>{% endif %}
-          {% for error in form.manufacturer.errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
+          {% field_errors form.manufacturer %}
         </div>
         <div class="form-field hidden" id="field-year">
           {{ form.year.label_tag }}
           {{ form.year }}
           {% if form.year.help_text %}<small class="help-text">{{ form.year.help_text }}</small>{% endif %}
-          {% for error in form.year.errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
+          {% field_errors form.year %}
         </div>
         <div class="form-field hidden" id="field-name-override">
           {{ form.name_override.label_tag }}
           {{ form.name_override }}
           {% if form.name_override.help_text %}<small class="help-text">{{ form.name_override.help_text }}</small>{% endif %}
-          {% for error in form.name_override.errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
+          {% field_errors form.name_override %}
         </div>
       </fieldset>
       <div class="form-actions">
