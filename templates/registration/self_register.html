@@ -21,7 +21,7 @@
       {% form_non_field_errors form %}
       <!-- Username section -->
       <div class="form-field">
-        <label for="id_username" class="form-label">Username</label>
+        {{ form.username.label_tag }}
         <div class="input-with-button">
           <input type="text"
                  name="username"
@@ -49,7 +49,7 @@
                autocomplete="username"
                id="id_username_hidden">
         <div class="form-field">
-          <label for="id_first_name" class="form-label">First name</label>
+          {{ form.first_name.label_tag }}
           <input type="text"
                  name="first_name"
                  id="id_first_name"
@@ -59,7 +59,7 @@
           {% field_errors form.first_name %}
         </div>
         <div class="form-field">
-          <label for="id_last_name" class="form-label">Last name</label>
+          {{ form.last_name.label_tag }}
           <input type="text"
                  name="last_name"
                  id="id_last_name"
@@ -69,9 +69,7 @@
           {% field_errors form.last_name %}
         </div>
         <div class="form-field">
-          <label for="id_email" class="form-label">
-            Email <span class="text-muted">(optional)</span>
-          </label>
+          {{ form.email.label_tag }}
           <input type="email"
                  name="email"
                  id="id_email"
@@ -81,16 +79,16 @@
           {% field_errors form.email %}
         </div>
         <div class="form-field">
-          <label for="id_password" class="form-label">Password</label>
-          <input type="text"
+          {{ form.password.label_tag }}
+          <input type="password"
                  name="password"
                  id="id_password"
                  class="form-input"
                  required
                  autocomplete="new-password">
           <label class="checkbox-label space-above-sm">
-            <input type="checkbox" id="hide-password" class="checkbox">
-            <span>Hide password</span>
+            <input type="checkbox" id="show-password" class="checkbox">
+            <span>Show password</span>
           </label>
           {% field_errors form.password %}
         </div>
@@ -111,7 +109,7 @@
       const registeringAs = document.getElementById('registering-as');
       const datalist = document.getElementById('username-suggestions');
       const passwordInput = document.getElementById('id_password');
-      const hidePasswordCheckbox = document.getElementById('hide-password');
+      const showPasswordCheckbox = document.getElementById('show-password');
 
       let debounceTimer;
 
@@ -182,8 +180,8 @@
       });
 
       // Toggle password visibility
-      hidePasswordCheckbox.addEventListener('change', function() {
-        passwordInput.type = this.checked ? 'password' : 'text';
+      showPasswordCheckbox.addEventListener('change', function() {
+        passwordInput.type = this.checked ? 'text' : 'password';
       });
 
       // If form has errors, show profile section
