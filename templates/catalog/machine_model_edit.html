@@ -10,7 +10,6 @@
   <span>Model</span>
 {% endblock %}
 {% block sidebar %}
-  {% sidebar %}
   {% include "components/history_link.html" with history_url=object.get_admin_history_url %}
   {% sidebar_section label="Edit Model" %}
   <div class="sidebar__title">{{ object.name }}</div>
@@ -26,7 +25,6 @@
   </ul>
 {% endsidebar_section %}
 {% endif %}
-{% endsidebar %}
 {% endblock %}
 {% block main %}
   <div class="card card--padded">

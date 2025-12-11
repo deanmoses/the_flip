@@ -9,7 +9,6 @@
   </a>
 {% endblock %}
 {% block sidebar %}
-  {% sidebar %}
   {% sidebar_section label="Shared Terminal Accounts" %}
   <p class="text-muted text-sm">These user accounts are for shared machines, like in the workshop or floor.</p>
   <p class="text-muted text-sm">
@@ -22,7 +21,6 @@
   Add Terminal
 </a>
 {% endsidebar_section %}
-{% endsidebar %}
 {% endblock %}
 {% block main %}
   {% if terminals %}

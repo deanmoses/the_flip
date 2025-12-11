@@ -413,22 +413,6 @@ def field_help_text(field):
 
 
 @register.simple_block_tag
-def sidebar(content):
-    """Wrap content in a sticky sidebar card.
-
-    Usage:
-        {% sidebar %}
-          {% sidebar_section title="Stats" %}...{% endsidebar_section %}
-          {% sidebar_section title="Actions" %}...{% endsidebar_section %}
-        {% endsidebar %}
-    """
-    return format_html(
-        '<div class="card card--padded sidebar--sticky">\n{}</div>',
-        content,
-    )
-
-
-@register.simple_block_tag
 def sidebar_section(content, label=""):
     """Wrap content in a sidebar section with optional label.
 

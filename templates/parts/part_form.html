@@ -18,7 +18,6 @@
   {% endif %}
 {% endblock %}
 {% block sidebar %}
-  {% sidebar %}
   {% sidebar_section label="Parts Request" %}
   <p class="text-muted text-sm">
     {% if is_edit %}
@@ -34,7 +33,6 @@
      class="sidebar__title sidebar__link">{{ machine.display_name }}</a>
 {% endsidebar_section %}
 {% endif %}
-{% endsidebar %}
 {% endblock %}
 {% block main %}
   <div class="card card--padded">

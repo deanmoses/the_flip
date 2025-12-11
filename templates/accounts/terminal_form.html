@@ -40,7 +40,6 @@
   {% endif %}
 {% endblock %}
 {% block sidebar %}
-  {% sidebar %}
   {% sidebar_section label="Shared Terminal" %}
   {% if not is_create %}
     <div class="sidebar__title">{{ terminal.user|display_name_with_username }}</div>
@@ -69,7 +68,6 @@
   {% endif %}
 {% endsidebar_section %}
 {% endif %}
-{% endsidebar %}
 {% endblock %}
 {% block main %}
   <div class="card card--padded">

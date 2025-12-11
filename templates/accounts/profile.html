@@ -10,7 +10,6 @@
   </a>
 {% endblock %}
 {% block sidebar %}
-  {% sidebar %}
   {% sidebar_section label="Profile" %}
   <div class="sidebar__title">{{ user|display_name_with_username }}</div>
 {% endsidebar_section %}
@@ -21,7 +20,6 @@
   Change Password
 </a>
 {% endsidebar_section %}
-{% endsidebar %}
 {% endblock %}
 {% block main %}
   <div class="card card--padded">

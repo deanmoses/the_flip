@@ -100,9 +100,8 @@ Load with `{% load core_extras %}`, then use:
 
 | Component | Type | Usage |
 |-----------|------|-------|
-| `two_column_layout` | Template | `{% extends "layouts/two_column.html" %}` with blocks: `mobile_actions`, `sidebar`, `main` |
-| `sidebar` | Block tag | `{% sidebar %}...{% endsidebar %}` - Sticky sidebar card wrapper |
-| `sidebar_section` | Block tag | `{% sidebar_section title="Stats" %}...{% endsidebar_section %}` - Section within sidebar |
+| `two_column_layout` | Template | `{% extends "layouts/two_column.html" %}` with blocks: `mobile_actions`, `sidebar`, `main`. Sidebar block is auto-wrapped in sticky card. |
+| `sidebar_section` | Block tag | `{% sidebar_section label="Stats" %}...{% endsidebar_section %}` - Section within sidebar |
 | `button` | Inclusion tag | `{% button url="/path" label="Click" icon="plus" variant="log" full_width=True %}` |
 | `stat_grid` | Inclusion tag | `{% stat_grid stats=stats_list %}` where stats is list of `{value, label, variant}` dicts |
 | `timeline` | Block tag | `{% timeline %}...{% endtimeline %}` - Timeline container with vertical line |
