@@ -61,7 +61,6 @@ class InvitationRegistrationViewTests(AccessControlTestCase):
             "last_name": "Maintainer",
             "email": "newuser@example.com",
             "password": "SecurePass123!",
-            "password_confirm": "SecurePass123!",
         }
         response = self.client.post(self.register_url, data, follow=True)
 
@@ -92,26 +91,11 @@ class InvitationRegistrationViewTests(AccessControlTestCase):
             "username": "newmaintainer",
             "email": "different@example.com",
             "password": "SecurePass123!",
-            "password_confirm": "SecurePass123!",
         }
         self.client.post(self.register_url, data, follow=True)
 
         user = User.objects.get(username="newmaintainer")
         self.assertEqual(user.email, "different@example.com")
-
-    def test_registration_validates_password_match(self):
-        """Registration should fail if passwords don't match."""
-        data = {
-            "username": "newmaintainer",
-            "email": "newuser@example.com",
-            "password": "SecurePass123!",
-            "password_confirm": "DifferentPass123!",
-        }
-        response = self.client.post(self.register_url, data)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Passwords do not match")
-        self.assertFalse(User.objects.filter(username="newmaintainer").exists())
 
     def test_registration_validates_username_uniqueness(self):
         """Registration should fail if username is taken."""
@@ -121,7 +105,6 @@ class InvitationRegistrationViewTests(AccessControlTestCase):
             "username": "existinguser",
             "email": "newuser@example.com",
             "password": "SecurePass123!",
-            "password_confirm": "SecurePass123!",
         }
         response = self.client.post(self.register_url, data)
 
@@ -136,7 +119,6 @@ class InvitationRegistrationViewTests(AccessControlTestCase):
             "username": "newmaintainer",
             "email": "newuser@example.com",
             "password": "SecurePass123!",
-            "password_confirm": "SecurePass123!",
         }
         response = self.client.post(self.register_url, data)
 
@@ -149,7 +131,6 @@ class InvitationRegistrationViewTests(AccessControlTestCase):
             "username": "newmaintainer",
             "email": "newuser@example.com",
             "password": "123",  # Too short and common
-            "password_confirm": "123",
         }
         response = self.client.post(self.register_url, data)
 

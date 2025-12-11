@@ -61,20 +61,22 @@
                required
                autocomplete="new-password">
         {% field_errors form.password %}
-      </div>
-      <div class="form-field">
-        <label for="id_password_confirm" class="form-label">Confirm password</label>
-        <input type="password"
-               name="password_confirm"
-               id="id_password_confirm"
-               class="form-input"
-               required
-               autocomplete="new-password">
-        {% field_errors form.password_confirm %}
+        <label class="checkbox-label">
+          <input type="checkbox" id="show-password" class="checkbox">
+          Show password
+        </label>
       </div>
       <div class="form-actions">
         <button type="submit" class="btn btn--primary btn--full">Create Account</button>
       </div>
     </form>
   </div>
+{% endblock %}
+{% block extra_scripts %}
+  <script>
+    document.getElementById('show-password').addEventListener('change', function() {
+      const passwordInput = document.getElementById('id_password');
+      passwordInput.type = this.checked ? 'text' : 'password';
+    });
+  </script>
 {% endblock %}

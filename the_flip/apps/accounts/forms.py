@@ -25,7 +25,6 @@ class InvitationRegistrationForm(StyledFormMixin, forms.Form):
     last_name = forms.CharField(max_length=150, required=False)
     email = forms.EmailField(help_text="You can change this from the invitation email if needed.")
     password = forms.CharField(widget=forms.PasswordInput)
-    password_confirm = forms.CharField(widget=forms.PasswordInput, label="Confirm password")
 
     def clean_username(self):
         username = self.cleaned_data["username"]
@@ -44,14 +43,6 @@ class InvitationRegistrationForm(StyledFormMixin, forms.Form):
         if password:
             validate_password(password)
         return password
-
-    def clean(self):
-        cleaned_data = super().clean()
-        password = cleaned_data.get("password")
-        password_confirm = cleaned_data.get("password_confirm")
-        if password and password_confirm and password != password_confirm:
-            self.add_error("password_confirm", "Passwords do not match.")
-        return cleaned_data
 
 
 class ProfileForm(StyledFormMixin, forms.ModelForm):
