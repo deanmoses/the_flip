@@ -1,143 +1,126 @@
-{% extends "base.html" %}
+{% extends "layouts/two_column.html" %}
 {% load static core_extras %}
 {% block title %}Problem Report #{{ report.pk }} · {{ block.super }}{% endblock %}
-{% block content %}
-  <!-- BREADCRUMBS -->
-  <nav class="breadcrumbs breadcrumbs--responsive">
-    <a href="{% url 'maintainer-machine-list' %}">Machines</a>
-    <a href="{% url 'maintainer-machine-detail' machine.slug %}">{{ machine.display_name }}</a>
-    <a href="{% url 'machine-problem-reports' machine.slug %}">Problems</a>
-    <span><i class="fa-solid fa-bug"></i> #{{ report.pk }}</span>
-  </nav>
-  <!-- TWO COLUMN LAYOUT -->
-  <div class="two-column">
-    <!-- MOBILE ACTIONS -->
-    <div class="mobile-actions">
+{% block breadcrumbs %}
+  <a href="{% url 'maintainer-machine-list' %}">Machines</a>
+  <a href="{% url 'maintainer-machine-detail' machine.slug %}">{{ machine.display_name }}</a>
+  <a href="{% url 'machine-problem-reports' machine.slug %}">Problems</a>
+  <span><i class="fa-solid fa-bug"></i> #{{ report.pk }}</span>
+{% endblock %}
+{% block mobile_actions %}
+  {% if report.status == report.STATUS_OPEN %}
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn--log btn--full">
+        <i class="fa-solid fa-check meta"></i>
+        Close Problem
+      </button>
+    </form>
+  {% else %}
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn--report btn--full">
+        <i class="fa-solid fa-rotate-left meta"></i>
+        Re-Open Problem
+      </button>
+    </form>
+  {% endif %}
+{% endblock %}
+{% block sidebar %}
+  {% include "components/history_link.html" with history_url=report.get_admin_history_url %}
+  {% sidebar_section label="Problem Report" %}
+  <div class="sidebar__title">
+    <i class="fa-solid fa-bug"></i> #{{ report.pk }}
+  </div>
+  <div class="flex flex-wrap stack-tight space-above-sm">
+    <span class="pill {% if report.status == report.STATUS_OPEN %}pill--status-broken{% else %}pill--status-good{% endif %}">
       {% if report.status == report.STATUS_OPEN %}
-        <form method="post">
-          {% csrf_token %}
-          <button type="submit" class="btn btn--log btn--full">
-            <i class="fa-solid fa-check meta"></i>
-            Close Problem
-          </button>
-        </form>
+        <i class="fa-solid fa-circle-exclamation meta"></i>
       {% else %}
-        <form method="post">
-          {% csrf_token %}
-          <button type="submit" class="btn btn--report btn--full">
-            <i class="fa-solid fa-rotate-left meta"></i>
-            Re-Open Problem
-          </button>
-        </form>
+        <i class="fa-solid fa-check meta"></i>
+      {% endif %}
+      {{ report.get_status_display }}
+    </span>
+    {% if report.problem_type != report.PROBLEM_OTHER %}
+      <span class="pill pill--neutral">{{ report.get_problem_type_display }}</span>
+    {% endif %}
+  </div>
+  {% if report.reporter_display %}
+    <p class="text-muted text-sm space-above-sm">{{ report.created_at|smart_date }} by {{ report.reporter_display }}</p>
+  {% else %}
+    <p class="text-muted text-sm space-above-sm">{{ report.created_at|smart_date }}</p>
+  {% endif %}
+{% endsidebar_section %}
+{% sidebar_section label="Machine" %}
+{% include "components/machine_sidebar_card.html" with editable=True %}
+{% endsidebar_section %}
+{% sidebar_section %}
+{% if report.status == report.STATUS_OPEN %}
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn--log btn--full">
+      <i class="fa-solid fa-check meta"></i>
+      Close Problem
+    </button>
+  </form>
+{% else %}
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn--report btn--full">
+      <i class="fa-solid fa-rotate-left meta"></i>
+      Re-Open Problem
+    </button>
+  </form>
+{% endif %}
+{% endsidebar_section %}
+{% endblock %}
+{% block main %}
+  <!-- DESCRIPTION CARD -->
+  {% include "core/partials/text_card_editable.html" with content=report.description %}
+  <!-- MEDIA CARD -->
+  {% include "core/partials/media_card_editable.html" with media_items=report.media.all alt="Problem report photo" %}
+  <!-- LOG ENTRIES SECTION -->
+  <div class="space-above-lg">
+    <div class="section-header">
+      <h3 class="section-header__title">Log Entries</h3>
+      <a href="{% url 'log-create-problem-report' report.pk %}"
+         class="btn btn--log btn--sm">
+        <i class="fa-solid fa-plus meta"></i>
+        Add Log
+      </a>
+    </div>
+    <div class="space-above-sm">
+      <form method="get" action="">
+        <input type="search"
+               name="q"
+               value="{{ search_form.q.value|default:'' }}"
+               placeholder="Search logs..."
+               class="form-input form-input--sm">
+      </form>
+    </div>
+    <div id="log-container"
+         class="space-above-sm"
+         data-fetch-url="{% url 'problem-report-log-entries' report.pk %}">
+      {% if log_entries %}
+        <div class="log-entry-list" id="log-list">
+          {% for entry in log_entries %}
+            {% include "maintenance/partials/problem_report_log_entry.html" with entry=entry %}
+          {% endfor %}
+        </div>
+        <div id="log-pagination"
+             data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}0{% endif %}"></div>
+      {% else %}
+        <p class="text-muted">
+          {% if search_form.q.value %}
+            No log entries match your search.
+          {% else %}
+            No log entries yet.
+          {% endif %}
+        </p>
       {% endif %}
     </div>
-    <!-- SIDEBAR -->
-    <aside class="two-column__sidebar">
-      <div class="card card--padded sidebar--sticky">
-        {% include "components/history_link.html" with history_url=report.get_admin_history_url %}
-        <!-- PROBLEM REPORT -->
-        <div class="sidebar__section">
-          <div class="sidebar__label">Problem Report</div>
-          <div class="sidebar__title">
-            <i class="fa-solid fa-bug"></i> #{{ report.pk }}
-          </div>
-          <div class="flex flex-wrap stack-tight space-above-sm">
-            <span class="pill {% if report.status == report.STATUS_OPEN %}pill--status-broken{% else %}pill--status-good{% endif %}">
-              {% if report.status == report.STATUS_OPEN %}
-                <i class="fa-solid fa-circle-exclamation meta"></i>
-              {% else %}
-                <i class="fa-solid fa-check meta"></i>
-              {% endif %}
-              {{ report.get_status_display }}
-            </span>
-            {% if report.problem_type != report.PROBLEM_OTHER %}
-              <span class="pill pill--neutral">{{ report.get_problem_type_display }}</span>
-            {% endif %}
-          </div>
-          {% if report.reporter_display %}
-            <p class="text-muted text-sm space-above-sm">{{ report.created_at|smart_date }} by {{ report.reporter_display }}</p>
-          {% else %}
-            <p class="text-muted text-sm space-above-sm">{{ report.created_at|smart_date }}</p>
-          {% endif %}
-        </div>
-        <!-- MACHINE -->
-        <div class="sidebar__section">
-          <div class="sidebar__label">Machine</div>
-          {% include "components/machine_sidebar_card.html" with editable=True %}
-        </div>
-        <!-- ACTIONS -->
-        <div class="sidebar__section">
-          {% if report.status == report.STATUS_OPEN %}
-            <form method="post">
-              {% csrf_token %}
-              <button type="submit" class="btn btn--log btn--full">
-                <i class="fa-solid fa-check meta"></i>
-                Close Problem
-              </button>
-            </form>
-          {% else %}
-            <form method="post">
-              {% csrf_token %}
-              <button type="submit" class="btn btn--report btn--full">
-                <i class="fa-solid fa-rotate-left meta"></i>
-                Re-Open Problem
-              </button>
-            </form>
-          {% endif %}
-        </div>
-      </div>
-    </aside>
-    <!-- MAIN COLUMN -->
-    <div class="two-column__main">
-      <!-- DESCRIPTION CARD -->
-      {% include "core/partials/text_card_editable.html" with content=report.description %}
-      <!-- MEDIA CARD -->
-      {% include "core/partials/media_card_editable.html" with media_items=report.media.all alt="Problem report photo" %}
-      <!-- LOG ENTRIES SECTION -->
-      <div class="space-above-lg">
-        <div class="section-header">
-          <h3 class="section-header__title">Log Entries</h3>
-          <a href="{% url 'log-create-problem-report' report.pk %}"
-             class="btn btn--log btn--sm">
-            <i class="fa-solid fa-plus meta"></i>
-            Add Log
-          </a>
-        </div>
-        <div class="space-above-sm">
-          <form method="get" action="">
-            <input type="search"
-                   name="q"
-                   value="{{ search_form.q.value|default:'' }}"
-                   placeholder="Search logs..."
-                   class="form-input form-input--sm">
-          </form>
-        </div>
-        <div id="log-container"
-             class="space-above-sm"
-             data-fetch-url="{% url 'problem-report-log-entries' report.pk %}">
-          {% if log_entries %}
-            <div class="log-entry-list" id="log-list">
-              {% for entry in log_entries %}
-                {% include "maintenance/partials/problem_report_log_entry.html" with entry=entry %}
-              {% endfor %}
-            </div>
-            <div id="log-pagination"
-                 data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}0{% endif %}">
-            </div>
-          {% else %}
-            <p class="text-muted">
-              {% if search_form.q.value %}
-                No log entries match your search.
-              {% else %}
-                No log entries yet.
-              {% endif %}
-            </p>
-          {% endif %}
-        </div>
-        <div id="log-loading" class="hidden">Loading…</div>
-        <div id="log-sentinel"></div>
-      </div>
-    </div>
+    <div id="log-loading" class="hidden">Loading…</div>
+    <div id="log-sentinel"></div>
   </div>
 {% endblock %}
 {% block extra_scripts %}

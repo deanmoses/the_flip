@@ -1,76 +1,58 @@
-{% extends "base.html" %}
+{% extends "layouts/two_column.html" %}
 {% load static core_extras %}
 {% block title %}Log Entry · {{ block.super }}{% endblock %}
-{% block content %}
-  <!-- BREADCRUMBS -->
-  <nav class="breadcrumbs breadcrumbs--responsive">
-    <a href="{% url 'maintainer-machine-list' %}">Machines</a>
-    <a href="{% url 'maintainer-machine-detail' entry.machine.slug %}">{{ entry.machine.display_name }}</a>
-    {% if entry.problem_report %}
-      <a href="{% url 'problem-report-detail' entry.problem_report.pk %}">Problem #{{ entry.problem_report.pk }}</a>
-    {% else %}
-      <a href="{% url 'log-machine' entry.machine.slug %}">Logs</a>
-    {% endif %}
-    <span>Log Entry <i class="fa-solid fa-screwdriver-wrench"></i></span>
-  </nav>
-  <!-- TWO COLUMN LAYOUT -->
-  <div class="two-column">
-    <!-- SIDEBAR -->
-    <aside class="two-column__sidebar">
-      <div class="card card--padded sidebar--sticky">
-        {% include "components/history_link.html" with history_url=entry.get_admin_history_url %}
-        <!-- MACHINE -->
-        <div class="sidebar__section">
-          <div class="sidebar__label">Machine</div>
-          {% if entry.problem_report %}
-            {# Machine is controlled by problem report, not directly editable #}
-            {% include "components/machine_sidebar_card.html" with machine=entry.machine %}
-          {% else %}
-            {# Orphan log entry: machine is directly editable #}
-            {% include "components/machine_sidebar_card.html" with machine=entry.machine editable=True %}
-          {% endif %}
-        </div>
-        <!-- LINKED PROBLEM (always show, editable) -->
-        <div class="sidebar__section">
-          <div class="sidebar__label">Problem</div>
-          {% include "components/problem_report_sidebar_card.html" with problem_report=entry.problem_report editable=True current_machine_slug=entry.machine.slug %}
-        </div>
-        <!-- WHEN -->
-        <div class="sidebar__section">
-          <div class="sidebar__label">When</div>
-          <input type="datetime-local"
-                 id="work-date"
-                 class="form-input form-input--sm"
-                 data-utc="{{ entry.work_date.isoformat }}"
-                 data-entry-id="{{ entry.pk }}">
-          <div id="work-date-status" class="status-indicator"></div>
-        </div>
-        <!-- WHO -->
-        <div class="sidebar__section">
-          <div class="sidebar__label">Who</div>
-          <div class="autocomplete" id="maintainer-autocomplete">
-            <input type="text"
-                   id="maintainer-names"
-                   class="form-input form-input--sm"
-                   value="{% if entry.maintainers.all %}{{ entry.maintainers.all|join:", " }}{% elif entry.maintainer_names %}{{ entry.maintainer_names }}{% endif %}"
-                   placeholder="Name(s), comma separated"
-                   autocomplete="off"
-                   data-1p-ignore="true"
-                   data-lpignore="true">
-            <div class="autocomplete__dropdown hidden" id="maintainer-dropdown"></div>
-          </div>
-          <div id="maintainer-save-indicator" class="status-indicator"></div>
-        </div>
-      </div>
-    </aside>
-    <!-- MAIN COLUMN -->
-    <div class="two-column__main">
-      <!-- DESCRIPTION CARD -->
-      {% include "core/partials/text_card_editable.html" with content=entry.text %}
-      <!-- MEDIA CARD -->
-      {% include "core/partials/media_card_editable.html" with media_items=entry.media.all alt="Log entry photo" %}
-    </div>
-  </div>
+{% block breadcrumbs %}
+  <a href="{% url 'maintainer-machine-list' %}">Machines</a>
+  <a href="{% url 'maintainer-machine-detail' entry.machine.slug %}">{{ entry.machine.display_name }}</a>
+  {% if entry.problem_report %}
+    <a href="{% url 'problem-report-detail' entry.problem_report.pk %}">Problem #{{ entry.problem_report.pk }}</a>
+  {% else %}
+    <a href="{% url 'log-machine' entry.machine.slug %}">Logs</a>
+  {% endif %}
+  <span>Log Entry <i class="fa-solid fa-screwdriver-wrench"></i></span>
+{% endblock %}
+{% block sidebar %}
+  {% include "components/history_link.html" with history_url=entry.get_admin_history_url %}
+  {% sidebar_section label="Machine" %}
+  {% if entry.problem_report %}
+    {# Machine is controlled by problem report, not directly editable #}
+    {% include "components/machine_sidebar_card.html" with machine=entry.machine %}
+  {% else %}
+    {# Orphan log entry: machine is directly editable #}
+    {% include "components/machine_sidebar_card.html" with machine=entry.machine editable=True %}
+  {% endif %}
+{% endsidebar_section %}
+{% sidebar_section label="Problem" %}
+{% include "components/problem_report_sidebar_card.html" with problem_report=entry.problem_report editable=True current_machine_slug=entry.machine.slug %}
+{% endsidebar_section %}
+{% sidebar_section label="When" %}
+<input type="datetime-local"
+       id="work-date"
+       class="form-input form-input--sm"
+       data-utc="{{ entry.work_date.isoformat }}"
+       data-entry-id="{{ entry.pk }}">
+<div id="work-date-status" class="status-indicator"></div>
+{% endsidebar_section %}
+{% sidebar_section label="Who" %}
+<div class="autocomplete" id="maintainer-autocomplete">
+  <input type="text"
+         id="maintainer-names"
+         class="form-input form-input--sm"
+         value="{% if entry.maintainers.all %}{{ entry.maintainers.all|join:", " }}{% elif entry.maintainer_names %}{{ entry.maintainer_names }}{% endif %}"
+         placeholder="Name(s), comma separated"
+         autocomplete="off"
+         data-1p-ignore="true"
+         data-lpignore="true">
+  <div class="autocomplete__dropdown hidden" id="maintainer-dropdown"></div>
+</div>
+<div id="maintainer-save-indicator" class="status-indicator"></div>
+{% endsidebar_section %}
+{% endblock %}
+{% block main %}
+  <!-- DESCRIPTION CARD -->
+  {% include "core/partials/text_card_editable.html" with content=entry.text %}
+  <!-- MEDIA CARD -->
+  {% include "core/partials/media_card_editable.html" with media_items=entry.media.all alt="Log entry photo" %}
 {% endblock %}
 {% block extra_scripts %}
   <script>

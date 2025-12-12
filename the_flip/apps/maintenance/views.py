@@ -152,7 +152,7 @@ class ProblemReportAutocompleteView(CanAccessMaintainerPortalMixin, View):
     Includes a "None" option for unlinking log entries.
     """
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs) -> JsonResponse:
         query = request.GET.get("q", "").strip()
         current_machine_slug = request.GET.get("current_machine", "")
 
