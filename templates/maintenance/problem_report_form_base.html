@@ -113,10 +113,10 @@
         </button>
       </div>
     </div>
-    <!-- SIDEBAR: Context & Metadata (desktop only) -->
-    <aside class="two-column__sidebar">
-      <div class="card card--padded sidebar--sticky">
-        {% if machine %}
+    {% if machine %}
+      <!-- SIDEBAR: Context & Metadata (desktop only) -->
+      <aside class="two-column__sidebar">
+        <div class="card card--padded sidebar--sticky">
           <!-- MACHINE CARD (machine-specific pages) -->
           <input type="hidden"
                  name="{{ form.machine_slug.html_name }}"
@@ -125,10 +125,10 @@
             <div class="sidebar__label">Machine</div>
             {% include "components/machine_sidebar_card.html" with machine=machine %}
           </div>
-        {% endif %}
-        {% block sidebar_extra %}{% endblock %}
-      </div>
-    </aside>
+          {% block sidebar_extra %}{% endblock %}
+        </div>
+      </aside>
+    {% endif %}
   </form>
 {% endblock %}
 {% block extra_scripts %}
