@@ -1,153 +1,67 @@
-{% extends "base.html" %}
+{% extends "layouts/two_column.html" %}
 {% load static core_extras %}
 {% block title %}Log Entry · {{ block.super }}{% endblock %}
-{% block content %}
-  <!-- BREADCRUMBS -->
-  <nav class="breadcrumbs breadcrumbs--responsive">
-    <a href="{% url 'maintainer-machine-list' %}" class="breadcrumbs__link">Machines</a>
-    <span>/</span>
-    <a href="{% url 'maintainer-machine-detail' entry.machine.slug %}"
-       class="breadcrumbs__link">{{ entry.machine.display_name }}</a>
-    <span>/</span>
-    {% if entry.problem_report %}
-      <a href="{% url 'problem-report-detail' entry.problem_report.pk %}"
-         class="breadcrumbs__link">Problem #{{ entry.problem_report.pk }}</a>
-      <span>/</span>
-    {% else %}
-      <a href="{% url 'log-machine' entry.machine.slug %}"
-         class="breadcrumbs__link">Logs</a>
-      <span>/</span>
-    {% endif %}
-    <span class="breadcrumbs__current">Log Entry <i class="fa-solid fa-screwdriver-wrench"></i></span>
-  </nav>
-  <!-- TWO COLUMN LAYOUT -->
-  <div class="two-column">
-    <!-- SIDEBAR -->
-    <aside class="two-column__sidebar">
-      <div class="card card--padded sidebar--sticky">
-        {% include "components/history_link.html" with history_url=entry.get_admin_history_url %}
-        <!-- MACHINE -->
-        <div class="sidebar__section">
-          <div class="sidebar__label">Machine</div>
-          {% if entry.problem_report %}
-            {# Machine is controlled by problem report, not directly editable #}
-            {% include "components/machine_sidebar_card.html" with machine=entry.machine %}
-          {% else %}
-            {# Orphan log entry: machine is directly editable #}
-            {% include "components/machine_sidebar_card.html" with machine=entry.machine editable=True %}
-          {% endif %}
-        </div>
-        <!-- LINKED PROBLEM (always show, editable) -->
-        <div class="sidebar__section">
-          <div class="sidebar__label">Problem</div>
-          {% include "components/problem_report_sidebar_card.html" with problem_report=entry.problem_report editable=True current_machine_slug=entry.machine.slug %}
-        </div>
-        <!-- WHEN -->
-        <div class="sidebar__section">
-          <div class="sidebar__label">When</div>
-          <input type="datetime-local"
-                 id="work-date"
-                 class="form-input form-input--sm"
-                 data-utc="{{ entry.work_date.isoformat }}"
-                 data-entry-id="{{ entry.pk }}">
-          <div id="work-date-status" class="status-indicator"></div>
-        </div>
-        <!-- WHO -->
-        <div class="sidebar__section">
-          <div class="sidebar__label">Who</div>
-          <div class="autocomplete" id="maintainer-autocomplete">
-            <input type="text"
-                   id="maintainer-names"
-                   class="form-input form-input--sm"
-                   value="{% if entry.maintainers.all %}{{ entry.maintainers.all|join:", " }}{% elif entry.maintainer_names %}{{ entry.maintainer_names }}{% endif %}"
-                   placeholder="Name(s), comma separated"
-                   autocomplete="off"
-                   data-1p-ignore="true"
-                   data-lpignore="true">
-            <div class="autocomplete__dropdown hidden" id="maintainer-dropdown"></div>
-          </div>
-          <div id="maintainer-save-indicator" class="status-indicator"></div>
-        </div>
-      </div>
-    </aside>
-    <!-- MAIN COLUMN -->
-    <div class="two-column__main">
-      <!-- DESCRIPTION CARD -->
-      <div class="card card--padded">
-        <div class="card__header">
-          <div class="card__title">Description</div>
-          <div class="card__actions">
-            <button type="button" id="edit-button" class="btn btn--secondary btn--sm">Edit</button>
-            <div id="edit-actions-header" class="hidden">
-              <button type="button" id="save-button" class="btn btn--primary btn--sm">Save</button>
-              <button type="button" id="cancel-button" class="btn btn--secondary btn--sm">Cancel</button>
-            </div>
-            <span id="save-status" class="status-indicator"></span>
-          </div>
-        </div>
-        <div id="text-view-mode">
-          <div id="entry-text-display" class="markdown-content">{{ entry.text|render_markdown }}</div>
-        </div>
-        <div id="text-edit-mode" class="hidden">
-          <textarea id="entry-text"
-                    class="form-input form-textarea"
-                    data-entry-id="{{ entry.pk }}">{{ entry.text }}</textarea>
-        </div>
-      </div>
-      <!-- MEDIA CARD -->
-      <div class="card card--padded space-above-lg">
-        <div class="card__header">
-          <div class="card__title">Media</div>
-          <div class="card__actions">
-            <button type="button" id="upload-button" class="btn btn--secondary btn--sm">Upload Photos</button>
-          </div>
-        </div>
-        <div id="media-container" class="media-grid">
-          {% if entry.media.all %}
-            {% for media in entry.media.all %}
-              <div class="media-grid__item" data-media-id="{{ media.id }}">
-                {% if media.media_type == 'video' %}
-                  {% if media.transcode_status == 'ready' and media.transcoded_file %}
-                    <video controls poster="{{ media.poster_file.url }}">
-                      <source src="{{ media.transcoded_file.url }}" type="video/mp4">
-                      Your browser doesn't support video playback.
-                    </video>
-                  {% elif media.transcode_status == 'processing' or media.transcode_status == 'pending' %}
-                    <div class="media-grid__status">Processing video…</div>
-                  {% else %}
-                    <div class="media-grid__status media-grid__status--error">Video processing failed.</div>
-                  {% endif %}
-                {% else %}
-                  <a href="{{ media.file.url }}" target="_blank">
-                    {% if media.thumbnail_file %}
-                      <img src="{{ media.thumbnail_file.url }}" alt="Log entry photo">
-                    {% else %}
-                      <img src="{{ media.file.url }}" alt="Log entry photo">
-                    {% endif %}
-                  </a>
-                {% endif %}
-                <button type="button"
-                        class="media-grid__delete"
-                        data-media-id="{{ media.id }}"
-                        aria-label="Delete media">×</button>
-              </div>
-            {% endfor %}
-          {% else %}
-            <p class="text-muted" id="no-media-message">No media.</p>
-          {% endif %}
-        </div>
-        <input type="file"
-               id="media-upload"
-               accept="image/*,video/*,.heic,.heif,image/heic,image/heif"
-               multiple
-               class="hidden">
-      </div>
-    </div>
-  </div>
+{% block breadcrumbs %}
+  <a href="{% url 'maintainer-machine-list' %}">Machines</a>
+  <a href="{% url 'maintainer-machine-detail' entry.machine.slug %}">{{ entry.machine.display_name }}</a>
+  {% if entry.problem_report %}
+    <a href="{% url 'problem-report-detail' entry.problem_report.pk %}">Problem #{{ entry.problem_report.pk }}</a>
+  {% else %}
+    <a href="{% url 'log-machine' entry.machine.slug %}">Logs</a>
+  {% endif %}
+  <span>Log Entry <i class="fa-solid fa-screwdriver-wrench"></i></span>
+{% endblock %}
+{% block sidebar %}
+  {% include "components/history_link.html" with history_url=entry.get_admin_history_url %}
+  {% sidebar_section label="Machine" %}
+  {% if entry.problem_report %}
+    {# Machine is controlled by problem report, not directly editable #}
+    {% include "components/machine_sidebar_card.html" with machine=entry.machine %}
+  {% else %}
+    {# Orphan log entry: machine is directly editable #}
+    {% include "components/machine_sidebar_card.html" with machine=entry.machine editable=True %}
+  {% endif %}
+{% endsidebar_section %}
+{% sidebar_section label="Problem" %}
+{% include "components/problem_report_sidebar_card.html" with problem_report=entry.problem_report editable=True current_machine_slug=entry.machine.slug %}
+{% endsidebar_section %}
+{% sidebar_section label="When" %}
+<input type="datetime-local"
+       id="work-date"
+       class="form-input form-input--sm"
+       data-utc="{{ entry.work_date.isoformat }}"
+       data-entry-id="{{ entry.pk }}">
+<div id="work-date-status" class="status-indicator"></div>
+{% endsidebar_section %}
+{% sidebar_section label="Who" %}
+<div class="autocomplete"
+     data-maintainer-autocomplete
+     data-autocomplete-url="{% url 'api-maintainer-autocomplete' %}"
+     data-on-select="onMaintainerSelect">
+  <input type="text"
+         data-maintainer-search
+         id="maintainer-names"
+         class="form-input form-input--sm"
+         value="{% if entry.maintainers.all %}{{ entry.maintainers.all|join:", " }}{% elif entry.maintainer_names %}{{ entry.maintainer_names }}{% endif %}"
+         placeholder="Name(s), comma separated"
+         autocomplete="off"
+         data-1p-ignore="true"
+         data-lpignore="true">
+  <div class="autocomplete__dropdown hidden"></div>
+</div>
+<div id="maintainer-save-indicator" class="status-indicator"></div>
+{% endsidebar_section %}
+{% endblock %}
+{% block main %}
+  <!-- DESCRIPTION CARD -->
+  {% include "core/partials/text_card_editable.html" with content=entry.text %}
+  <!-- MEDIA CARD -->
+  {% include "core/partials/media_card_editable.html" with media_items=entry.media.all alt="Log entry photo" %}
 {% endblock %}
 {% block extra_scripts %}
+  <script src="{% static 'core/dropdown_keyboard.js' %}"></script>
+  <script src="{% static 'core/maintainer_autocomplete.js' %}"></script>
   <script>
-    const ENTRY_ID = {{ entry.pk }};
     const CSRF_TOKEN = '{{ csrf_token }}';
 
     // Helper: format Date as datetime-local value (YYYY-MM-DDTHH:MM)
@@ -207,190 +121,10 @@
       }
     });
 
-    // Text edit mode switching
-    const textarea = document.getElementById('entry-text');
-    const saveStatus = document.getElementById('save-status');
-    const textViewMode = document.getElementById('text-view-mode');
-    const textEditMode = document.getElementById('text-edit-mode');
-    const editButton = document.getElementById('edit-button');
-    const headerActions = document.getElementById('edit-actions-header');
-    const saveButton = document.getElementById('save-button');
-    const cancelButton = document.getElementById('cancel-button');
-
-    let originalText = textarea.value;
-
-    function setTextareaHeight() {
-      if (!textarea) return;
-      textarea.style.height = 'auto';
-      textarea.style.height = `${textarea.scrollHeight}px`;
-      textarea.style.overflowY = 'hidden';
-    }
-
-    editButton.addEventListener('click', () => {
-      originalText = textarea.value;
-      textViewMode.classList.add('hidden');
-      textEditMode.classList.remove('hidden');
-      textarea.focus();
-      editButton.classList.add('hidden');
-      headerActions.classList.remove('hidden');
-      setTextareaHeight();
-      requestAnimationFrame(setTextareaHeight);
-    });
-
-    textarea.addEventListener('input', setTextareaHeight);
-
-    cancelButton.addEventListener('click', () => {
-      textarea.value = originalText;
-      saveStatus.textContent = '';
-      saveStatus.className = 'status-indicator';
-      textEditMode.classList.add('hidden');
-      textViewMode.classList.remove('hidden');
-      headerActions.classList.add('hidden');
-      editButton.classList.remove('hidden');
-    });
-
-    saveButton.addEventListener('click', async () => {
-      saveStatus.textContent = 'Saving...';
-      saveStatus.className = 'status-indicator saving';
-
-      try {
-        const formData = new FormData();
-        formData.append('action', 'update_text');
-        formData.append('text', textarea.value);
-        formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
-
-        const response = await fetch(window.location.href, {
-          method: 'POST',
-          body: formData
-        });
-
-        if (response.ok) {
-          window.location.reload();
-        } else {
-          saveStatus.textContent = 'Error saving';
-          saveStatus.className = 'status-indicator error';
-        }
-      } catch (error) {
-        console.error('Save error:', error);
-        saveStatus.textContent = 'Error saving';
-        saveStatus.className = 'status-indicator error';
-      }
-    });
-
-    // Upload media
-    const uploadButton = document.getElementById('upload-button');
-    const mediaInput = document.getElementById('media-upload');
-    const existingMediaCount = document.querySelectorAll('#media-container .media-grid__item').length;
-    if (uploadButton && existingMediaCount > 0) {
-      uploadButton.textContent = 'Upload More Photos';
-    }
-    if (uploadButton && mediaInput) {
-      uploadButton.addEventListener('click', () => mediaInput.click());
-    }
-
+    // Maintainer auto-save
     const maintainerInput = document.getElementById('maintainer-names');
     const maintainerStatus = document.getElementById('maintainer-save-indicator');
-    const maintainerDropdown = document.getElementById('maintainer-dropdown');
-    let maintainers = [];
-    let activeMaintainerIndex = -1;
 
-    mediaInput.addEventListener('change', async (e) => {
-      if (!e.target.files || !e.target.files.length) return;
-
-      const files = Array.from(e.target.files);
-      const noMediaMessage = document.getElementById('no-media-message');
-      if (noMediaMessage) noMediaMessage.remove();
-
-      for (const file of files) {
-        const formData = new FormData();
-        formData.append('action', 'upload_media');
-        formData.append('file', file);
-        formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
-
-        try {
-          const response = await fetch(window.location.href, {
-            method: 'POST',
-            body: formData
-          });
-
-          const data = await response.json();
-          if (data.success) {
-            const mediaContainer = document.getElementById('media-container');
-            const mediaItem = document.createElement('div');
-            mediaItem.className = 'media-grid__item';
-            mediaItem.dataset.mediaId = data.media_id;
-            let content = '';
-            if (data.media_type === 'video') {
-              if (data.transcode_status === 'ready' && data.media_url) {
-                const posterAttr = data.poster_url ? ` poster="${data.poster_url}"` : '';
-                content = `
-                  <video controls${posterAttr}>
-                    <source src="${data.media_url}" type="video/mp4">
-                    Your browser doesn't support video playback.
-                  </video>
-                `;
-              } else if (data.transcode_status === 'failed') {
-                content = `<div class="media-grid__status media-grid__status--error">Video processing failed.</div>`;
-              } else {
-                content = `<div class="media-grid__status">Processing video…</div>`;
-              }
-            } else {
-              content = `
-                <a href="${data.media_url}" target="_blank">
-                  <img src="${data.thumbnail_url}" alt="Log entry photo">
-                </a>
-              `;
-            }
-            mediaItem.innerHTML = `
-              ${content}
-              <button type="button" class="media-grid__delete" data-media-id="${data.media_id}" aria-label="Delete media">×</button>
-            `;
-            mediaContainer.appendChild(mediaItem);
-            attachDeleteHandler(mediaItem.querySelector('.media-grid__delete'));
-            uploadButton.textContent = 'Upload More Photos';
-          } else {
-            alert('Failed to upload media: ' + (data.error || 'Unknown error'));
-          }
-        } catch (error) {
-          console.error('Upload error:', error);
-          alert('Failed to upload media');
-        }
-      }
-
-      e.target.value = '';
-    });
-
-    // Delete media
-    function attachDeleteHandler(button) {
-      button.addEventListener('click', async () => {
-        const mediaId = button.dataset.mediaId;
-        const formData = new FormData();
-        formData.append('action', 'delete_media');
-        formData.append('media_id', mediaId);
-        formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
-
-        try {
-          const response = await fetch(window.location.href, {
-            method: 'POST',
-            body: formData
-          });
-
-          if (response.ok) {
-            const mediaItem = button.closest('.media-grid__item');
-            mediaItem.remove();
-          } else {
-            alert('Failed to delete media');
-          }
-        } catch (error) {
-          console.error('Delete error:', error);
-          alert('Failed to delete media');
-        }
-      });
-    }
-
-    document.querySelectorAll('.media-grid__delete').forEach(attachDeleteHandler);
-
-    // Maintainer autocomplete
     async function saveMaintainers() {
       if (!maintainerInput || !maintainerStatus) return;
       maintainerStatus.textContent = 'Saving...';
@@ -426,113 +160,18 @@
       }
     }
 
-    function formatMaintainer(m) {
-      if (m.display_name === m.username) {
-        return m.username;
-      }
-      return `${m.display_name} (${m.username})`;
-    }
-
-    function filterMaintainers(query) {
-      const q = query.toLowerCase().trim();
-      if (!q) return maintainers;
-      return maintainers.filter(m =>
-        m.first_name.toLowerCase().startsWith(q) ||
-        m.last_name.toLowerCase().startsWith(q) ||
-        m.username.toLowerCase().startsWith(q)
-      );
-    }
-
-    function showMaintainerDropdown(filtered) {
-      if (!maintainerDropdown) return;
-      if (!filtered.length) {
-        maintainerDropdown.classList.add('hidden');
-        return;
-      }
-      maintainerDropdown.innerHTML = filtered.map((m, i) =>
-        `<div class="autocomplete__item${i === activeMaintainerIndex ? ' autocomplete__item-active' : ''}" data-index="${i}" data-username="${m.username}">${formatMaintainer(m)}</div>`
-      ).join('');
-      maintainerDropdown.classList.remove('hidden');
-    }
-
-    function hideMaintainerDropdown() {
-      if (maintainerDropdown) {
-        maintainerDropdown.classList.add('hidden');
-      }
-      activeMaintainerIndex = -1;
-    }
-
-    function attachMaintainerAutocomplete() {
-      if (!maintainerInput || !maintainerDropdown) return;
-
-      fetch('{% url "api-maintainer-autocomplete" %}')
-        .then(response => response.json())
-        .then(data => { maintainers = data.maintainers || []; })
-        .catch(() => { maintainers = []; });
-
-      maintainerInput.addEventListener('focus', () => {
-        const filtered = filterMaintainers(maintainerInput.value);
-        showMaintainerDropdown(filtered);
-      });
-
-      maintainerInput.addEventListener('input', () => {
-        activeMaintainerIndex = -1;
-        const filtered = filterMaintainers(maintainerInput.value);
-        showMaintainerDropdown(filtered);
-      });
-
-      maintainerInput.addEventListener('keydown', (e) => {
-        const filtered = filterMaintainers(maintainerInput.value);
-        if (!filtered.length || maintainerDropdown.classList.contains('hidden')) return;
-
-        if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          activeMaintainerIndex = Math.min(activeMaintainerIndex + 1, filtered.length - 1);
-          showMaintainerDropdown(filtered);
-        } else if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          activeMaintainerIndex = Math.max(activeMaintainerIndex - 1, 0);
-          showMaintainerDropdown(filtered);
-        } else if (e.key === 'Enter' && activeMaintainerIndex >= 0) {
-          e.preventDefault();
-          maintainerInput.value = filterMaintainers(maintainerInput.value)[activeMaintainerIndex].display_name;
-          hideMaintainerDropdown();
-          saveMaintainers();
-        }
-      });
-
-      document.addEventListener('click', (e) => {
-        if (maintainerDropdown && maintainerDropdown.contains(e.target)) {
-          const item = e.target.closest('.autocomplete__item');
-          if (item) {
-            const idx = Number(item.dataset.index);
-            const filtered = filterMaintainers(maintainerInput.value);
-            maintainerInput.value = filtered[idx]?.display_name || '';
-            saveMaintainers();
-          }
-          hideMaintainerDropdown();
-        } else if (maintainerDropdown && !maintainerInput.contains(e.target)) {
-          hideMaintainerDropdown();
-        }
-      });
+    // Callback for maintainer autocomplete selection
+    function onMaintainerSelect(maintainer, input) {
+      saveMaintainers();
     }
 
     if (maintainerInput) {
       maintainerInput.addEventListener('change', saveMaintainers);
-      maintainerInput.addEventListener('blur', () => {
-        saveMaintainers();
-      });
-      maintainerInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          saveMaintainers();
-        }
-      });
-      attachMaintainerAutocomplete();
+      maintainerInput.addEventListener('blur', saveMaintainers);
     }
-
   </script>
-  <script src="{% static 'core/dropdown_keyboard.js' %}"></script>
+  <script src="{% static 'core/text_edit.js' %}" defer></script>
+  <script src="{% static 'core/media_grid.js' %}" defer></script>
   <script src="{% static 'core/searchable_dropdown.js' %}"></script>
   <script src="{% static 'core/sidebar_card_edit.js' %}"></script>
 {% endblock %}

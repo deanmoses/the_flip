@@ -1,11 +1,7 @@
 {% extends "layouts/two_column.html" %}
 {% load core_extras %}
 {% block title %}Profile · {{ block.super }}{% endblock %}
-{% block breadcrumbs %}
-  <nav class="breadcrumbs breadcrumbs--responsive">
-    <span class="breadcrumbs__current">Profile</span>
-  </nav>
-{% endblock %}
+{% block breadcrumbs %}<span>Profile</span>{% endblock %}
 {% block mobile_actions %}
   <a href="{% url 'password_change' %}"
      class="btn btn--secondary btn--full">
@@ -14,15 +10,8 @@
   </a>
 {% endblock %}
 {% block sidebar %}
-  {% sidebar %}
   {% sidebar_section label="Profile" %}
-  <div class="sidebar__title">
-    {% if user.first_name or user.last_name %}
-      {{ user.first_name }} {{ user.last_name }} ({{ user.username }})
-    {% else %}
-      {{ user.username }}
-    {% endif %}
-  </div>
+  <div class="sidebar__title">{{ user|display_name_with_username }}</div>
 {% endsidebar_section %}
 {% sidebar_section %}
 <a href="{% url 'password_change' %}"
@@ -31,25 +20,13 @@
   Change Password
 </a>
 {% endsidebar_section %}
-{% endsidebar %}
 {% endblock %}
 {% block main %}
   <div class="card card--padded">
     <form method="post" class="form-main">
       {% csrf_token %}
-      {% if form.non_field_errors %}
-        <div class="text-problem body-small">
-          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-        </div>
-      {% endif %}
-      {% for field in form %}
-        <div class="form-field">
-          {{ field.label_tag }}
-          {{ field }}
-          {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
-          {% for error in field.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-        </div>
-      {% endfor %}
+      {% form_non_field_errors form %}
+      {% form_fields form %}
       <div class="form-actions">
         <a href="{% url 'home' %}" class="btn btn--secondary">
           <i class="fa-solid fa-circle-xmark meta"></i>

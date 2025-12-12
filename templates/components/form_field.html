@@ -1,0 +1,8 @@
+{% load core_extras %}
+<div class="form-field{% if class_ %} {{ class_ }}{% endif %}"
+     {% if id %}id="{{ id }}"{% endif %}>
+  {{ field.label_tag }}
+  {{ field }}
+  {% field_help_text field %}
+  {% field_errors field %}
+</div>

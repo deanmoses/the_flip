@@ -38,7 +38,7 @@ The project establishes component patterns in [the_flip/static/core/styles.css](
 - **Centered Container** (`.centered-container` - flexbox container that vertically and horizontally centers content)
 
 ### UI Components
-- **Buttons** (`.btn` with modifiers like `.btn-primary`, `.btn-secondary`)
+- **Buttons** (`.btn` with modifiers like `.btn--primary`, `.btn--secondary`, `.btn--log`, `.btn--report`)
 - **Badges, Tags, Pills** (`.badge` with status modifiers like `.badge-open`, `.badge-fixing`, `.badge-inline`)
 - **Cards** (`.card` with BEM elements like `.card__header`, `.card__body`)
 - **Forms** (`.form-field` wrapper pattern, `.form-inline` for inline forms)
@@ -89,10 +89,10 @@ Use `block__element` when creating component subparts (header, body, footer, met
 - `.flip-card__bottom-right` - right-aligned bottom content of flip-card
 - `.page-header__left` - left section of page-header
 
-### Use `Block-modifier` (single hyphen) for variants/states
-Use `block-modifier` when adding variants (colors, sizes, states).  Examples:
-- `.badge-open`, `.badge-closed`, `.badge-fixing`
-- `.btn-primary`, `.btn-secondary`
+### Use `Block--modifier` (double hyphen) for variants/states
+Use `block--modifier` when adding variants (colors, sizes, states).  Examples:
+- `.btn--primary`, `.btn--secondary`, `.btn--log`
+- `.pill--neutral`, `.pill--status-good`, `.pill--status-broken`
 
 ### Don't use hyphens for standalone utilities
 Use simple names for standalone utilities (`.card`, `.btn`, `.hidden`)

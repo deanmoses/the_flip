@@ -1,0 +1,132 @@
+{% extends "layouts/two_column.html" %}
+{% load static core_extras %}
+{% block title %}
+  {% if is_edit %}
+    Edit
+  {% else %}
+    New
+  {% endif %}
+  Parts Request · {{ block.super }}
+{% endblock %}
+{% block breadcrumbs %}
+  <a href="{% url 'part-request-list' %}">Parts</a>
+  {% if is_edit %}
+    <a href="{% url 'part-request-detail' part_request.pk %}">#{{ part_request.pk }}</a>
+    <span>Edit</span>
+  {% else %}
+    <span>New Request</span>
+  {% endif %}
+{% endblock %}
+{% block sidebar %}
+  {% sidebar_section label="Parts Request" %}
+  <p class="text-muted text-sm">
+    {% if is_edit %}
+      Update the parts request details.
+    {% else %}
+      Request a part needed for maintenance.
+    {% endif %}
+  </p>
+{% endsidebar_section %}
+{% if machine %}
+  {% sidebar_section label="Machine" %}
+  <a href="{% url 'maintainer-machine-detail' machine.slug %}"
+     class="sidebar__title sidebar__link">{{ machine.display_name }}</a>
+{% endsidebar_section %}
+{% endif %}
+{% endblock %}
+{% block main %}
+  <div class="card card--padded">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <!-- Machine selector (if not pre-selected) -->
+      {% if not machine %}
+        <div class="form-field">
+          <label class="form-label">Machine (optional)</label>
+          <div class="autocomplete"
+               data-machine-autocomplete
+               data-autocomplete-url="{% url 'api-machine-autocomplete' %}">
+            <input type="search"
+                   placeholder="Search machines..."
+                   class="form-input"
+                   autocomplete="off"
+                   data-1p-ignore="true"
+                   data-lpignore="true"
+                   data-machine-search
+                   {% if selected_machine %}value="{{ selected_machine.display_name }}"{% endif %}>
+            <input type="hidden"
+                   name="{{ form.machine_slug.html_name }}"
+                   id="{{ form.machine_slug.id_for_label }}"
+                   value="{{ form.machine_slug.value|default_if_none:'' }}"
+                   data-machine-slug-input>
+            <div class="autocomplete__dropdown hidden"></div>
+          </div>
+          {% if form.machine_slug.errors %}<p class="text-problem body-small">{{ form.machine_slug.errors.0 }}</p>{% endif %}
+        </div>
+      {% endif %}
+      <!-- Description -->
+      <div class="form-field">
+        <label for="id_text" class="form-label">Description</label>
+        {{ form.text }}
+        {% if form.text.errors %}<p class="text-problem body-small">{{ form.text.errors.0 }}</p>{% endif %}
+        <!-- File upload link (GitHub-style) -->
+        <div class="form-hint space-above-sm">
+          <input type="file"
+                 id="file-input"
+                 name="{{ form.media_file.html_name }}"
+                 class="hidden"
+                 multiple
+                 accept="image/*,video/*,.heic,.heif">
+          <a href="#" id="file-upload-link" class="file-upload-link">
+            <i class="fa-solid fa-paperclip space-right-xs"></i>Paste, drop, or click to add photos
+          </a>
+        </div>
+        {% if form.media_file.errors %}<p class="text-problem body-small">{{ form.media_file.errors.0 }}</p>{% endif %}
+        <!-- Uploaded files preview -->
+        <div class="file-preview-row" id="file-preview-row"></div>
+      </div>
+      <!-- Submit -->
+      <div class="form-actions">
+        <a href="{% if is_edit %}{% url 'part-request-detail' part_request.pk %}{% else %}{% url 'part-request-list' %}{% endif %}"
+           class="btn btn--secondary">Cancel</a>
+        <button type="submit" class="btn btn--log">
+          <i class="fa-solid fa-box-open meta"></i>
+          {% if is_edit %}
+            Save Changes
+          {% else %}
+            Create Request
+          {% endif %}
+        </button>
+      </div>
+    </form>
+  </div>
+{% endblock %}
+{% block extra_scripts %}
+  <script src="{% static 'core/dropdown_keyboard.js' %}" defer></script>
+  <script src="{% static 'core/machine_autocomplete.js' %}" defer></script>
+  <script>
+    // File upload click handler
+    document.getElementById('file-upload-link').addEventListener('click', function(e) {
+      e.preventDefault();
+      document.getElementById('file-input').click();
+    });
+
+    // File preview functionality
+    (function() {
+      const fileInput = document.getElementById('file-input');
+      const previewRow = document.getElementById('file-preview-row');
+      if (!fileInput || !previewRow) return;
+
+      fileInput.addEventListener('change', function() {
+        previewRow.innerHTML = '';
+        Array.from(this.files).forEach((file) => {
+          const isVideo = file.type && file.type.startsWith('video/');
+          const icon = isVideo ? 'fa-video' : 'fa-image';
+          const pill = document.createElement('span');
+          pill.className = 'pill pill--neutral';
+          pill.innerHTML = `<i class="fa-solid ${icon} meta"></i> ${file.name}`;
+          previewRow.appendChild(pill);
+        });
+      });
+    })();
+  </script>
+{% endblock %}

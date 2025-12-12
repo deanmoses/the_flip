@@ -152,7 +152,7 @@ class ProblemReportAutocompleteView(CanAccessMaintainerPortalMixin, View):
     Includes a "None" option for unlinking log entries.
     """
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs) -> JsonResponse:
         query = request.GET.get("q", "").strip()
         current_machine_slug = request.GET.get("current_machine", "")
 
@@ -469,6 +469,11 @@ class ProblemReportCreateView(CanAccessMaintainerPortalMixin, FormView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["machine"] = self.machine
+        # Check if current user is a shared account (show autocomplete for reporter selection)
+        is_shared_account = False
+        if hasattr(self.request.user, "maintainer"):
+            is_shared_account = self.request.user.maintainer.is_shared_account
+        context["is_shared_account"] = is_shared_account
         selected_slug = (
             self.request.POST.get("machine_slug") if self.request.method == "POST" else ""
         )
@@ -493,6 +498,10 @@ class ProblemReportCreateView(CanAccessMaintainerPortalMixin, FormView):
         report.device_info = self.request.META.get("HTTP_USER_AGENT", "")[:200]
         if self.request.user.is_authenticated:
             report.reported_by_user = self.request.user
+        # Save reporter name for shared accounts
+        reporter_name = (form.cleaned_data.get("reporter_name") or "").strip()
+        if reporter_name:
+            report.reported_by_name = reporter_name
         report.save()
 
         # Handle media uploads
@@ -555,8 +564,8 @@ class ProblemReportDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, 
         action = request.POST.get("action")
 
         # Handle AJAX description update
-        if action == "update_description":
-            self.report.description = request.POST.get("description", "")
+        if action == "update_text":
+            self.report.description = request.POST.get("text", "")
             self.report.save(update_fields=["description", "updated_at"])
             return JsonResponse({"success": True})
 
@@ -737,7 +746,7 @@ class MachineLogView(CanAccessMaintainerPortalMixin, TemplateView):
 
 
 class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
-    template_name = "maintenance/machine_log_new.html"
+    template_name = "maintenance/log_entry_new.html"
     form_class = LogEntryQuickForm
 
     def dispatch(self, request, *args, **kwargs):
@@ -942,7 +951,7 @@ class MachineLogPartialView(CanAccessMaintainerPortalMixin, View):
 class LogListView(CanAccessMaintainerPortalMixin, TemplateView):
     """Global list of all log entries across all machines. Maintainer-only access."""
 
-    template_name = "maintenance/log_list.html"
+    template_name = "maintenance/log_entry_list.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

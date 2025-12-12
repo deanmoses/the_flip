@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, cast
 
 from django import forms
 from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.password_validation import validate_password
 
 from the_flip.apps.core.forms import StyledFormMixin
@@ -19,13 +20,28 @@ class InvitationRegistrationForm(StyledFormMixin, forms.Form):
 
     username = forms.CharField(
         max_length=150,
-        help_text="Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.",
+        help_text="150 characters or fewer. Letters, digits and @/./+/-/_.",
+        widget=forms.TextInput(attrs={"autocomplete": "username"}),
     )
-    first_name = forms.CharField(max_length=150, required=False)
-    last_name = forms.CharField(max_length=150, required=False)
-    email = forms.EmailField(help_text="You can change this from the invitation email if needed.")
-    password = forms.CharField(widget=forms.PasswordInput)
-    password_confirm = forms.CharField(widget=forms.PasswordInput, label="Confirm password")
+    first_name = forms.CharField(
+        max_length=150,
+        required=False,
+        label="First name (optional)",
+        widget=forms.TextInput(attrs={"autocomplete": "given-name"}),
+    )
+    last_name = forms.CharField(
+        max_length=150,
+        required=False,
+        label="Last name (optional)",
+        widget=forms.TextInput(attrs={"autocomplete": "family-name"}),
+    )
+    email = forms.EmailField(
+        help_text="You can change this from the invitation email if needed.",
+        widget=forms.EmailInput(attrs={"autocomplete": "email"}),
+    )
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+    )
 
     def clean_username(self):
         username = self.cleaned_data["username"]
@@ -44,14 +60,6 @@ class InvitationRegistrationForm(StyledFormMixin, forms.Form):
         if password:
             validate_password(password)
         return password
-
-    def clean(self):
-        cleaned_data = super().clean()
-        password = cleaned_data.get("password")
-        password_confirm = cleaned_data.get("password_confirm")
-        if password and password_confirm and password != password_confirm:
-            self.add_error("password_confirm", "Passwords do not match.")
-        return cleaned_data
 
 
 class ProfileForm(StyledFormMixin, forms.ModelForm):
@@ -79,9 +87,9 @@ class SelfRegistrationForm(StyledFormMixin, forms.Form):
     """Form for self-registration during beta period."""
 
     username = forms.CharField(max_length=150)
-    first_name = forms.CharField(max_length=150, required=False)
-    last_name = forms.CharField(max_length=150, required=False)
-    email = forms.EmailField(required=False)
+    first_name = forms.CharField(max_length=150, required=False, label="First name (optional)")
+    last_name = forms.CharField(max_length=150, required=False, label="Last name (optional)")
+    email = forms.EmailField(required=False, label="Email (optional)")
     password = forms.CharField(widget=forms.PasswordInput)
 
     existing_user: "UserType | None"
@@ -193,3 +201,27 @@ class TerminalUpdateForm(StyledFormMixin, forms.Form):
             }
         ),
     )
+
+
+class SimplePasswordChangeForm(PasswordChangeForm):
+    """Password change form without confirmation field.
+
+    Removes the new_password2 field and adds show/hide toggle support.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Remove the confirmation field
+        del self.fields["new_password2"]
+
+    def clean_new_password1(self):
+        """Validate the new password."""
+        password = self.cleaned_data.get("new_password1")
+        if password:
+            validate_password(password, self.user)
+        return password
+
+    def clean(self):
+        """Skip the password confirmation check."""
+        # Don't call super().clean() since it checks new_password1 == new_password2
+        return self.cleaned_data

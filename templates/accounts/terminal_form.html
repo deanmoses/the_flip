@@ -9,19 +9,14 @@
   · {{ block.super }}
 {% endblock %}
 {% block breadcrumbs %}
-  <nav class="breadcrumbs breadcrumbs--responsive">
-    <a href="{% url 'terminal-list' %}" class="breadcrumbs__link">Shared Terminal Accounts</a>
-    <span>/</span>
-    <span class="breadcrumbs__current">
-      {% if is_create %}
-        New Account
-      {% elif terminal.user.first_name or terminal.user.last_name %}
-        {{ terminal.user.first_name }} {{ terminal.user.last_name }} ({{ terminal.user.username }})
-      {% else %}
-        {{ terminal.user.username }}
-      {% endif %}
-    </span>
-  </nav>
+  <a href="{% url 'terminal-list' %}">Shared Terminal Accounts</a>
+  <span>
+    {% if is_create %}
+      New Account
+    {% else %}
+      {{ terminal.user|display_name_with_username }}
+    {% endif %}
+  </span>
 {% endblock %}
 {% block mobile_actions %}
   {% if not is_create %}
@@ -45,16 +40,9 @@
   {% endif %}
 {% endblock %}
 {% block sidebar %}
-  {% sidebar %}
   {% sidebar_section label="Shared Terminal" %}
   {% if not is_create %}
-    <div class="sidebar__title">
-      {% if terminal.user.first_name or terminal.user.last_name %}
-        {{ terminal.user.first_name }} {{ terminal.user.last_name }} ({{ terminal.user.username }})
-      {% else %}
-        {{ terminal.user.username }}
-      {% endif %}
-    </div>
+    <div class="sidebar__title">{{ terminal.user|display_name_with_username }}</div>
   {% else %}
     <div class="sidebar__title text-muted">New terminal</div>
   {% endif %}
@@ -80,25 +68,13 @@
   {% endif %}
 {% endsidebar_section %}
 {% endif %}
-{% endsidebar %}
 {% endblock %}
 {% block main %}
   <div class="card card--padded">
     <form method="post" autocomplete="off" class="form-main">
       {% csrf_token %}
-      {% if form.non_field_errors %}
-        <div class="text-problem body-small">
-          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-        </div>
-      {% endif %}
-      {% for field in form %}
-        <div class="form-field">
-          {{ field.label_tag }}
-          {{ field }}
-          {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
-          {% for error in field.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-        </div>
-      {% endfor %}
+      {% form_non_field_errors form %}
+      {% form_fields form %}
       <div class="form-actions">
         <a href="{% url 'terminal-list' %}" class="btn btn--secondary">
           <i class="fa-solid fa-circle-xmark meta"></i>

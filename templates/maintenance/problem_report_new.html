@@ -1,4 +1,5 @@
 {% extends "maintenance/problem_report_form_base.html" %}
+{% load core_extras %}
 {% block form_title %}New Problem Report{% endblock %}
 {% block breadcrumb_current %}New Report{% endblock %}
 {% block submit_label %}Report Problem{% endblock %}
@@ -17,7 +18,7 @@
       <i class="fa-solid fa-paperclip space-right-xs"></i>Paste, drop, or click to add photos
     </a>
   </div>
-  {% for error in form.media_file.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+  {% field_errors form.media_file %}
   <!-- Uploaded files preview -->
   <div class="file-preview-row" id="file-preview-row"></div>
 {% endblock %}

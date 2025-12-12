@@ -1,0 +1,184 @@
+{% extends "layouts/two_column.html" %}
+{% load static core_extras %}
+{% block title %}Parts Request #{{ part_request.pk }} · {{ block.super }}{% endblock %}
+{% block breadcrumbs %}
+  <a href="{% url 'part-request-list' %}">Parts</a>
+  <span><i class="fa-solid fa-box-open"></i> #{{ part_request.pk }}</span>
+{% endblock %}
+{% block mobile_actions %}
+  <a href="{% url 'part-request-update-create' part_request.pk %}"
+     class="btn btn--log btn--full">
+    <i class="fa-solid fa-plus meta"></i>
+    Add Update
+  </a>
+{% endblock %}
+{% block sidebar %}
+  {% sidebar_section label="Parts Request" %}
+  <div class="sidebar__title">
+    <i class="fa-solid fa-box-open"></i> #{{ part_request.pk }}
+  </div>
+  <div class="flex flex-wrap stack-tight space-above-sm">
+    <div class="dropdown"
+         data-update-url="{% url 'part-request-status-update' part_request.pk %}">
+      <button type="button"
+              id="status-pill"
+              class="pill pill--neutral"
+              aria-haspopup="true"
+              aria-expanded="false"
+              onclick="toggleDropdown(this)">
+        <span class="status-label">{{ part_request.get_status_display }}</span>
+        <i class="fa-solid fa-caret-down meta"></i>
+      </button>
+      <div class="dropdown__menu dropdown__menu--left hidden">
+        {% for value, label in part_request.STATUS_CHOICES %}
+          <button type="button"
+                  class="dropdown__item{% if value == part_request.status %} dropdown__item--selected{% endif %}"
+                  data-value="{{ value }}"
+                  data-label="{{ label }}"
+                  onclick="updatePartRequestStatus(this)">{{ label }}</button>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="sidebar__subtitle space-above-sm">
+    {{ part_request.requested_by.display_name }} · {{ part_request.created_at|smart_date }}
+  </div>
+{% endsidebar_section %}
+{% if part_request.machine %}
+  {% sidebar_section label="Machine" %}
+  {% include "components/machine_sidebar_card.html" with machine=part_request.machine %}
+{% endsidebar_section %}
+{% endif %}
+{% endblock %}
+{% block main %}
+  <!-- DESCRIPTION CARD -->
+  {% include "core/partials/text_card_editable.html" with content=part_request.text %}
+  <!-- MEDIA CARD -->
+  {% include "core/partials/media_card_editable.html" with media_items=part_request.media.all alt="Part request photo" %}
+  <!-- UPDATES SECTION -->
+  <div class="space-above-lg">
+    <div class="section-header">
+      <h3 class="section-header__title">Updates</h3>
+      <a href="{% url 'part-request-update-create' part_request.pk %}"
+         class="btn btn--log btn--sm">
+        <i class="fa-solid fa-plus meta"></i>
+        Add Update
+      </a>
+    </div>
+    <div class="space-above-sm">
+      <form method="get" action="">
+        <input type="search"
+               name="q"
+               value="{{ search_form.q.value|default:'' }}"
+               placeholder="Search updates..."
+               class="form-input form-input--sm">
+      </form>
+    </div>
+    <div id="log-container"
+         class="space-above-sm"
+         data-fetch-url="{% url 'part-request-updates' part_request.pk %}">
+      {% if updates %}
+        {% timeline id="log-list" %}
+        {% for update in updates %}
+          {% include "parts/partials/part_update_entry.html" with update=update %}
+        {% endfor %}
+      {% endtimeline %}
+      <div id="log-pagination"
+           data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}0{% endif %}"></div>
+    {% else %}
+      <p class="text-muted">
+        {% if search_form.q.value %}
+          No updates match your search.
+        {% else %}
+          No updates yet.
+        {% endif %}
+      </p>
+    {% endif %}
+    <div id="log-loading" class="hidden">Loading…</div>
+    <div id="log-sentinel"></div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+  <script src="{% static 'core/infinite_scroll.js' %}" defer></script>
+  <script>
+    const CSRF_TOKEN = '{{ csrf_token }}';
+
+    // Status dropdown update
+    async function updatePartRequestStatus(button) {
+      const dropdown = button.closest('.dropdown');
+      const updateUrl = dropdown.dataset.updateUrl;
+      const newStatus = button.dataset.value;
+      const newLabel = button.dataset.label;
+
+      const formData = new FormData();
+      formData.append('action', 'update_status');
+      formData.append('status', newStatus);
+      formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
+
+      try {
+        const response = await fetch(updateUrl, {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+        if (data.status === 'success') {
+          // Update the pill label
+          const statusLabel = dropdown.querySelector('.status-label');
+          if (statusLabel) {
+            statusLabel.textContent = data.new_status_display;
+          }
+
+          // Update selected state in dropdown
+          dropdown.querySelectorAll('.dropdown__item').forEach(item => {
+            item.classList.toggle('dropdown__item--selected', item.dataset.value === newStatus);
+          });
+
+          // Inject the new update into the updates list
+          if (data.update_html) {
+            const noUpdatesMsg = document.querySelector('#log-container > p.text-muted');
+            if (noUpdatesMsg) {
+              noUpdatesMsg.remove();
+            }
+
+            // Parse the HTML into an element
+            const template = document.createElement('template');
+            template.innerHTML = data.update_html.trim();
+            const newEntry = template.content.firstChild;
+
+            // Get or create the timeline container
+            let logList = document.getElementById('log-list');
+            if (!logList) {
+              logList = document.createElement('div');
+              logList.className = 'timeline';
+              logList.id = 'log-list';
+              logList.innerHTML = '<div class="timeline__line"></div>';
+              document.getElementById('log-container').prepend(logList);
+            }
+
+            // Insert after the timeline line (second child position)
+            const timelineLine = logList.firstElementChild;
+            timelineLine.after(newEntry);
+            applySmartDates(newEntry);
+          }
+
+          // Show success message
+          const pillHtml = `<span class="pill pill--neutral">${data.new_status_display}</span>`;
+          showMessage('success', `Part request #{{ part_request.pk }} updated to ${pillHtml}`);
+
+          // Close the dropdown
+          dropdown.querySelector('.dropdown__menu').classList.add('hidden');
+          dropdown.querySelector('[aria-expanded]').setAttribute('aria-expanded', 'false');
+        } else if (data.status !== 'noop') {
+          alert('Failed to update status: ' + (data.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Status update error:', error);
+        alert('Failed to update status');
+      }
+    }
+  </script>
+  <script src="{% static 'core/text_edit.js' %}" defer></script>
+  <script src="{% static 'core/media_grid.js' %}" defer></script>
+{% endblock %}

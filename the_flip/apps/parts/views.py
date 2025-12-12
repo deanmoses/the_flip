@@ -31,7 +31,7 @@ from the_flip.apps.parts.models import (
 class PartRequestListView(CanAccessMaintainerPortalMixin, TemplateView):
     """List of all part requests. Maintainer-only access."""
 
-    template_name = "parts/part_list.html"
+    template_name = "parts/part_request_list.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -137,7 +137,7 @@ class PartRequestListPartialView(CanAccessMaintainerPortalMixin, View):
 class PartRequestCreateView(CanAccessMaintainerPortalMixin, FormView):
     """Create a new part request."""
 
-    template_name = "parts/part_form.html"
+    template_name = "parts/part_request_new.html"
     form_class = PartRequestForm
 
     def dispatch(self, request, *args, **kwargs):
@@ -219,7 +219,7 @@ class PartRequestCreateView(CanAccessMaintainerPortalMixin, FormView):
 class PartRequestDetailView(CanAccessMaintainerPortalMixin, MediaUploadMixin, View):
     """Detail view for a part request. Maintainer-only access."""
 
-    template_name = "parts/part_detail.html"
+    template_name = "parts/part_request_detail.html"
 
     def get_media_model(self):
         return PartRequestMedia
@@ -292,7 +292,7 @@ class PartRequestDetailView(CanAccessMaintainerPortalMixin, MediaUploadMixin, Vi
 class PartRequestUpdateCreateView(CanAccessMaintainerPortalMixin, FormView):
     """Add an update/comment to a part request."""
 
-    template_name = "parts/part_update_form.html"
+    template_name = "parts/part_update_new.html"
     form_class = PartRequestUpdateForm
 
     def dispatch(self, request, *args, **kwargs):

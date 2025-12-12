@@ -5,14 +5,12 @@
   · {{ block.super }}
 {% endblock %}
 {% block sidebar %}
-  {% sidebar %}
   {% sidebar_section %}
   {% block sidebar_stats %}{% endblock %}
 {% endsidebar_section %}
 {% sidebar_section %}
 {% block sidebar_actions %}{% endblock %}
 {% endsidebar_section %}
-{% endsidebar %}
 {% endblock %}
 {% block main %}
   <!-- SEARCH BAR -->

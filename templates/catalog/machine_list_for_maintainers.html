@@ -10,7 +10,6 @@
   {% endif %}
 {% endblock %}
 {% block sidebar %}
-  {% sidebar %}
   {% sidebar_section label="Machines" %}
   {% stat_grid stats=stats %}
 {% endsidebar_section %}
@@ -23,7 +22,6 @@
   </a>
 {% endif %}
 {% endsidebar_section %}
-{% endsidebar %}
 {% endblock %}
 {% block main %}
   <!-- SEARCH BAR -->

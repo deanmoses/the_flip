@@ -1,73 +1,37 @@
-{% extends "base_public_minimal.html" %}
-{% block title %}Complete Registration - The Flip{% endblock %}
-{% block content %}
-  <h2>Complete Your Registration</h2>
-  <p>You've been invited to join The Flip as a maintainer.</p>
-  <form method="post">
-    {% csrf_token %}
-    {% if form.non_field_errors %}
-      <div class="form-errors">
-        {% for error in form.non_field_errors %}<p class="error">{{ error }}</p>{% endfor %}
+{% extends "layouts/minimal_centered.html" %}
+{% load core_extras %}
+{% block title %}Complete Registration · The Flip{% endblock %}
+{% block centered_content %}
+  <div class="card card--padded">
+    <h2>Complete Your Registration</h2>
+    <p class="text-muted space-below-md">You've been invited to join Flipfix, the maintenance site for The Flip museum.</p>
+    <form method="post" class="form-main">
+      {% csrf_token %}
+      {% form_non_field_errors form %}
+      {% form_field form.username %}
+      {% form_field form.first_name %}
+      {% form_field form.last_name %}
+      {% form_field form.email %}
+      <div class="form-field">
+        {{ form.password.label_tag }}
+        {{ form.password }}
+        {% field_errors form.password %}
+        <label class="checkbox-label">
+          <input type="checkbox" id="show-password" class="checkbox">
+          Show password
+        </label>
       </div>
-    {% endif %}
-    <div class="form-field">
-      <label for="id_username">Username</label>
-      <input type="text"
-             name="username"
-             id="id_username"
-             value="{{ form.username.value|default:'' }}"
-             required
-             autocomplete="username">
-      {% if form.username.help_text %}<small>{{ form.username.help_text }}</small>{% endif %}
-      {% for error in form.username.errors %}<p class="error">{{ error }}</p>{% endfor %}
-    </div>
-    <div class="form-field">
-      <label for="id_first_name">First name</label>
-      <input type="text"
-             name="first_name"
-             id="id_first_name"
-             value="{{ form.first_name.value|default:'' }}"
-             autocomplete="given-name">
-      {% for error in form.first_name.errors %}<p class="error">{{ error }}</p>{% endfor %}
-    </div>
-    <div class="form-field">
-      <label for="id_last_name">Last name</label>
-      <input type="text"
-             name="last_name"
-             id="id_last_name"
-             value="{{ form.last_name.value|default:'' }}"
-             autocomplete="family-name">
-      {% for error in form.last_name.errors %}<p class="error">{{ error }}</p>{% endfor %}
-    </div>
-    <div class="form-field">
-      <label for="id_email">Email</label>
-      <input type="email"
-             name="email"
-             id="id_email"
-             value="{{ form.email.value|default:'' }}"
-             required
-             autocomplete="email">
-      {% if form.email.help_text %}<small>{{ form.email.help_text }}</small>{% endif %}
-      {% for error in form.email.errors %}<p class="error">{{ error }}</p>{% endfor %}
-    </div>
-    <div class="form-field">
-      <label for="id_password">Password</label>
-      <input type="password"
-             name="password"
-             id="id_password"
-             required
-             autocomplete="new-password">
-      {% for error in form.password.errors %}<p class="error">{{ error }}</p>{% endfor %}
-    </div>
-    <div class="form-field">
-      <label for="id_password_confirm">Confirm password</label>
-      <input type="password"
-             name="password_confirm"
-             id="id_password_confirm"
-             required
-             autocomplete="new-password">
-      {% for error in form.password_confirm.errors %}<p class="error">{{ error }}</p>{% endfor %}
-    </div>
-    <button type="submit" class="btn btn-primary">Create Account</button>
-  </form>
+      <div class="form-actions">
+        <button type="submit" class="btn btn--primary btn--full">Create Account</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}
+{% block extra_scripts %}
+  <script>
+    document.getElementById('show-password').addEventListener('change', function() {
+      const passwordInput = document.getElementById('id_password');
+      passwordInput.type = this.checked ? 'text' : 'password';
+    });
+  </script>
 {% endblock %}

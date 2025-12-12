@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% load static core_extras %}
 {% block content %}
-  {% block breadcrumbs %}{% endblock %}
+  <nav class="breadcrumbs breadcrumbs--responsive">
+    {% block breadcrumbs %}{% endblock %}
+  </nav>
   <!-- TWO COLUMN LAYOUT: Main Content + Sidebar -->
   <div class="two-column">
     <!-- MOBILE ACTION BUTTONS (visible on mobile only) -->
@@ -10,7 +12,9 @@
     </div>
     <!-- SIDEBAR (desktop only) -->
     <aside class="two-column__sidebar">
-      {% block sidebar %}{% endblock %}
+      <div class="card card--padded sidebar--sticky">
+        {% block sidebar %}{% endblock %}
+      </div>
     </aside>
     <!-- MAIN COLUMN -->
     <div class="two-column__main">
