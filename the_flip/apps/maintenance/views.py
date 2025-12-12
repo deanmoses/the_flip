@@ -737,7 +737,7 @@ class MachineLogView(CanAccessMaintainerPortalMixin, TemplateView):
 
 
 class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
-    template_name = "maintenance/machine_log_new.html"
+    template_name = "maintenance/log_entry_new.html"
     form_class = LogEntryQuickForm
 
     def dispatch(self, request, *args, **kwargs):
@@ -942,7 +942,7 @@ class MachineLogPartialView(CanAccessMaintainerPortalMixin, View):
 class LogListView(CanAccessMaintainerPortalMixin, TemplateView):
     """Global list of all log entries across all machines. Maintainer-only access."""
 
-    template_name = "maintenance/log_list.html"
+    template_name = "maintenance/log_entry_list.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

@@ -166,7 +166,7 @@ class PartRequestViewTests(AccessControlTestCase):
         self.client.force_login(self.maintainer_user)
         response = self.client.get(reverse("part-request-list"))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "parts/part_list.html")
+        self.assertTemplateUsed(response, "parts/part_request_list.html")
 
     def test_list_view_shows_part_requests(self):
         """List view shows part requests."""

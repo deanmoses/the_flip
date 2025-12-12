@@ -601,7 +601,7 @@ class LogEntryProblemReportTests(TestDataMixin, TestCase):
         self.client.force_login(self.staff_user)
         response = self.client.get(self.create_url)
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "maintenance/machine_log_new.html")
+        self.assertTemplateUsed(response, "maintenance/log_entry_new.html")
 
     def test_create_view_shows_problem_report_context(self):
         """Create form should show the problem report context."""
