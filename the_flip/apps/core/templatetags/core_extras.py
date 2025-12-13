@@ -374,6 +374,53 @@ def field_help_text(field):
     return {"field": field}
 
 
+@register.inclusion_tag("components/maintainer_autocomplete_field.html", takes_context=True)
+def maintainer_autocomplete_field(
+    context,
+    field,
+    label: str = "",
+    placeholder: str = "Search users...",
+    size: str = "",
+    show_label: bool = True,
+    required: bool = False,
+):
+    """Render a maintainer autocomplete field with dropdown.
+
+    Usage:
+        {% maintainer_autocomplete_field form.requester_name %}
+        {% maintainer_autocomplete_field form.requester_name label="Who" size="sm" %}
+        {% maintainer_autocomplete_field form.submitter_name show_label=False %}
+        {% maintainer_autocomplete_field form.submitter_name required=True %}
+
+    Args:
+        context: Template context (auto-passed with takes_context=True)
+        field: A Django form field (BoundField)
+        label: Custom label text (defaults to field.label)
+        placeholder: Input placeholder text
+        size: Size variant - "" (default) or "sm" for smaller sidebar inputs
+        show_label: Whether to show the label (default True)
+        required: Whether the field is required (adds HTML required attribute and asterisk)
+    """
+    input_class = "form-input form-input--sm" if size == "sm" else "form-input"
+
+    # Get the hidden username value from POST data (preserves value on form re-render)
+    username_value = ""
+    request = context.get("request")
+    if request and request.method == "POST":
+        username_field_name = f"{field.html_name}_username"
+        username_value = request.POST.get(username_field_name, "")
+
+    return {
+        "field": field,
+        "label": label or (field.label if hasattr(field, "label") else ""),
+        "placeholder": placeholder,
+        "input_class": input_class,
+        "show_label": show_label,
+        "required": required,
+        "username_value": username_value,
+    }
+
+
 # -----------------------------------------------------------------------------
 # Sidebar template tags
 # -----------------------------------------------------------------------------
