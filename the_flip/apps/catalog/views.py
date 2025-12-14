@@ -126,14 +126,6 @@ def get_activity_page(machine, page_num, page_size=10, search_query=None):
     page_items = combined[offset : offset + page_size]
     has_next = len(combined) > offset + page_size
 
-    # Prefetch latest log for problem report entries (for snippets)
-    for entry in page_items:
-        if getattr(entry, "entry_type", "") == "problem_report":
-            latest = (
-                entry.log_entries.select_related("problem_report").order_by("-created_at").first()
-            )
-            entry.prefetched_log_entries = [latest] if latest else []
-
     return page_items, has_next
 
 
