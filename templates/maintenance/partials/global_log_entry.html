@@ -13,12 +13,13 @@
   {% url 'log-detail' entry.pk as entry_url %}
   {% include "core/partials/media_grid_readonly.html" with media_items=entry.media.all detail_url=entry_url %}
   {% if entry.problem_report %}
-    <div class="snippet-row">
+    <a href="{% url 'problem-report-detail' entry.problem_report.pk %}"
+       class="timeline__snippet-link">
       <span class="snippet-label text-problem">
         <i class="fa-solid fa-bug space-right-xs"></i>Problem:
       </span>
       <span class="snippet-text">{{ entry.problem_report|problem_report_summary }}</span>
-    </div>
+    </a>
   {% endif %}
 </div>
 {% endtimeline_entry %}

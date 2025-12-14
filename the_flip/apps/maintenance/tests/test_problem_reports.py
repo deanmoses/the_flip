@@ -83,8 +83,8 @@ class ProblemReportDetailViewTests(SuppressRequestLogsMixin, TestDataMixin, Test
         self.assertNotContains(response, "iPhone 12")
         self.assertNotContains(response, "192.168.1.1")
 
-    def test_detail_view_hides_reporter_for_anonymous_submission(self):
-        """Anonymous submissions should not render reporter details."""
+    def test_detail_view_shows_anonymous_for_anonymous_submission(self):
+        """Anonymous submissions should show 'Anonymous' as reporter."""
         self.report.reported_by_user = None
         self.report.reported_by_name = ""
         self.report.reported_by_contact = ""
@@ -95,7 +95,7 @@ class ProblemReportDetailViewTests(SuppressRequestLogsMixin, TestDataMixin, Test
         self.client.force_login(self.staff_user)
         response = self.client.get(self.detail_url)
 
-        self.assertNotContains(response, "by ")
+        self.assertContains(response, "by Anonymous")
 
     def test_detail_view_shows_close_button_for_open_report(self):
         """Detail page should show 'Close Problem' button for open reports."""

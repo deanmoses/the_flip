@@ -74,9 +74,8 @@ def _format_problem_report_created(report: ProblemReport) -> dict:
 
     description = ": ".join(parts) if len(parts) > 1 else (parts[0] if parts else "")
 
-    # Add reporter with em dash (default to "Visitor" if no reporter info)
-    reporter = report.reporter_display or "Visitor"
-    description += f"\n\n— {reporter}"
+    # Add reporter attribution
+    description += f"\n\n— {report.reporter_display}"
 
     return {
         "embeds": [

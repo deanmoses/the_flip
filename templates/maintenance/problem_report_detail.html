@@ -45,11 +45,7 @@
       <span class="pill pill--neutral">{{ report.get_problem_type_display }}</span>
     {% endif %}
   </div>
-  {% if report.reporter_display %}
-    <p class="text-muted text-sm space-above-sm">{{ report.created_at|smart_date }} by {{ report.reporter_display }}</p>
-  {% else %}
-    <p class="text-muted text-sm space-above-sm">{{ report.created_at|smart_date }}</p>
-  {% endif %}
+  <p class="text-muted text-sm space-above-sm">{{ report.created_at|smart_date }} by {{ report.reporter_display }}</p>
 {% endsidebar_section %}
 {% sidebar_section label="Machine" %}
 {% include "components/machine_sidebar_card.html" with editable=True %}
