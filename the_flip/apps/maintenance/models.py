@@ -95,7 +95,7 @@ class ProblemReport(TimeStampedModel):
             return self.reported_by_user.get_full_name() or self.reported_by_user.get_username()
         if self.reported_by_contact:
             return self.reported_by_contact
-        return ""
+        return "Anonymous"
 
 
 class LogEntry(TimeStampedModel):
