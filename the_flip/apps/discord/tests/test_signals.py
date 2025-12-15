@@ -2,6 +2,7 @@
 
 from unittest.mock import patch
 
+from constance.test import override_config
 from django.test import TestCase
 
 from the_flip.apps.accounts.models import Maintainer
@@ -16,6 +17,7 @@ from the_flip.apps.maintenance.models import ProblemReport
 from the_flip.apps.parts.models import PartRequest
 
 
+@override_config(DISCORD_WEBHOOKS_ENABLED=True, DISCORD_WEBHOOK_URL="https://test.webhook")
 class WebhookSignalTests(TestCase):
     """Tests for webhook signal triggers."""
 
@@ -39,7 +41,10 @@ class WebhookSignalTests(TestCase):
     def test_signal_fires_on_log_entry_created(self, mock_async):
         """Signal fires when a log entry is created."""
         maintainer_user = create_maintainer_user()
-        log_entry = create_log_entry(machine=self.machine, created_by=maintainer_user)
+
+        # Log entry signal uses transaction.on_commit, so we need to capture and execute
+        with self.captureOnCommitCallbacks(execute=True):
+            log_entry = create_log_entry(machine=self.machine, created_by=maintainer_user)
 
         # Find the log_entry_created call
         calls = [c for c in mock_async.call_args_list if c[0][1] == "log_entry_created"]
@@ -47,6 +52,7 @@ class WebhookSignalTests(TestCase):
         self.assertEqual(calls[0][0][2], log_entry.pk)
 
 
+@override_config(DISCORD_WEBHOOKS_ENABLED=True, DISCORD_WEBHOOK_URL="https://test.webhook")
 class PartRequestWebhookSignalTests(TestCase):
     """Tests for part request webhook signal triggers."""
 

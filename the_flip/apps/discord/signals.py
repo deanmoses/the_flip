@@ -1,5 +1,6 @@
 """Django signals for Discord webhook triggers."""
 
+from django.db import transaction
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
@@ -23,12 +24,19 @@ def problem_report_saved(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=LogEntry)
 def log_entry_created(sender, instance, created, **kwargs):
-    """Trigger webhook when a log entry is created."""
+    """Trigger webhook when a log entry is created.
+
+    Uses transaction.on_commit to ensure webhook fires after the entire
+    request transaction commits, including any media attachments saved
+    after the log entry itself.
+    """
     if created:
-        dispatch_webhook(
-            event_type="log_entry_created",
-            object_id=instance.pk,
-            model_name="LogEntry",
+        transaction.on_commit(
+            lambda: dispatch_webhook(
+                event_type="log_entry_created",
+                object_id=instance.pk,
+                model_name="LogEntry",
+            )
         )
 
 
