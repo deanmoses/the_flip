@@ -18,7 +18,7 @@ def get_base_url() -> str:
     """Get the base URL for the site."""
     if not hasattr(settings, "SITE_URL") or not settings.SITE_URL:
         raise ValueError("SITE_URL must be configured in settings")
-    return settings.SITE_URL
+    return settings.SITE_URL.rstrip("/")
 
 
 def _get_maintainer_display_name(maintainer: Maintainer) -> str:
@@ -152,23 +152,23 @@ def _format_log_entry_created(log_entry: LogEntry) -> dict:
     }
 
     # Get photo URLs (up to 4 for Discord gallery effect)
+    # Use thumbnail_file (JPEG) - originals may be HEIC or too large for Discord
     photos = list(
         log_entry.media.filter(media_type=LogEntryMedia.TYPE_PHOTO)  # type: ignore[attr-defined]
-        .exclude(file="")
+        .exclude(thumbnail_file="")
         .order_by("display_order", "created_at")[:4]
     )
 
     embeds = []
     if photos:
         # First photo goes in the main embed
-        first_photo = photos[0]
-        image_url = base_url + first_photo.file.url
+        image_url = base_url + photos[0].thumbnail_file.url
         main_embed["image"] = {"url": image_url}
         embeds.append(main_embed)
 
         # Additional photos get their own embeds with same url (creates gallery)
         for photo in photos[1:]:
-            image_url = base_url + photo.file.url
+            image_url = base_url + photo.thumbnail_file.url
             embeds.append(
                 {
                     "url": url,  # Same URL links them visually in Discord
