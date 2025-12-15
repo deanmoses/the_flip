@@ -9,7 +9,8 @@ from .base import *  # noqa
 
 DEBUG = False
 
-# Base URL for external links (Discord messages, webhook images, etc.)
+# Base absolute URL for external systems following links into this system,
+# such as Discord webhooks and Discord bot record links.
 SITE_URL = os.environ.get("SITE_URL", "https://flipfix.theflip.museum")
 
 # Production domains - override base.py's env-var-based ALLOWED_HOSTS
