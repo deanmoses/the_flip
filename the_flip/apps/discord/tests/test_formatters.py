@@ -175,8 +175,9 @@ class PartRequestWebhookFormatterTests(TestCase):
         self.assertIn("url", embed)
         self.assertIn("color", embed)
 
-        # Title includes part request ID
+        # Title includes ID and machine name
         self.assertIn(f"#{part_request.pk}", embed["title"])
+        self.assertIn(self.machine.display_name, embed["title"])
 
         # Description includes the text
         self.assertIn("flipper rubbers", embed["description"])

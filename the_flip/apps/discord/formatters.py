@@ -192,10 +192,6 @@ def _format_part_request_created(part_request: PartRequest) -> dict:
     if len(part_request.text) > 500:
         description += "..."
 
-    # Add machine info if linked
-    if part_request.machine:
-        description += f"\n\n📍 Machine: {part_request.machine.display_name}"
-
     # Add requester (use Discord name if available, or fall back to display property)
     if part_request.requested_by:
         requester = _get_maintainer_display_name(part_request.requested_by)
@@ -203,10 +199,16 @@ def _format_part_request_created(part_request: PartRequest) -> dict:
         requester = part_request.requester_display or "Unknown"
     description += f"\n\n— {requester}"
 
+    # Build title with machine name if available
+    if part_request.machine:
+        title = f"📦 Parts Request #{part_request.pk} for {part_request.machine.display_name}"
+    else:
+        title = f"📦 Parts Request #{part_request.pk}"
+
     return {
         "embeds": [
             {
-                "title": f"📦 Parts Requested: #{part_request.pk}",
+                "title": title,
                 "description": description,
                 "url": url,
                 "color": 3447003,  # Blue color (same as logs)
@@ -238,14 +240,12 @@ def _format_part_request_status_changed(part_request: PartRequest) -> dict:
         text_preview += "..."
     description += f"\n\n{text_preview}"
 
-    # Add machine info if linked
-    if part_request.machine:
-        description += f"\n\n📍 Machine: {part_request.machine.display_name}"
-
     return {
         "embeds": [
             {
-                "title": f"{emoji} Parts Request #{part_request.pk}: {status_display}",
+                "title": f"{emoji} Parts Request #{part_request.pk} for {part_request.machine.display_name}: {status_display}"
+                if part_request.machine
+                else f"{emoji} Parts Request #{part_request.pk}: {status_display}",
                 "description": description,
                 "url": url,
                 "color": 3447003,  # Blue color (same as logs)
@@ -269,10 +269,6 @@ def _format_part_request_update_created(update: PartRequestUpdate) -> dict:
         status_display = update.get_new_status_display()
         description += f"\n\n**Status changed to:** {status_display}"
 
-    # Add machine info if linked
-    if update.part_request.machine:
-        description += f"\n\n📍 Machine: {update.part_request.machine.display_name}"
-
     # Add who posted (use Discord name if available, or fall back to display property)
     if update.posted_by:
         poster = _get_maintainer_display_name(update.posted_by)
@@ -283,7 +279,9 @@ def _format_part_request_update_created(update: PartRequestUpdate) -> dict:
     return {
         "embeds": [
             {
-                "title": f"💬 Update on Parts Request #{update.part_request.pk}",
+                "title": f"💬 Update on Parts Request #{update.part_request.pk} for {update.part_request.machine.display_name}"
+                if update.part_request.machine
+                else f"💬 Update on Parts Request #{update.part_request.pk}",
                 "description": description,
                 "url": url,
                 "color": 3447003,  # Blue color (same as logs)
