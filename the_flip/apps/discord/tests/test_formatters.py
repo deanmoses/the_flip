@@ -56,6 +56,42 @@ class DiscordFormatterTests(TemporaryMediaMixin, TestCase):
         # URL points to the problem report
         self.assertIn(f"/problem-reports/{report.pk}/", embed["url"])
 
+    def test_format_problem_report_with_photos(self):
+        """Format a problem report with photos creates multiple embeds for gallery."""
+        from the_flip.apps.maintenance.models import ProblemReportMedia
+
+        report = create_problem_report(machine=self.machine)
+
+        # Create mock photos with thumbnails (Discord uses thumbnails, not originals)
+        for i in range(3):
+            media = ProblemReportMedia(
+                problem_report=report,
+                media_type=ProblemReportMedia.TYPE_PHOTO,
+                display_order=i,
+            )
+            media.file.save(f"test{i}.jpg", ContentFile(b"fake image data"), save=False)
+            media.thumbnail_file.save(
+                f"test{i}_thumb.jpg", ContentFile(b"fake thumbnail"), save=True
+            )
+
+        message = format_discord_message("problem_report_created", report)
+
+        # Should have 3 embeds (main + 2 additional for gallery effect)
+        self.assertEqual(len(message["embeds"]), 3)
+
+        # First embed has title, description, and image
+        self.assertIn("title", message["embeds"][0])
+        self.assertIn("image", message["embeds"][0])
+
+        # Image URLs should use thumbnail_file, not file
+        self.assertIn("_thumb", message["embeds"][0]["image"]["url"])
+
+        # All embeds share the same URL (required for Discord gallery)
+        main_url = message["embeds"][0]["url"]
+        for embed in message["embeds"][1:]:
+            self.assertIn("image", embed)
+            self.assertEqual(embed["url"], main_url)
+
     def test_format_log_entry_created(self):
         """Format a new log entry message."""
         log_entry = create_log_entry(machine=self.machine, created_by=self.maintainer_user)
@@ -157,7 +193,7 @@ class DiscordFormatterTests(TemporaryMediaMixin, TestCase):
         self.assertIn("description", embed)
 
 
-class PartRequestWebhookFormatterTests(TestCase):
+class PartRequestWebhookFormatterTests(TemporaryMediaMixin, TestCase):
     """Tests for part request Discord webhook formatting."""
 
     def setUp(self):
@@ -234,6 +270,91 @@ class PartRequestWebhookFormatterTests(TestCase):
 
         # Description includes the update text
         self.assertIn("Marco Specialties", embed["description"])
+
+    def test_format_part_request_with_photos(self):
+        """Format a part request with photos creates multiple embeds for gallery."""
+        from the_flip.apps.parts.models import PartRequestMedia
+
+        part_request = create_part_request(
+            text="Need new flipper rubbers",
+            requested_by=self.maintainer,
+            machine=self.machine,
+        )
+
+        # Create mock photos with thumbnails (Discord uses thumbnails, not originals)
+        for i in range(3):
+            media = PartRequestMedia(
+                part_request=part_request,
+                media_type=PartRequestMedia.TYPE_PHOTO,
+                display_order=i,
+            )
+            media.file.save(f"test{i}.jpg", ContentFile(b"fake image data"), save=False)
+            media.thumbnail_file.save(
+                f"test{i}_thumb.jpg", ContentFile(b"fake thumbnail"), save=True
+            )
+
+        message = format_discord_message("part_request_created", part_request)
+
+        # Should have 3 embeds (main + 2 additional for gallery effect)
+        self.assertEqual(len(message["embeds"]), 3)
+
+        # First embed has title, description, and image
+        self.assertIn("title", message["embeds"][0])
+        self.assertIn("image", message["embeds"][0])
+
+        # Image URLs should use thumbnail_file, not file
+        self.assertIn("_thumb", message["embeds"][0]["image"]["url"])
+
+        # All embeds share the same URL (required for Discord gallery)
+        main_url = message["embeds"][0]["url"]
+        for embed in message["embeds"][1:]:
+            self.assertIn("image", embed)
+            self.assertEqual(embed["url"], main_url)
+
+    def test_format_part_request_update_with_photos(self):
+        """Format a part request update with photos creates multiple embeds for gallery."""
+        from the_flip.apps.parts.models import PartRequestUpdateMedia
+
+        part_request = create_part_request(
+            text="Need new flipper rubbers",
+            requested_by=self.maintainer,
+            machine=self.machine,
+        )
+        update = create_part_request_update(
+            part_request=part_request,
+            posted_by=self.maintainer,
+            text="Ordered from Marco Specialties",
+        )
+
+        # Create mock photos with thumbnails (Discord uses thumbnails, not originals)
+        for i in range(3):
+            media = PartRequestUpdateMedia(
+                update=update,
+                media_type=PartRequestUpdateMedia.TYPE_PHOTO,
+                display_order=i,
+            )
+            media.file.save(f"test{i}.jpg", ContentFile(b"fake image data"), save=False)
+            media.thumbnail_file.save(
+                f"test{i}_thumb.jpg", ContentFile(b"fake thumbnail"), save=True
+            )
+
+        message = format_discord_message("part_request_update_created", update)
+
+        # Should have 3 embeds (main + 2 additional for gallery effect)
+        self.assertEqual(len(message["embeds"]), 3)
+
+        # First embed has title, description, and image
+        self.assertIn("title", message["embeds"][0])
+        self.assertIn("image", message["embeds"][0])
+
+        # Image URLs should use thumbnail_file, not file
+        self.assertIn("_thumb", message["embeds"][0]["image"]["url"])
+
+        # All embeds share the same URL (required for Discord gallery)
+        main_url = message["embeds"][0]["url"]
+        for embed in message["embeds"][1:]:
+            self.assertIn("image", embed)
+            self.assertEqual(embed["url"], main_url)
 
 
 class GetBaseUrlTests(TestCase):
