@@ -1,9 +1,17 @@
 # Views
 
+## When to Use CBVs vs FBVs
+
+This project uses **Class-Based Views (CBVs)** for most views and **Function-Based Views (FBVs)** for simple endpoints.
+
+| Use | When |
+|-----|------|
+| **CBV** | Standard CRUD: list, detail, create, update, delete. Django's generic views handle the boilerplate. |
+| **FBV** | Simple one-off endpoints: health checks, AJAX validation, webhooks, or views with unusual logic that doesn't fit CBV patterns. |
+
+Examples of FBVs in this project: `healthz` (health check), `check_username` (AJAX validation), registration views.
 
 ## CBV Pattern
-
-This project uses Django Class-Based Views (CBVs) extensively but not exclusively.
 
 ```python
 class MyListView(CanAccessMaintainerPortalMixin, ListView):
