@@ -14,9 +14,10 @@ STOP and read the relevant doc before writing code:
 |------|------------|
 | Templates, HTML, CSS, Javascript | `docs/HTML_CSS.md` |
 | Forms, inputs, validation | `docs/Forms.md` |
-| Models, relationships | `docs/Datamodel.md` |
+| Models, relationships | `docs/Models.md`, `docs/Datamodel.md` |
+| Views, CBVs, query optimization | `docs/Views.md` |
 | Writing tests | `docs/Testing.md` |
-| Django patterns, views | `docs/Django_Python.md` |
+| Django patterns | `docs/Django_Python.md` |
 | System architecture | `docs/Architecture.md` |
 | Directory layout | `docs/Project_Structure.md` |
 

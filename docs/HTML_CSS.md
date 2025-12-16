@@ -111,8 +111,14 @@ The site must be optimized for mobile, tablet, and desktop. Breakpoints are defi
 - Respect `@media (prefers-reduced-motion: reduce)` by disabling transitions.
 
 
+## XSS Protection
+
+Django auto-escapes `{{ variable }}` output. User-submitted text is safe to display.
+
+Only use `{{ variable|safe }}` for HTML you control (e.g., markdown rendered server-side).
+
 ## Performance & Build
 
 - Stick to vanilla CSS compiled once (no external fonts, minimal animations).
 - Use `@layer base, components, utilities;` to control cascade if desired.
-- Gzip production CSS and ensure it is fingerprinted via Django’s `collectstatic`.
+- Gzip production CSS and ensure it is fingerprinted via Django's `collectstatic`.
