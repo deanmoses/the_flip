@@ -1,6 +1,7 @@
 """Core form utilities and mixins."""
 
 from pathlib import Path
+from typing import Any
 
 from django import forms
 from django.core.files.uploadedfile import UploadedFile
@@ -118,7 +119,7 @@ def validate_media_files(files: list[UploadedFile]) -> list[UploadedFile]:
     return cleaned_files
 
 
-def collect_media_files(files_dict, field_name: str, cleaned_data: dict) -> list[UploadedFile]:
+def collect_media_files(files_dict: Any, field_name: str, cleaned_data: dict) -> list[UploadedFile]:
     """Collect uploaded files from both multi-file and single-file contexts.
 
     Handles the complexity of file uploads coming from different sources:

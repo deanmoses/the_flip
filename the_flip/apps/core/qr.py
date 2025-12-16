@@ -7,6 +7,7 @@ from io import BytesIO
 from pathlib import Path
 
 import qrcode
+from django.conf import settings
 from PIL import Image, ImageOps
 from PIL.Image import Resampling
 from qrcode.constants import ERROR_CORRECT_H
@@ -20,7 +21,7 @@ QR_LOGO_SIZE_RATIO_BULK = 0.25  # Slightly smaller for bulk
 QR_LOGO_PADDING = 4
 
 # Path to logo image
-LOGO_PATH = Path(__file__).resolve().parent.parent.parent / "static/core/images/logo_white.png"
+LOGO_PATH = Path(settings.BASE_DIR) / "the_flip/static/core/images/logo_white.png"
 
 
 def _load_and_invert_logo() -> Image.Image | None:
