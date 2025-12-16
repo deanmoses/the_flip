@@ -26,7 +26,9 @@ from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.decorators import method_decorator
 from django.utils.html import format_html
+from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import DetailView, FormView, ListView, TemplateView, View
 
 from the_flip.apps.accounts.models import Maintainer
@@ -1345,6 +1347,7 @@ class MachineBulkQRCodeView(CanAccessMaintainerPortalMixin, TemplateView):
         return context
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class ReceiveTranscodedMediaView(View):
     """
     API endpoint for worker service to upload transcoded video files.
