@@ -22,6 +22,15 @@ STOP and read the relevant doc before writing code:
 
 Follow the patterns in these docs exactly. Do not introduce new conventions without asking. Update docs when changing behavior.
 
+## PR Workflow
+
+Before creating a pull request, run the code review agents on changed files:
+1. `antipattern-scanner` - detects architectural violations
+2. `clean-code-reviewer` - checks clean code principles
+3. `code-smell-detector` - identifies maintainability hints
+
+Use `/pre-pr-check` command to run the full pre-PR checklist, or spawn agents directly via Task tool. Address findings before submitting.
+
 ## Development Commands
 
 ```bash
