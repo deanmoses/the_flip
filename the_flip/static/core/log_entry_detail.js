@@ -141,10 +141,11 @@
       }
     }
 
-    // Expose callback for maintainer autocomplete selection
-    window.onMaintainerSelect = function (maintainer, input) {
-      saveMaintainers();
-    };
+    // Listen for autocomplete selection
+    const container = document.querySelector("[data-maintainer-autocomplete]");
+    if (container) {
+      container.addEventListener("maintainer:selected", saveMaintainers);
+    }
 
     maintainerInput.addEventListener("change", saveMaintainers);
     maintainerInput.addEventListener("blur", saveMaintainers);

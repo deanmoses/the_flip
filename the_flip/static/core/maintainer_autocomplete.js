@@ -14,7 +14,10 @@
  *
  * Options (data attributes on container):
  *   data-autocomplete-url: API endpoint for maintainer list (required)
- *   data-on-select: Name of global callback function to call after selection (optional)
+ *
+ * Events:
+ *   maintainer:selected - Dispatched on container when a maintainer is selected
+ *                         detail: { maintainer, input }
  */
 
 function initMaintainerAutocomplete(container) {
@@ -22,7 +25,6 @@ function initMaintainerAutocomplete(container) {
   const usernameInput = container.querySelector("[data-maintainer-username]");
   const dropdown = container.querySelector(".autocomplete__dropdown");
   const endpoint = container.dataset.autocompleteUrl;
-  const onSelectCallback = container.dataset.onSelect;
 
   if (!input || !dropdown || !endpoint) return;
 
@@ -68,10 +70,9 @@ function initMaintainerAutocomplete(container) {
       selectedDisplayName = maintainer.display_name;
     }
     hideDropdown();
-    // Call optional callback after selection
-    if (onSelectCallback && typeof window[onSelectCallback] === "function") {
-      window[onSelectCallback](maintainer, input);
-    }
+    container.dispatchEvent(
+      new CustomEvent("maintainer:selected", { detail: { maintainer, input } })
+    );
   }
 
   function formatMaintainer(m) {
