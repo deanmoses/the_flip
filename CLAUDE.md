@@ -136,6 +136,14 @@ the_flip/
     └── static/             # Project-level static files
 ```
 
+## Rules (Always Follow)
+
+- **Don't silence linter warnings**: don't add `# noqa`, `# type: ignore`, or similar comments to suppress warnings without explicit user approval. Fix the underlying issue instead, unless fixing looks complicated, then ask user.
+- **Secrets**: never hardcode keys, passwords or tokens:
+  - Use `python-decouple` to read from environment variables.
+  - When tests need keys, tokens or passwords, generate them dynamically to avoid triggering the `detect-secrets` pre-commit hook, using secrets.token_hex(16).
+- **Use Mixins, not base classes**: for shared behavior, use mixins (classes that call `super()`) instead of base classes. Python's MRO breaks when base classes don't call `super()` - sibling classes get skipped silently.
+
 ## Key Conventions
 
 - Each app keeps `models.py`, `forms.py`, `views.py`, `admin.py`, `tests.py` focused on that domain

@@ -69,3 +69,20 @@ class MyTestCase(TestDataMixin, TestCase):
 5. Use descriptive test names AND one-line docstrings; docstrings clarify intent and appear in test failure output
 
 For mocking patterns (subprocess, HTTP, settings, time), see `maintenance/tests/test_tasks.py`.
+
+## Avoiding Secret Scanner Triggers
+
+When tests need tokens or passwords, generate them dynamically to avoid triggering the `detect-secrets` pre-commit hook:
+
+```python
+import secrets
+
+# At module level for reuse across tests
+TEST_TOKEN = secrets.token_hex(16)
+
+# Or in setUp for per-test isolation
+def setUp(self):
+    self.test_token = secrets.token_hex(16)
+```
+
+Do NOT hardcode strings like `"test-secret-token-12345"` — these trigger the secret scanner.
