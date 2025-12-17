@@ -2093,6 +2093,29 @@ body {
 .space-right-sm { margin-right: var(--space-2); }
 
 /* ========================================
+   STATUS INDICATOR
+   Small inline text for save state feedback
+   ======================================== */
+
+.status-indicator {
+  font-size: var(--text-sm);
+  margin-top: var(--space-1);
+  min-height: 1.25em;
+}
+
+.status-indicator.saving {
+  color: var(--color-text-muted);
+}
+
+.status-indicator.saved {
+  color: var(--color-success);
+}
+
+.status-indicator.error {
+  color: var(--color-error);
+}
+
+/* ========================================
    RESPONSIVE OVERRIDES (mobile-first)
    ======================================== */
 
