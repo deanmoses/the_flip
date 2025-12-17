@@ -96,16 +96,18 @@ Always use `defer` when including scripts:
 When JS modules need to communicate, use custom DOM events rather than globals:
 
 ```javascript
-// Dispatch event
-document.dispatchEvent(new CustomEvent('media:uploaded', {
-  detail: { mediaId: 123 }
+// Dispatch event on a specific element (preferred) or document
+container.dispatchEvent(new CustomEvent('maintainer:selected', {
+  detail: { maintainer, input }
 }));
 
 // Listen for event
-document.addEventListener('media:uploaded', (e) => {
-  console.log(e.detail.mediaId);
+container.addEventListener('maintainer:selected', (e) => {
+  console.log(e.detail.maintainer);
 });
 ```
+
+**Do not use global callbacks** like `window.onSomething = function() {...}` or `data-on-select="globalFunctionName"`. These pollute the global namespace and create hidden coupling between modules. Custom events are explicit, discoverable, and don't require the listener to exist when the event is dispatched.
 
 ### Visibility Pattern
 
