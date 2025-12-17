@@ -89,7 +89,7 @@ Handles media upload and deletion.
 **Upload progress features:**
 - Shows "Uploading 1 of 5..." status during multi-file uploads
 - Disables upload button during uploads (prevents double-uploads)
-- Updates button text based on media state ("Upload Photos" vs "Upload More Photos")
+- Updates button text based on media state ("Upload" vs "Upload More")
 - Dispatches `media:uploaded` event when videos are uploaded
 
 ## Template Integration

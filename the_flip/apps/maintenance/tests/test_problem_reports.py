@@ -1123,7 +1123,7 @@ class ProblemReportDetailMediaDisplayTests(TemporaryMediaMixin, TestDataMixin, T
         response = self.client.get(self.detail_url)
 
         self.assertContains(response, "Media")
-        self.assertContains(response, "Upload Photos")
+        self.assertContains(response, "Upload")
 
     def test_detail_shows_no_media_message(self):
         """Detail page should show 'No media' when there are no uploads."""

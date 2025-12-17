@@ -10,7 +10,7 @@
  *
  * Expected DOM structure (from media_card_editable.html partial):
  *   <div data-media-card>
- *     <button data-media-upload-btn>Upload Photos</button>
+ *     <button data-media-upload-btn>Upload</button>
  *     <div data-media-container class="media-grid">
  *       <div class="media-grid__item" data-media-id="123">
  *         ...
@@ -91,7 +91,7 @@
     }
 
     uploadButton.disabled = false;
-    uploadButton.textContent = 'Upload More Photos';
+    uploadButton.textContent = 'Upload More';
 
     if (hasVideo) {
       document.dispatchEvent(
@@ -116,7 +116,7 @@
     // Update button text if there are existing media items
     const existingMediaCount = container.querySelectorAll('.media-grid__item').length;
     if (existingMediaCount > 0) {
-      uploadButton.textContent = 'Upload More Photos';
+      uploadButton.textContent = 'Upload More';
     }
 
     // Trigger file picker when upload button is clicked
@@ -187,7 +187,7 @@
         const mediaItem = createMediaElement(data, altText, modelName);
         container.appendChild(mediaItem);
         attachDeleteHandler(mediaItem.querySelector('.media-grid__delete'), container);
-        uploadButton.textContent = 'Upload More Photos';
+        uploadButton.textContent = 'Upload More';
         return data;
       } else {
         console.error('Upload failed:', data.error || 'Unknown error');
@@ -270,7 +270,7 @@
       const remaining = container.querySelectorAll('.media-grid__item').length;
       const uploadBtn = card.querySelector('[data-media-upload-btn]');
       if (uploadBtn && remaining === 0) {
-        uploadBtn.textContent = 'Upload Photos';
+        uploadBtn.textContent = 'Upload';
       }
     }
   }
