@@ -62,7 +62,52 @@ The project establishes component patterns in [the_flip/static/core/styles.css](
 
 **Do not introduce new component patterns without documenting them here**.
 
-## JavaScript Visibility Pattern
+## JavaScript
+
+### Module Pattern
+
+This project uses vanilla JavaScript with IIFEs (Immediately Invoked Function Expressions) rather than ES modules:
+
+```javascript
+(function () {
+  'use strict';
+  // Module code here - all variables are scoped to this function
+})();
+```
+
+**Why IIFEs instead of ES modules:**
+- No bundler required - works with Django's `collectstatic`
+- Simple `<script defer>` loading without `type="module"` complexity
+- No import path management (ES modules require full URLs, not bare specifiers)
+- Works everywhere without CORS considerations
+
+For a low-JS project like this, IIFEs are the pragmatic choice. If the project grows to need significant JS sharing between modules, consider adding a bundler (esbuild) and switching to ES modules.
+
+### Script Loading
+
+Always use `defer` when including scripts:
+
+```html
+<script src="{% static 'core/my_script.js' %}" defer></script>
+```
+
+### Cross-Module Communication
+
+When JS modules need to communicate, use custom DOM events rather than globals:
+
+```javascript
+// Dispatch event
+document.dispatchEvent(new CustomEvent('media:uploaded', {
+  detail: { mediaId: 123 }
+}));
+
+// Listen for event
+document.addEventListener('media:uploaded', (e) => {
+  console.log(e.detail.mediaId);
+});
+```
+
+### Visibility Pattern
 
 When toggling element visibility with JavaScript, use the `.hidden` class instead of `style.display`:
 
