@@ -138,6 +138,7 @@ the_flip/
 
 ## Rules (Always Follow)
 
+- **Always use latest stable versions**: When adding a new dependency, pre-commit hook, or library, always verify and use the latest stable version. Check PyPI, npm, GitHub tags, or the package's official source before specifying a version. Don't guess or use outdated versions from memory.
 - **Don't silence linter warnings**: don't add `# noqa`, `# type: ignore`, or similar comments to suppress warnings without explicit user approval. Fix the underlying issue instead, unless fixing looks complicated, then ask user.
 - **Secrets**: never hardcode keys, passwords or tokens:
   - Use `python-decouple` to read from environment variables.
