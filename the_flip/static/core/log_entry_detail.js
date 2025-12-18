@@ -99,8 +99,11 @@
     if (!maintainerInput) return;
 
     let lastSavedValue = maintainerInput.value;
+    let saveInProgress = false;
 
     async function saveMaintainers() {
+      if (saveInProgress) return;
+
       const newValue = maintainerInput.value.trim();
 
       // If empty, restore previous value (no server call)
@@ -112,6 +115,7 @@
       // Skip if unchanged
       if (newValue === lastSavedValue) return;
 
+      saveInProgress = true;
       showStatus(maintainerStatus, "Saving...", "saving");
 
       try {
@@ -138,6 +142,8 @@
         console.error("Save error:", error);
         maintainerInput.value = lastSavedValue;
         showStatus(maintainerStatus, "Error saving", "error");
+      } finally {
+        saveInProgress = false;
       }
     }
 
