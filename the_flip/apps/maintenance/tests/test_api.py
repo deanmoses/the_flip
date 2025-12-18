@@ -397,3 +397,34 @@ class DeleteMediaTests(TemporaryMediaMixin, TestDataMixin, TestCase):
         storage = self.media.file.storage
         self.assertFalse(storage.exists(file_name))
         self.assertFalse(storage.exists(thumb_name))
+
+    def test_deletes_all_video_files(self):
+        """Deleting video media removes original, transcoded, poster, and DB record."""
+        # Create video with all associated files
+        original = SimpleUploadedFile("video.mp4", b"original", content_type="video/mp4")
+        transcoded = SimpleUploadedFile("transcoded.mp4", b"transcoded", content_type="video/mp4")
+        poster = SimpleUploadedFile("poster.jpg", b"poster", content_type="image/jpeg")
+
+        video_media = LogEntryMedia.objects.create(
+            log_entry=self.log_entry,
+            media_type=LogEntryMedia.TYPE_VIDEO,
+            file=original,
+            transcoded_file=transcoded,
+            poster_file=poster,
+            transcode_status=LogEntryMedia.STATUS_READY,
+        )
+
+        original_name = video_media.file.name
+        transcoded_name = video_media.transcoded_file.name
+        poster_name = video_media.poster_file.name
+        storage = video_media.file.storage
+
+        response = self.client.post(
+            self.delete_url, {"action": "delete_media", "media_id": video_media.id}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(LogEntryMedia.objects.filter(id=video_media.id).exists())
+        self.assertFalse(storage.exists(original_name))
+        self.assertFalse(storage.exists(transcoded_name))
+        self.assertFalse(storage.exists(poster_name))
