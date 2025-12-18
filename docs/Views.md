@@ -1,0 +1,124 @@
+# Views
+
+## When to Use CBVs vs FBVs
+
+This project uses **Class-Based Views (CBVs)** for most views and **Function-Based Views (FBVs)** for simple endpoints.
+
+| Use | When |
+|-----|------|
+| **CBV** | Standard CRUD: list, detail, create, update, delete. Django's generic views handle the boilerplate. |
+| **FBV** | Simple one-off endpoints: health checks, AJAX validation, webhooks, or views with unusual logic that doesn't fit CBV patterns. |
+
+Examples of FBVs in this project: `healthz` (health check), `check_username` (AJAX validation), registration views.
+
+## CBV Pattern
+
+```python
+class MyListView(CanAccessMaintainerPortalMixin, ListView):
+    """Docstring describing the view's purpose."""
+
+    # Always specify template explicitly, don't rely on auto-discovery
+    template_name = "app/mymodel_list.html"
+
+    # Name used in template: {% for item in items %}
+    context_object_name = "items"
+
+    # For paginated views. Omit for infinite scroll views.
+    paginate_by = 20
+
+    def dispatch(self, request, *args, **kwargs):
+        """
+        Runs before get() or post().
+
+        Use to fetch objects from URL params that will be needed
+        in multiple methods. Store on self for later access.
+        """
+        self.parent = get_object_or_404(Parent, slug=kwargs["slug"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        """
+        Return the list of items for this view.
+
+        Always optimize queries:
+        - select_related() for ForeignKey/OneToOne (single JOIN)
+        - prefetch_related() for ManyToMany/reverse FK (separate query)
+        """
+        return (
+            MyModel.objects.filter(parent=self.parent)
+            .select_related("foreign_key_field")
+            .prefetch_related("many_to_many_field")
+            .order_by("-created_at")
+        )
+
+    def get_context_data(self, **kwargs):
+        """
+        Add extra variables to the template context.
+
+        Always call super() first to get the default context,
+        then add your custom variables.
+        """
+        context = super().get_context_data(**kwargs)
+        context["parent"] = self.parent
+        context["stats"] = calculate_stats(self.parent)
+        return context
+```
+
+## Common CBV Types
+
+| CBV | Purpose | Key Methods |
+|-----|---------|-------------|
+| `ListView` | Display list of objects | `get_queryset()`, `get_context_data()` |
+| `DetailView` | Display single object | `get_object()`, `get_context_data()` |
+| `CreateView` | Form to create object | `form_valid()`, `get_success_url()` |
+| `UpdateView` | Form to edit object | `get_object()`, `form_valid()` |
+| `DeleteView` | Confirm and delete | `get_object()`, `get_success_url()` |
+| `FormView` | Generic form handling | `form_valid()`, `form_invalid()` |
+
+## Access Control
+
+Protect maintainer views with `CanAccessMaintainerPortalMixin`:
+
+```python
+from the_flip.apps.core.mixins import CanAccessMaintainerPortalMixin
+
+class MyProtectedView(CanAccessMaintainerPortalMixin, View):
+    # Only logged-in maintainers can access
+    ...
+```
+
+## Safe Object Lookups
+
+Use `get_object_or_404()` when fetching objects from URL parameters:
+
+```python
+# If no machine with this slug exists, Django returns a 404 page
+# Without this, you'd get a 500 error (exposes that the object doesn't exist)
+machine = get_object_or_404(MachineInstance, slug=kwargs["slug"])
+```
+
+## Mixins Over Base Classes
+
+Use mixins (classes that call `super()`) instead of base classes. Python's MRO breaks when base classes don't call `super()` - sibling classes get skipped silently. Mixins compose safely; base classes don't.
+
+## Infinite Scroll
+
+List views use infinite scroll instead of traditional pagination:
+
+- View returns a partial template for AJAX requests
+- `infinite_scroll.js` handles loading more items on scroll
+- See `LogListPartialView` for example implementation
+
+## Query Optimization
+
+Use `select_related` for ForeignKey/OneToOne (single JOIN) and `prefetch_related` for reverse/ManyToMany (separate query):
+
+```python
+# From maintenance/views.py - actual project usage
+LogEntry.objects.filter(machine=self.machine)
+    .select_related("machine", "problem_report")
+    .prefetch_related("maintainers__user", "media")
+    .order_by("-work_date")
+```
+
+Add these in views or QuerySet methods where queries are built, not in model methods.

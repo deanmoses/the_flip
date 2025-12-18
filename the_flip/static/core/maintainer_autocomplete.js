@@ -14,22 +14,24 @@
  *
  * Options (data attributes on container):
  *   data-autocomplete-url: API endpoint for maintainer list (required)
- *   data-on-select: Name of global callback function to call after selection (optional)
+ *
+ * Events:
+ *   maintainer:selected - Dispatched on container when a maintainer is selected
+ *                         detail: { maintainer, input }
  */
 
 function initMaintainerAutocomplete(container) {
-  const input = container.querySelector("[data-maintainer-search]");
-  const usernameInput = container.querySelector("[data-maintainer-username]");
-  const dropdown = container.querySelector(".autocomplete__dropdown");
+  const input = container.querySelector('[data-maintainer-search]');
+  const usernameInput = container.querySelector('[data-maintainer-username]');
+  const dropdown = container.querySelector('.autocomplete__dropdown');
   const endpoint = container.dataset.autocompleteUrl;
-  const onSelectCallback = container.dataset.onSelect;
 
   if (!input || !dropdown || !endpoint) return;
 
   let maintainers = [];
   // Track the display name that corresponds to the current hidden username value.
   // Initialize from input if hidden field already has a value (e.g., form re-render).
-  let selectedDisplayName = usernameInput?.value ? input.value : "";
+  let selectedDisplayName = usernameInput?.value ? input.value : '';
 
   // Prefetch all maintainers on init (small dataset)
   fetch(endpoint)
@@ -45,19 +47,17 @@ function initMaintainerAutocomplete(container) {
   const keyboardNav = attachDropdownKeyboard({
     searchInput: input,
     listContainer: dropdown,
-    getSelectableItems: () => dropdown.querySelectorAll("[data-username]"),
+    getSelectableItems: () => dropdown.querySelectorAll('[data-username]'),
     onSelect: (item) => {
-      const maintainer = maintainers.find(
-        (m) => m.username === item.dataset.username
-      );
+      const maintainer = maintainers.find((m) => m.username === item.dataset.username);
       if (maintainer) selectMaintainer(maintainer);
     },
     onEscape: hideDropdown,
   });
 
   function hideDropdown() {
-    dropdown.classList.add("hidden");
-    dropdown.innerHTML = "";
+    dropdown.classList.add('hidden');
+    dropdown.innerHTML = '';
   }
 
   function selectMaintainer(maintainer) {
@@ -68,10 +68,9 @@ function initMaintainerAutocomplete(container) {
       selectedDisplayName = maintainer.display_name;
     }
     hideDropdown();
-    // Call optional callback after selection
-    if (onSelectCallback && typeof window[onSelectCallback] === "function") {
-      window[onSelectCallback](maintainer, input);
-    }
+    container.dispatchEvent(
+      new CustomEvent('maintainer:selected', { detail: { maintainer, input } })
+    );
   }
 
   function formatMaintainer(m) {
@@ -97,15 +96,15 @@ function initMaintainerAutocomplete(container) {
       hideDropdown();
       return;
     }
-    dropdown.innerHTML = "";
+    dropdown.innerHTML = '';
 
     list.forEach((maintainer) => {
-      const item = document.createElement("div");
-      item.className = "autocomplete__item";
+      const item = document.createElement('div');
+      item.className = 'autocomplete__item';
       item.dataset.username = maintainer.username;
       item.textContent = formatMaintainer(maintainer);
 
-      item.addEventListener("mousedown", (event) => {
+      item.addEventListener('mousedown', (event) => {
         event.preventDefault();
         selectMaintainer(maintainer);
       });
@@ -113,33 +112,33 @@ function initMaintainerAutocomplete(container) {
       dropdown.appendChild(item);
     });
 
-    dropdown.classList.remove("hidden");
+    dropdown.classList.remove('hidden');
     keyboardNav.reset();
   }
 
-  input.addEventListener("focus", () => {
+  input.addEventListener('focus', () => {
     const filtered = filterMaintainers(input.value);
     renderDropdown(filtered);
   });
 
-  input.addEventListener("input", () => {
+  input.addEventListener('input', () => {
     // Clear hidden username if user manually edits the text to something different
     // than what was selected from the dropdown
     if (usernameInput && input.value !== selectedDisplayName) {
-      usernameInput.value = "";
+      usernameInput.value = '';
     }
     const filtered = filterMaintainers(input.value);
     renderDropdown(filtered);
   });
 
-  document.addEventListener("click", (event) => {
+  document.addEventListener('click', (event) => {
     if (!container.contains(event.target)) {
       hideDropdown();
     }
   });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const containers = document.querySelectorAll("[data-maintainer-autocomplete]");
+document.addEventListener('DOMContentLoaded', () => {
+  const containers = document.querySelectorAll('[data-maintainer-autocomplete]');
   containers.forEach((container) => initMaintainerAutocomplete(container));
 });

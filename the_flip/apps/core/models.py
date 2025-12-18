@@ -19,7 +19,9 @@ MAX_IMAGE_DIMENSION = 2400
 THUMB_IMAGE_DIMENSION = 800
 
 
-class TimeStampedModel(models.Model):
+class TimeStampedMixin(models.Model):
+    """Mixin providing created_at and updated_at timestamp fields."""
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -138,7 +140,7 @@ def resize_image_file(
 # ---------------------------------------------------------------------------
 
 
-class AbstractMedia(TimeStampedModel):
+class AbstractMedia(TimeStampedMixin):
     """
     Abstract base class for media attachments (photos and videos).
 
@@ -226,17 +228,13 @@ class AbstractMedia(TimeStampedModel):
 # Media model registry
 # ---------------------------------------------------------------------------
 
-# Maps model names to their import paths for lazy loading
+# Maps model names to import paths for lazy loading. Add new media models here.
 _MEDIA_MODEL_REGISTRY: dict[str, str] = {
     "LogEntryMedia": "the_flip.apps.maintenance.models.LogEntryMedia",
+    "ProblemReportMedia": "the_flip.apps.maintenance.models.ProblemReportMedia",
     "PartRequestMedia": "the_flip.apps.parts.models.PartRequestMedia",
     "PartRequestUpdateMedia": "the_flip.apps.parts.models.PartRequestUpdateMedia",
 }
-
-
-def register_media_model(model_name: str, import_path: str) -> None:
-    """Register a media model for the transcode worker to find."""
-    _MEDIA_MODEL_REGISTRY[model_name] = import_path
 
 
 def get_media_model(model_name: str):

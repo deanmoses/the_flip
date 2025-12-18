@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-import base64
 from datetime import UTC, datetime, timedelta
 from datetime import timezone as dt_timezone
-from io import BytesIO
-from pathlib import Path
+from functools import partial
 
-import qrcode
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
@@ -25,23 +22,28 @@ from django.db.models import (
     When,
 )
 from django.db.models.functions import Lower
-from django.http import JsonResponse
+from django.http import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.crypto import constant_time_compare
+from django.utils.decorators import method_decorator
 from django.utils.html import format_html
+from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import DetailView, FormView, ListView, TemplateView, View
-from PIL import Image, ImageOps
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import Location, MachineInstance
+from the_flip.apps.core.forms import is_video_file
 from the_flip.apps.core.ip import get_real_ip
 from the_flip.apps.core.mixins import (
     CanAccessMaintainerPortalMixin,
     MediaUploadMixin,
     can_access_maintainer_portal,
 )
+from the_flip.apps.core.models import get_media_model
+from the_flip.apps.core.qr import QR_BOX_SIZE_BULK, generate_qr_code_base64
 from the_flip.apps.core.tasks import enqueue_transcode
 from the_flip.apps.maintenance.forms import (
     LogEntryQuickForm,
@@ -546,14 +548,7 @@ class ProblemReportCreateView(CanAccessMaintainerPortalMixin, FormView):
         media_files = form.cleaned_data.get("media_file", [])
         if media_files:
             for media_file in media_files:
-                content_type = (getattr(media_file, "content_type", "") or "").lower()
-                ext = Path(getattr(media_file, "name", "")).suffix.lower()
-                is_video = content_type.startswith("video/") or ext in {
-                    ".mp4",
-                    ".mov",
-                    ".m4v",
-                    ".hevc",
-                }
+                is_video = is_video_file(media_file)
 
                 media = ProblemReportMedia.objects.create(
                     problem_report=report,
@@ -565,9 +560,10 @@ class ProblemReportCreateView(CanAccessMaintainerPortalMixin, FormView):
                 )
 
                 if is_video:
-                    media_id = media.id
                     transaction.on_commit(
-                        lambda mid=media_id: enqueue_transcode(mid, model_name="ProblemReportMedia")
+                        partial(
+                            enqueue_transcode, media_id=media.id, model_name="ProblemReportMedia"
+                        )
                     )
 
         messages.success(
@@ -683,6 +679,12 @@ class ProblemReportDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, 
         # Handle AJAX media delete
         if action == "delete_media":
             return self.handle_delete_media(request)
+
+        # Reject unrecognized actions (empty string means toggle status from form)
+        if action and action != "toggle_status":
+            return JsonResponse(
+                {"success": False, "error": f"Unknown action: {action}"}, status=400
+            )
 
         # Toggle status (wrapped in transaction so status + log entry are atomic)
         if self.report.status == ProblemReport.STATUS_OPEN:
@@ -902,7 +904,7 @@ class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
                 is_shared_account=False,
             ).first()
         if not maintainer:
-            maintainer = self.match_maintainer(submitter_name)
+            maintainer = Maintainer.match_by_name(submitter_name)
         if maintainer:
             log_entry.maintainers.add(maintainer)
         elif submitter_name:
@@ -911,14 +913,7 @@ class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
 
         if media_files:
             for media_file in media_files:
-                content_type = (getattr(media_file, "content_type", "") or "").lower()
-                ext = Path(getattr(media_file, "name", "")).suffix.lower()
-                is_video = content_type.startswith("video/") or ext in {
-                    ".mp4",
-                    ".mov",
-                    ".m4v",
-                    ".hevc",
-                }
+                is_video = is_video_file(media_file)
 
                 media = LogEntryMedia.objects.create(
                     log_entry=log_entry,
@@ -928,8 +923,9 @@ class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
                 )
 
                 if is_video:
-                    media_id = media.id
-                    transaction.on_commit(lambda mid=media_id: enqueue_transcode(mid))
+                    transaction.on_commit(
+                        partial(enqueue_transcode, media_id=media.id, model_name="LogEntryMedia")
+                    )
 
         # Close problem report if checkbox was checked
         if self.problem_report and self.request.POST.get("close_problem"):
@@ -957,17 +953,6 @@ class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
         if self.problem_report:
             return redirect("problem-report-detail", pk=self.problem_report.pk)
         return redirect("log-machine", slug=self.machine.slug)
-
-    def match_maintainer(self, name: str):
-        normalized = name.lower().strip()
-        if not normalized:
-            return None
-        for maintainer in Maintainer.objects.select_related("user"):
-            username = maintainer.user.username.lower()
-            full_name = (maintainer.user.get_full_name() or "").lower()
-            if normalized in {username, full_name}:
-                return maintainer
-        return None
 
 
 class MachineLogPartialView(CanAccessMaintainerPortalMixin, View):
@@ -1132,7 +1117,7 @@ class LogEntryDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, Detai
             matched = []
             unmatched = []
             for name in names:
-                maintainer = self.match_maintainer(name)
+                maintainer = Maintainer.match_by_name(name)
                 if maintainer:
                     matched.append(maintainer)
                 else:
@@ -1323,17 +1308,6 @@ class LogEntryDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, Detai
 
         return JsonResponse({"success": False, "error": "Invalid action"}, status=400)
 
-    def match_maintainer(self, name: str):
-        normalized = name.lower().strip()
-        if not normalized:
-            return None
-        for maintainer in Maintainer.objects.select_related("user"):
-            username = maintainer.user.username.lower()
-            full_name = (maintainer.user.get_full_name() or "").lower()
-            if normalized in {username, full_name}:
-                return maintainer
-        return None
-
 
 class MachineQRView(CanAccessMaintainerPortalMixin, DetailView):
     """Generate and display a printable QR code for a machine's public info page."""
@@ -1348,64 +1322,11 @@ class MachineQRView(CanAccessMaintainerPortalMixin, DetailView):
         context = super().get_context_data(**kwargs)
         machine = self.object
 
-        # Build the absolute URL for the public problem report page
         public_url = self.request.build_absolute_uri(
             reverse("public-problem-report-create", args=[machine.slug])
         )
 
-        # Generate QR code with high error correction for logo embedding
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_H,  # High error correction (30%)
-            box_size=10,
-            border=4,
-        )
-        qr.add_data(public_url)
-        qr.make(fit=True)
-
-        # Create QR code image and convert to RGB for logo overlay
-        qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
-
-        # Add logo to center of QR code
-        logo_path = (
-            Path(__file__).resolve().parent.parent.parent / "static/core/images/logo_white.png"
-        )
-        if logo_path.exists():
-            # Invert white logo to black for visibility on white QR background
-            logo = Image.open(logo_path).convert("RGBA")
-            r, g, b, a = logo.split()
-            rgb = Image.merge("RGB", (r, g, b))
-            inverted = ImageOps.invert(rgb)
-            logo = Image.merge("RGBA", (*inverted.split(), a))
-
-            # Calculate logo size (28% of QR code size, within 30% error correction capacity)
-            qr_width, qr_height = qr_img.size
-            logo_size = int(qr_width * 0.28)
-
-            # Resize logo maintaining aspect ratio
-            logo.thumbnail((logo_size, logo_size), Image.LANCZOS)
-
-            # Add white background/padding to logo for better contrast
-            padding = 4
-            logo_with_bg = Image.new(
-                "RGB", (logo.size[0] + padding * 2, logo.size[1] + padding * 2), "white"
-            )
-            logo_pos = (padding, padding)
-            logo_with_bg.paste(logo, logo_pos, logo if logo.mode == "RGBA" else None)
-
-            # Calculate center position and paste logo
-            logo_position = (
-                (qr_width - logo_with_bg.size[0]) // 2,
-                (qr_height - logo_with_bg.size[1]) // 2,
-            )
-            qr_img.paste(logo_with_bg, logo_position)
-
-        # Convert to base64 for inline display
-        buffer = BytesIO()
-        qr_img.save(buffer, format="PNG")
-        qr_code_data = base64.b64encode(buffer.getvalue()).decode()
-
-        context["qr_code_data"] = qr_code_data
+        context["qr_code_data"] = generate_qr_code_base64(public_url)
         context["public_url"] = public_url
 
         return context
@@ -1421,57 +1342,14 @@ class MachineBulkQRCodeView(CanAccessMaintainerPortalMixin, TemplateView):
         machines = MachineInstance.objects.visible().select_related("model", "location")
         qr_entries = []
 
-        logo_path = (
-            Path(__file__).resolve().parent.parent.parent / "static/core/images/logo_white.png"
-        )
-        logo_img = None
-        if logo_path.exists():
-            logo_img = Image.open(logo_path).convert("RGBA")
-
         for machine in machines:
             public_url = self.request.build_absolute_uri(
                 reverse("public-problem-report-create", args=[machine.slug])
             )
-            qr = qrcode.QRCode(
-                version=1,
-                error_correction=qrcode.constants.ERROR_CORRECT_H,
-                box_size=8,
-                border=4,
-            )
-            qr.add_data(public_url)
-            qr.make(fit=True)
-            qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
-
-            if logo_img:
-                logo = logo_img.copy()
-                r, g, b, a = logo.split()
-                rgb = Image.merge("RGB", (r, g, b))
-                inverted = ImageOps.invert(rgb)
-                logo = Image.merge("RGBA", (*inverted.split(), a))
-
-                qr_width, qr_height = qr_img.size
-                logo_size = int(qr_width * 0.25)
-                logo.thumbnail((logo_size, logo_size), Image.LANCZOS)
-
-                padding = 4
-                logo_with_bg = Image.new(
-                    "RGB", (logo.size[0] + padding * 2, logo.size[1] + padding * 2), "white"
-                )
-                logo_with_bg.paste(logo, (padding, padding), logo)
-                logo_position = (
-                    (qr_width - logo_with_bg.size[0]) // 2,
-                    (qr_height - logo_with_bg.size[1]) // 2,
-                )
-                qr_img.paste(logo_with_bg, logo_position)
-
-            buffer = BytesIO()
-            qr_img.save(buffer, format="PNG")
-            qr_code_data = base64.b64encode(buffer.getvalue()).decode()
-
             qr_entries.append(
                 {
                     "machine": machine,
-                    "qr_data": qr_code_data,
+                    "qr_data": generate_qr_code_base64(public_url, box_size=QR_BOX_SIZE_BULK),
                     "public_url": public_url,
                 }
             )
@@ -1480,54 +1358,50 @@ class MachineBulkQRCodeView(CanAccessMaintainerPortalMixin, TemplateView):
         return context
 
 
+def _validate_transcoding_auth(request) -> JsonResponse | None:
+    """
+    Validate Bearer token authentication for transcoding API endpoints.
+
+    Returns None if authentication is valid, or a JsonResponse with error details.
+    Uses constant-time comparison to prevent timing attacks.
+    """
+    auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+    if not auth_header.startswith("Bearer "):
+        return JsonResponse(
+            {"success": False, "error": "Missing or invalid Authorization header"}, status=401
+        )
+
+    token = auth_header[7:]  # Remove "Bearer " prefix
+    if not settings.TRANSCODING_UPLOAD_TOKEN:
+        return JsonResponse(
+            {"success": False, "error": "Server not configured for transcoding"},
+            status=500,
+        )
+
+    if not constant_time_compare(token, settings.TRANSCODING_UPLOAD_TOKEN):
+        return JsonResponse({"success": False, "error": "Invalid authentication token"}, status=403)
+
+    return None
+
+
+@method_decorator(csrf_exempt, name="dispatch")
 class ReceiveTranscodedMediaView(View):
     """
     API endpoint for worker service to upload transcoded video files.
 
+    POST /api/transcoding/upload/<model_name>/<media_id>/
+
     Expects multipart/form-data with:
     - video_file: transcoded video file
     - poster_file: generated poster image
-    - media_id: ID of media record to update
-    - model_name: Name of the media model (LogEntryMedia, PartRequestMedia, etc.)
-    - log_entry_media_id: (legacy) ID of LogEntryMedia record to update
     - Authorization header: Bearer <token>
     """
 
-    def _get_media_model(self, model_name: str):
-        """Get the media model class by name."""
-        if model_name == "LogEntryMedia":
-            return LogEntryMedia
-        if model_name in ("PartRequestMedia", "PartRequestUpdateMedia"):
-            from the_flip.apps.parts.models import PartRequestMedia, PartRequestUpdateMedia
-
-            return PartRequestMedia if model_name == "PartRequestMedia" else PartRequestUpdateMedia
-        raise ValueError(f"Unknown media model: {model_name}")
-
-    def post(self, request, *args, **kwargs):
+    def post(self, request, model_name: str, media_id: int):
         # Validate authentication token
-        auth_header = request.META.get("HTTP_AUTHORIZATION", "")
-        if not auth_header.startswith("Bearer "):
-            return JsonResponse(
-                {"success": False, "error": "Missing or invalid Authorization header"}, status=401
-            )
-
-        token = auth_header[7:]  # Remove "Bearer " prefix
-        if not settings.TRANSCODING_UPLOAD_TOKEN:
-            return JsonResponse(
-                {"success": False, "error": "Server not configured for transcoding uploads"},
-                status=500,
-            )
-
-        if token != settings.TRANSCODING_UPLOAD_TOKEN:
-            return JsonResponse(
-                {"success": False, "error": "Invalid authentication token"}, status=403
-            )
-
-        # Validate required fields - support both new and legacy field names
-        media_id = request.POST.get("media_id") or request.POST.get("log_entry_media_id")
-        model_name = request.POST.get("model_name", "LogEntryMedia")
-        if not media_id:
-            return JsonResponse({"success": False, "error": "Missing media_id"}, status=400)
+        auth_error = _validate_transcoding_auth(request)
+        if auth_error:
+            return auth_error
 
         video_file = request.FILES.get("video_file")
         poster_file = request.FILES.get("poster_file")
@@ -1553,14 +1427,11 @@ class ReceiveTranscodedMediaView(View):
 
         # Get media record using appropriate model
         try:
-            media_model = self._get_media_model(model_name)
+            media_model = get_media_model(model_name)
             media = media_model.objects.get(id=media_id)
         except ValueError as e:
-            return JsonResponse(
-                {"success": False, "error": str(e)},
-                status=400,
-            )
-        except Exception:
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+        except media_model.DoesNotExist:
             return JsonResponse(
                 {"success": False, "error": f"{model_name} with id {media_id} not found"},
                 status=404,
@@ -1568,10 +1439,13 @@ class ReceiveTranscodedMediaView(View):
 
         # Save transcoded files and update record
         try:
+            # Capture original file reference for deferred deletion
+            original_file_name = media.file.name if media.file else None
+
             with transaction.atomic():
-                # Delete original file
+                # Clear original file reference (but don't delete yet)
                 if media.file:
-                    media.file.delete(save=False)
+                    media.file = None
 
                 # Save transcoded video
                 media.transcoded_file = video_file
@@ -1584,6 +1458,13 @@ class ReceiveTranscodedMediaView(View):
                 media.transcode_status = media_model.STATUS_READY
 
                 media.save()
+
+            # Delete original file only after transaction commits successfully
+            # This prevents data loss if save() fails
+            if original_file_name:
+                storage = media.transcoded_file.storage
+                file_to_delete = original_file_name
+                transaction.on_commit(lambda: storage.delete(file_to_delete))
 
             return JsonResponse(
                 {
@@ -1600,3 +1481,44 @@ class ReceiveTranscodedMediaView(View):
                 {"success": False, "error": f"Failed to save transcoded media: {str(e)}"},
                 status=500,
             )
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class ServeSourceMediaView(View):
+    """
+    API endpoint for worker service to download source video files.
+
+    GET /api/transcoding/download/<model_name>/<media_id>/
+    Authorization: Bearer <token>
+
+    Returns the source file as a streaming response.
+    """
+
+    def get(self, request, model_name: str, media_id: int):
+        # Validate authentication token
+        auth_error = _validate_transcoding_auth(request)
+        if auth_error:
+            return auth_error
+
+        # Get media record
+        try:
+            media_model = get_media_model(model_name)
+            media = media_model.objects.get(id=media_id)
+        except ValueError as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+        except media_model.DoesNotExist:
+            return JsonResponse(
+                {"success": False, "error": f"{model_name} with id {media_id} not found"},
+                status=404,
+            )
+
+        # Check that file exists
+        if not media.file:
+            return JsonResponse({"success": False, "error": "Media has no source file"}, status=404)
+
+        # Stream the file
+        return FileResponse(
+            media.file.open("rb"),
+            as_attachment=True,
+            filename=media.file.name.split("/")[-1],
+        )

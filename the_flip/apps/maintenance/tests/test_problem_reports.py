@@ -1,6 +1,7 @@
 """Tests for problem report views and functionality."""
 
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.conf import settings
 from django.test import TestCase, tag
@@ -180,6 +181,32 @@ class ProblemReportDetailViewTests(SuppressRequestLogsMixin, TestDataMixin, Test
         messages = list(response.context["messages"])
         self.assertEqual(len(messages), 1)
         self.assertIn("re-opened", str(messages[0]))
+
+    def test_unrecognized_action_does_not_toggle_status(self):
+        """POST with unrecognized action should NOT toggle status.
+
+        This is a regression test for a bug where any POST with an unrecognized
+        action would fall through to the status toggle code, inadvertently
+        changing the problem report status.
+        """
+        initial_status = self.report.status
+        initial_log_count = LogEntry.objects.count()
+
+        self.client.force_login(self.staff_user)
+        response = self.client.post(
+            self.detail_url,
+            {"action": "invalid_action_xyz"},
+        )
+
+        # Status should NOT have changed
+        self.report.refresh_from_db()
+        self.assertEqual(self.report.status, initial_status)
+
+        # No new log entry should have been created
+        self.assertEqual(LogEntry.objects.count(), initial_log_count)
+
+        # Should return 400 Bad Request for unrecognized action
+        self.assertEqual(response.status_code, 400)
 
     def test_detail_view_search_filters_log_entries_by_text(self):
         """Search should filter log entries by text on the detail page."""
@@ -971,7 +998,7 @@ class ProblemReportMediaUploadTests(
 
         data = {
             "action": "upload_media",
-            "file": img_io,
+            "media_file": img_io,
         }
         response = self.client.post(self.detail_url, data)
         self.assertEqual(response.status_code, 403)
@@ -993,7 +1020,7 @@ class ProblemReportMediaUploadTests(
 
         data = {
             "action": "upload_media",
-            "file": img_io,
+            "media_file": img_io,
         }
         response = self.client.post(self.detail_url, data)
 
@@ -1007,6 +1034,37 @@ class ProblemReportMediaUploadTests(
         media = ProblemReportMedia.objects.first()
         self.assertEqual(media.problem_report, self.report)
         self.assertEqual(media.media_type, ProblemReportMedia.TYPE_PHOTO)
+
+    @patch("the_flip.apps.core.mixins.enqueue_transcode")
+    def test_video_upload_enqueues_transcode_with_model_name(self, mock_enqueue):
+        """Video upload should call enqueue_transcode with correct model_name.
+
+        This test verifies that when a video is uploaded via AJAX to a problem report,
+        the view correctly calls enqueue_transcode with model_name="ProblemReportMedia".
+        """
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.client.force_login(self.staff_user)
+
+        video_file = SimpleUploadedFile("test.mp4", b"fake video content", content_type="video/mp4")
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                self.detail_url,
+                {
+                    "action": "upload_media",
+                    "media_file": video_file,
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertTrue(json_data["success"])
+        self.assertEqual(json_data["media_type"], "video")
+
+        # Verify enqueue_transcode was called with correct arguments
+        media = ProblemReportMedia.objects.first()
+        mock_enqueue.assert_called_once_with(media_id=media.id, model_name="ProblemReportMedia")
 
 
 @tag("views", "ajax", "media")
@@ -1123,7 +1181,7 @@ class ProblemReportDetailMediaDisplayTests(TemporaryMediaMixin, TestDataMixin, T
         response = self.client.get(self.detail_url)
 
         self.assertContains(response, "Media")
-        self.assertContains(response, "Upload Photos")
+        self.assertContains(response, "Upload")
 
     def test_detail_shows_no_media_message(self):
         """Detail page should show 'No media' when there are no uploads."""

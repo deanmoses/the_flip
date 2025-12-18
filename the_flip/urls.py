@@ -29,7 +29,7 @@ from the_flip.apps.catalog.views import (
 )
 from the_flip.apps.catalog.views_inline import MachineInlineUpdateView
 from the_flip.apps.core.admin_views import admin_debug_view
-from the_flip.apps.core.views import HomeView, healthz
+from the_flip.apps.core.views import HomeView, TranscodeStatusView, healthz
 from the_flip.apps.maintenance import views as maintenance_views
 from the_flip.apps.parts import views as parts_views
 from the_flip.views import serve_media
@@ -196,10 +196,20 @@ urlpatterns = [
     # API endpoints
     #
     path(
-        "api/transcoding/upload/",
+        "api/transcoding/download/<str:model_name>/<int:media_id>/",
+        maintenance_views.ServeSourceMediaView.as_view(),
+        name="api-transcoding-download",
+    ),  # Worker: download source video for transcoding
+    path(
+        "api/transcoding/upload/<str:model_name>/<int:media_id>/",
         maintenance_views.ReceiveTranscodedMediaView.as_view(),
         name="api-transcoding-upload",
-    ),  # Webhook: receive transcoded video from external service
+    ),  # Worker: upload transcoded video and poster
+    path(
+        "api/transcoding/status/",
+        TranscodeStatusView.as_view(),
+        name="api-transcoding-status",
+    ),  # AJAX: poll video transcode status
     path(
         "api/maintainers/",
         maintenance_views.MaintainerAutocompleteView.as_view(),

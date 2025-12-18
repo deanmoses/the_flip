@@ -14,9 +14,10 @@ STOP and read the relevant doc before writing code:
 |------|------------|
 | Templates, HTML, CSS, Javascript | `docs/HTML_CSS.md` |
 | Forms, inputs, validation | `docs/Forms.md` |
-| Models, relationships | `docs/Datamodel.md` |
+| Models, relationships | `docs/Models.md`, `docs/Datamodel.md` |
+| Views, CBVs, query optimization | `docs/Views.md` |
 | Writing tests | `docs/Testing.md` |
-| Django patterns, views | `docs/Django_Python.md` |
+| Django patterns | `docs/Django_Python.md` |
 | System architecture | `docs/Architecture.md` |
 | Directory layout | `docs/Project_Structure.md` |
 
@@ -134,6 +135,16 @@ the_flip/
     │   └── core/           # Shared utilities & decorators
     └── static/             # Project-level static files
 ```
+
+## Rules (Always Follow)
+
+- **Always use latest stable versions**: When adding a new dependency, pre-commit hook, or library, always verify and use the latest stable version. Check PyPI, npm, GitHub tags, or the package's official source before specifying a version. Don't guess or use outdated versions from memory.
+- **Don't silence linter warnings**: don't add `# noqa`, `# type: ignore`, or similar comments to suppress warnings without explicit user approval. Fix the underlying issue instead, unless fixing looks complicated, then ask user.
+- **Secrets**: never hardcode keys, passwords or tokens:
+  - Use `python-decouple` to read from environment variables.
+  - When tests need keys, tokens or passwords, generate them dynamically to avoid triggering the `detect-secrets` pre-commit hook, using secrets.token_hex(16).
+- **Use Mixins, not base classes**: for shared behavior, use mixins (classes that call `super()`) instead of base classes. Python's MRO breaks when base classes don't call `super()` - sibling classes get skipped silently.
+- **Use `functools.partial` for deferred calls**: use `partial(func, kwarg=val)` with keyword arguments (not positional) for `transaction.on_commit()` and similar callbacks.
 
 ## Key Conventions
 
