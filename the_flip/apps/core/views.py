@@ -62,7 +62,9 @@ class TranscodeStatusView(View):
         models_param = request.GET.get("models", "")
 
         if not ids_param or not models_param:
-            return JsonResponse({})
+            response = JsonResponse({})
+            response["Cache-Control"] = "no-store"
+            return response
 
         ids = [i.strip() for i in ids_param.split(",") if i.strip()]
         model_names = [m.strip() for m in models_param.split(",") if m.strip()]
