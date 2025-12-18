@@ -1,5 +1,7 @@
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse
+from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import TemplateView
 
@@ -35,6 +37,7 @@ def healthz(request):
     return resp
 
 
+@method_decorator(login_required, name="dispatch")
 class TranscodeStatusView(View):
     """
     API endpoint for polling video transcode status.
