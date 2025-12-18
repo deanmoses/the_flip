@@ -60,7 +60,7 @@
       ids.push(el.dataset.mediaPollId);
       models.push(el.dataset.mediaPollModel);
     });
-    return `${API_URL}?ids=${ids.join(',')}&models=${models.join(',')}`;
+    return `${API_URL}?ids=${encodeURIComponent(ids.join(','))}&models=${encodeURIComponent(models.join(','))}`;
   }
 
   /**
