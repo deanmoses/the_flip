@@ -113,7 +113,7 @@ def transcode_video_job(
         logger.error("Transcode job %s (%s) aborted: media not found", media_id, model_name)
         return
 
-    if media.media_type != media_model.TYPE_VIDEO:
+    if media.media_type != media_model.MediaType.VIDEO:
         logger.info("Transcode skipped for non-video media %s", media_id)
         return
 
@@ -122,13 +122,13 @@ def transcode_video_job(
         web_service_url, upload_token = _get_transcoding_config()
     except ValueError as e:
         logger.error("Transcode job %s aborted: %s", media_id, str(e))
-        media.transcode_status = media_model.STATUS_FAILED
+        media.transcode_status = media_model.TranscodeStatus.FAILED
         media.save(update_fields=["transcode_status", "updated_at"])
         raise
 
     logger.info("Transcoding video %s (%s) for HTTP transfer to web service", media_id, model_name)
 
-    media.transcode_status = media_model.STATUS_PROCESSING
+    media.transcode_status = media_model.TranscodeStatus.PROCESSING
     media.save(update_fields=["transcode_status", "updated_at"])
 
     tmp_source = None
@@ -204,7 +204,7 @@ def transcode_video_job(
         logger.error(
             "Failed to transcode video %s (%s): %s", media_id, model_name, exc, exc_info=True
         )
-        media.transcode_status = media_model.STATUS_FAILED
+        media.transcode_status = media_model.TranscodeStatus.FAILED
         media.save(update_fields=["transcode_status", "updated_at"])
         raise
     finally:

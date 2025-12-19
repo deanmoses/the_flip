@@ -154,36 +154,26 @@ class AbstractMedia(TimeStampedMixin):
     # Subclasses must define this to indicate which FK field points to the parent
     parent_field_name: ClassVar[str]
 
-    # Media type constants
-    TYPE_PHOTO = "photo"
-    TYPE_VIDEO = "video"
-    MEDIA_CHOICES = [
-        (TYPE_PHOTO, "Photo"),
-        (TYPE_VIDEO, "Video"),
-    ]
+    class MediaType(models.TextChoices):
+        PHOTO = "photo", "Photo"
+        VIDEO = "video", "Video"
 
-    # Transcode status constants
-    STATUS_PENDING = "pending"
-    STATUS_PROCESSING = "processing"
-    STATUS_READY = "ready"
-    STATUS_FAILED = "failed"
-    TRANSCODE_STATUS_CHOICES = [
-        (STATUS_PENDING, "Pending"),
-        (STATUS_PROCESSING, "Processing"),
-        (STATUS_READY, "Ready"),
-        (STATUS_FAILED, "Failed"),
-    ]
+    class TranscodeStatus(models.TextChoices):
+        PENDING = "pending", "Pending"
+        PROCESSING = "processing", "Processing"
+        READY = "ready", "Ready"
+        FAILED = "failed", "Failed"
 
-    media_type = models.CharField(max_length=20, choices=MEDIA_CHOICES)
+    media_type = models.CharField(max_length=20, choices=MediaType.choices)
     file = models.FileField()  # upload_to set by subclass
     thumbnail_file = models.FileField(blank=True)
     transcoded_file = models.FileField(blank=True, null=True)
     poster_file = models.ImageField(blank=True, null=True)
     transcode_status = models.CharField(
         max_length=20,
-        choices=TRANSCODE_STATUS_CHOICES,
+        choices=TranscodeStatus.choices,
         blank=True,
-        default=STATUS_PENDING,
+        default=TranscodeStatus.PENDING,
     )
     duration = models.IntegerField(null=True, blank=True, help_text="Duration in seconds")
     display_order = models.PositiveIntegerField(null=True, blank=True)
@@ -194,7 +184,7 @@ class AbstractMedia(TimeStampedMixin):
 
     def save(self, *args, **kwargs):
         """Process photo uploads: generate thumbnail and resize for web."""
-        if self.media_type == self.TYPE_PHOTO and self.file:
+        if self.media_type == self.MediaType.PHOTO and self.file:
             from django.core.files.uploadedfile import UploadedFile as DjangoUploadedFile
 
             is_fresh_upload = hasattr(self.file, "file") and isinstance(

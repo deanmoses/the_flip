@@ -19,7 +19,7 @@ class MachineInlineUpdateView(CanAccessMaintainerPortalMixin, View):
 
         if action == "update_status":
             status = request.POST.get("operational_status")
-            if status in dict(MachineInstance.STATUS_CHOICES):
+            if status in MachineInstance.OperationalStatus.values:
                 if machine.operational_status == status:
                     return JsonResponse({"status": "noop"})
                 machine.operational_status = status

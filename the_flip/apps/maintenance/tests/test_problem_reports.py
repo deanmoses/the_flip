@@ -28,7 +28,7 @@ class ProblemReportDetailViewTests(SuppressRequestLogsMixin, TestDataMixin, Test
         super().setUp()
         self.report = create_problem_report(
             machine=self.machine,
-            problem_type=ProblemReport.PROBLEM_STUCK_BALL,
+            problem_type=ProblemReport.ProblemType.STUCK_BALL,
             description="Ball is stuck in the upper playfield",
             reported_by_name="John Doe",
             reported_by_contact="john@example.com",
@@ -108,7 +108,7 @@ class ProblemReportDetailViewTests(SuppressRequestLogsMixin, TestDataMixin, Test
 
     def test_detail_view_shows_reopen_button_for_closed_report(self):
         """Detail page should show 'Re-Open Problem' button for closed reports."""
-        self.report.status = ProblemReport.STATUS_CLOSED
+        self.report.status = ProblemReport.Status.CLOSED
         self.report.save()
 
         self.client.force_login(self.staff_user)
@@ -124,7 +124,7 @@ class ProblemReportDetailViewTests(SuppressRequestLogsMixin, TestDataMixin, Test
         self.assertEqual(response.status_code, 403)
 
         self.report.refresh_from_db()
-        self.assertEqual(self.report.status, ProblemReport.STATUS_OPEN)
+        self.assertEqual(self.report.status, ProblemReport.Status.OPEN)
 
     def test_status_toggle_from_open_to_closed(self):
         """Staff users should be able to close an open report."""
@@ -135,7 +135,7 @@ class ProblemReportDetailViewTests(SuppressRequestLogsMixin, TestDataMixin, Test
         self.assertEqual(response.url, self.detail_url)
 
         self.report.refresh_from_db()
-        self.assertEqual(self.report.status, ProblemReport.STATUS_CLOSED)
+        self.assertEqual(self.report.status, ProblemReport.Status.CLOSED)
         log_entry = LogEntry.objects.latest("created_at")
         self.assertEqual(log_entry.text, "Closed problem report")
         self.assertEqual(log_entry.problem_report, self.report)
@@ -145,7 +145,7 @@ class ProblemReportDetailViewTests(SuppressRequestLogsMixin, TestDataMixin, Test
 
     def test_status_toggle_from_closed_to_open(self):
         """Staff users should be able to re-open a closed report."""
-        self.report.status = ProblemReport.STATUS_CLOSED
+        self.report.status = ProblemReport.Status.CLOSED
         self.report.save()
 
         self.client.force_login(self.staff_user)
@@ -153,7 +153,7 @@ class ProblemReportDetailViewTests(SuppressRequestLogsMixin, TestDataMixin, Test
 
         self.assertEqual(response.status_code, 302)
         self.report.refresh_from_db()
-        self.assertEqual(self.report.status, ProblemReport.STATUS_OPEN)
+        self.assertEqual(self.report.status, ProblemReport.Status.OPEN)
         log_entry = LogEntry.objects.latest("created_at")
         self.assertEqual(log_entry.text, "Re-opened problem report")
         self.assertEqual(log_entry.problem_report, self.report)
@@ -172,7 +172,7 @@ class ProblemReportDetailViewTests(SuppressRequestLogsMixin, TestDataMixin, Test
 
     def test_status_toggle_shows_reopen_message(self):
         """Re-opening a report should show appropriate success message."""
-        self.report.status = ProblemReport.STATUS_CLOSED
+        self.report.status = ProblemReport.Status.CLOSED
         self.report.save()
 
         self.client.force_login(self.staff_user)
@@ -664,7 +664,7 @@ class ProblemReportCreateViewTests(TestDataMixin, TestCase):
     def test_create_problem_report_success(self):
         """Successfully creating a problem report should save it with correct data."""
         data = {
-            "problem_type": ProblemReport.PROBLEM_STUCK_BALL,
+            "problem_type": ProblemReport.ProblemType.STUCK_BALL,
             "description": "Ball is stuck behind the bumpers",
         }
         response = self.client.post(self.url, data, REMOTE_ADDR="192.168.1.100")
@@ -675,27 +675,27 @@ class ProblemReportCreateViewTests(TestDataMixin, TestCase):
         self.assertEqual(ProblemReport.objects.count(), 1)
         report = ProblemReport.objects.first()
         self.assertEqual(report.machine, self.machine)
-        self.assertEqual(report.problem_type, ProblemReport.PROBLEM_STUCK_BALL)
+        self.assertEqual(report.problem_type, ProblemReport.ProblemType.STUCK_BALL)
         self.assertEqual(report.description, "Ball is stuck behind the bumpers")
-        self.assertEqual(report.status, ProblemReport.STATUS_OPEN)
+        self.assertEqual(report.status, ProblemReport.Status.OPEN)
         self.assertEqual(report.ip_address, "192.168.1.100")
 
     def test_create_problem_report_with_other_type(self):
         """Problem type can be explicitly set to 'other'."""
         data = {
-            "problem_type": ProblemReport.PROBLEM_OTHER,
+            "problem_type": ProblemReport.ProblemType.OTHER,
             "description": "Something is wrong",
         }
         response = self.client.post(self.url, data, REMOTE_ADDR="192.168.1.100")
 
         self.assertEqual(response.status_code, 302)
         report = ProblemReport.objects.first()
-        self.assertEqual(report.problem_type, ProblemReport.PROBLEM_OTHER)
+        self.assertEqual(report.problem_type, ProblemReport.ProblemType.OTHER)
 
     def test_create_problem_report_captures_user_agent(self):
         """Problem report should capture the User-Agent header."""
         data = {
-            "problem_type": ProblemReport.PROBLEM_NO_CREDITS,
+            "problem_type": ProblemReport.ProblemType.NO_CREDITS,
             "description": "Credits not working",
         }
         self.client.post(
@@ -714,7 +714,7 @@ class ProblemReportCreateViewTests(TestDataMixin, TestCase):
         maintainer = create_maintainer_user()
         self.client.force_login(maintainer)
         data = {
-            "problem_type": ProblemReport.PROBLEM_STUCK_BALL,
+            "problem_type": ProblemReport.ProblemType.STUCK_BALL,
             "description": "Ball locked up",
         }
         self.client.post(self.url, data, REMOTE_ADDR="203.0.113.42")
@@ -727,14 +727,14 @@ class ProblemReportCreateViewTests(TestDataMixin, TestCase):
         """Rate limiting should block submissions after exceeding the limit."""
         for i in range(settings.RATE_LIMIT_REPORTS_PER_IP):
             data = {
-                "problem_type": ProblemReport.PROBLEM_OTHER,
+                "problem_type": ProblemReport.ProblemType.OTHER,
                 "description": f"Report {i + 1}",
             }
             response = self.client.post(self.url, data, REMOTE_ADDR="192.168.1.100")
             self.assertEqual(response.status_code, 302)
 
         data = {
-            "problem_type": ProblemReport.PROBLEM_OTHER,
+            "problem_type": ProblemReport.ProblemType.OTHER,
             "description": "This should be blocked",
         }
         response = self.client.post(self.url, data, REMOTE_ADDR="192.168.1.100")
@@ -745,13 +745,13 @@ class ProblemReportCreateViewTests(TestDataMixin, TestCase):
         """Rate limiting should be per IP address."""
         for i in range(settings.RATE_LIMIT_REPORTS_PER_IP):
             data = {
-                "problem_type": ProblemReport.PROBLEM_OTHER,
+                "problem_type": ProblemReport.ProblemType.OTHER,
                 "description": f"Report from IP1 - {i + 1}",
             }
             self.client.post(self.url, data, REMOTE_ADDR="192.168.1.100")
 
         data = {
-            "problem_type": ProblemReport.PROBLEM_OTHER,
+            "problem_type": ProblemReport.ProblemType.OTHER,
             "description": "Report from different IP",
         }
         response = self.client.post(self.url, data, REMOTE_ADDR="192.168.1.200")
@@ -762,7 +762,7 @@ class ProblemReportCreateViewTests(TestDataMixin, TestCase):
         """Rate limiting should reset after the time window expires."""
         for i in range(settings.RATE_LIMIT_REPORTS_PER_IP):
             data = {
-                "problem_type": ProblemReport.PROBLEM_OTHER,
+                "problem_type": ProblemReport.ProblemType.OTHER,
                 "description": f"Report {i + 1}",
             }
             self.client.post(self.url, data, REMOTE_ADDR="192.168.1.100")
@@ -771,7 +771,7 @@ class ProblemReportCreateViewTests(TestDataMixin, TestCase):
         ProblemReport.objects.all().update(created_at=old_time)
 
         data = {
-            "problem_type": ProblemReport.PROBLEM_OTHER,
+            "problem_type": ProblemReport.ProblemType.OTHER,
             "description": "This should succeed after window expires",
         }
         response = self.client.post(self.url, data, REMOTE_ADDR="192.168.1.100")
@@ -787,7 +787,7 @@ class ProblemReportDetailLogEntriesTests(TestDataMixin, TestCase):
         super().setUp()
         self.problem_report = create_problem_report(
             machine=self.machine,
-            problem_type=ProblemReport.PROBLEM_STUCK_BALL,
+            problem_type=ProblemReport.ProblemType.STUCK_BALL,
             description="Ball stuck",
         )
         self.detail_url = reverse("problem-report-detail", kwargs={"pk": self.problem_report.pk})
@@ -830,7 +830,7 @@ class ProblemReportLogEntriesPartialViewTests(SuppressRequestLogsMixin, TestData
         super().setUp()
         self.problem_report = create_problem_report(
             machine=self.machine,
-            problem_type=ProblemReport.PROBLEM_STUCK_BALL,
+            problem_type=ProblemReport.ProblemType.STUCK_BALL,
             description="Ball stuck",
         )
         self.entries_url = reverse(
@@ -938,10 +938,10 @@ class ProblemReportMediaCreateTests(TemporaryMediaMixin, TestDataMixin, TestCase
         self.assertEqual(ProblemReport.objects.count(), 1)
         report = ProblemReport.objects.first()
         # Maintainer form defaults to "Other" problem type
-        self.assertEqual(report.problem_type, ProblemReport.PROBLEM_OTHER)
+        self.assertEqual(report.problem_type, ProblemReport.ProblemType.OTHER)
         self.assertEqual(report.media.count(), 1)
         media = report.media.first()
-        self.assertEqual(media.media_type, ProblemReportMedia.TYPE_PHOTO)
+        self.assertEqual(media.media_type, ProblemReportMedia.MediaType.PHOTO)
 
     def test_create_without_media(self):
         """Problem report can be created without media."""
@@ -956,7 +956,7 @@ class ProblemReportMediaCreateTests(TemporaryMediaMixin, TestDataMixin, TestCase
         self.assertEqual(ProblemReport.objects.count(), 1)
         report = ProblemReport.objects.first()
         # Maintainer form defaults to "Other" problem type
-        self.assertEqual(report.problem_type, ProblemReport.PROBLEM_OTHER)
+        self.assertEqual(report.problem_type, ProblemReport.ProblemType.OTHER)
         self.assertEqual(report.media.count(), 0)
 
     def test_public_form_has_no_media_field(self):
@@ -1033,7 +1033,7 @@ class ProblemReportMediaUploadTests(
         self.assertEqual(ProblemReportMedia.objects.count(), 1)
         media = ProblemReportMedia.objects.first()
         self.assertEqual(media.problem_report, self.report)
-        self.assertEqual(media.media_type, ProblemReportMedia.TYPE_PHOTO)
+        self.assertEqual(media.media_type, ProblemReportMedia.MediaType.PHOTO)
 
     @patch("the_flip.apps.core.mixins.enqueue_transcode")
     def test_video_upload_enqueues_transcode_with_model_name(self, mock_enqueue):
@@ -1094,7 +1094,7 @@ class ProblemReportMediaDeleteTests(
 
         self.media = ProblemReportMedia.objects.create(
             problem_report=self.report,
-            media_type=ProblemReportMedia.TYPE_PHOTO,
+            media_type=ProblemReportMedia.MediaType.PHOTO,
             file=SimpleUploadedFile("test.png", img_io.read(), content_type="image/png"),
         )
 
@@ -1145,7 +1145,7 @@ class ProblemReportMediaDeleteTests(
 
         other_media = ProblemReportMedia.objects.create(
             problem_report=other_report,
-            media_type=ProblemReportMedia.TYPE_PHOTO,
+            media_type=ProblemReportMedia.MediaType.PHOTO,
             file=SimpleUploadedFile("other.png", img_io.read(), content_type="image/png"),
         )
 
@@ -1205,7 +1205,7 @@ class ProblemReportDetailMediaDisplayTests(TemporaryMediaMixin, TestDataMixin, T
 
         ProblemReportMedia.objects.create(
             problem_report=self.report,
-            media_type=ProblemReportMedia.TYPE_PHOTO,
+            media_type=ProblemReportMedia.MediaType.PHOTO,
             file=SimpleUploadedFile("test.png", img_io.read(), content_type="image/png"),
         )
 
@@ -1300,7 +1300,7 @@ class ProblemReportAutocompleteViewTests(SuppressRequestLogsMixin, TestDataMixin
     def test_excludes_closed_reports(self):
         """Closed problem reports are not included in autocomplete."""
         # Close one of the reports
-        self.report1.status = ProblemReport.STATUS_CLOSED
+        self.report1.status = ProblemReport.Status.CLOSED
         self.report1.save()
 
         self.client.force_login(self.staff_user)

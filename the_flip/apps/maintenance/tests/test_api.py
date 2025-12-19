@@ -113,9 +113,9 @@ class ReceiveTranscodedMediaViewTests(
         )
         self.media = LogEntryMedia.objects.create(
             log_entry=self.log_entry,
-            media_type=LogEntryMedia.TYPE_VIDEO,
+            media_type=LogEntryMedia.MediaType.VIDEO,
             file=original_file,
-            transcode_status=LogEntryMedia.STATUS_PROCESSING,
+            transcode_status=LogEntryMedia.TranscodeStatus.PROCESSING,
         )
 
         # Generate token dynamically to avoid triggering secret scanners
@@ -225,7 +225,7 @@ class ReceiveTranscodedMediaViewTests(
         self.assertIn("successfully", result["message"].lower())
 
         self.media.refresh_from_db()
-        self.assertEqual(self.media.transcode_status, LogEntryMedia.STATUS_READY)
+        self.assertEqual(self.media.transcode_status, LogEntryMedia.TranscodeStatus.READY)
         self.assertTrue(self.media.transcoded_file)
         self.assertTrue(self.media.poster_file)
         self.assertFalse(self.media.file)
@@ -246,7 +246,7 @@ class ReceiveTranscodedMediaViewTests(
         self.assertTrue(result["success"])
 
         self.media.refresh_from_db()
-        self.assertEqual(self.media.transcode_status, LogEntryMedia.STATUS_READY)
+        self.assertEqual(self.media.transcode_status, LogEntryMedia.TranscodeStatus.READY)
         self.assertTrue(self.media.transcoded_file)
         self.assertFalse(self.media.poster_file)
 
@@ -275,9 +275,9 @@ class ServeSourceMediaViewTests(
         )
         self.media = LogEntryMedia.objects.create(
             log_entry=self.log_entry,
-            media_type=LogEntryMedia.TYPE_VIDEO,
+            media_type=LogEntryMedia.MediaType.VIDEO,
             file=original_file,
-            transcode_status=LogEntryMedia.STATUS_PENDING,
+            transcode_status=LogEntryMedia.TranscodeStatus.PENDING,
         )
 
         # Generate token dynamically to avoid triggering secret scanners
@@ -371,7 +371,7 @@ class DeleteMediaTests(TemporaryMediaMixin, TestDataMixin, TestCase):
         thumb = resize_image_file(converted)
         self.media = LogEntryMedia.objects.create(
             log_entry=self.log_entry,
-            media_type=LogEntryMedia.TYPE_PHOTO,
+            media_type=LogEntryMedia.MediaType.PHOTO,
             file=converted,
             thumbnail_file=thumb,
         )
@@ -401,11 +401,11 @@ class DeleteMediaTests(TemporaryMediaMixin, TestDataMixin, TestCase):
 
         video_media = LogEntryMedia.objects.create(
             log_entry=self.log_entry,
-            media_type=LogEntryMedia.TYPE_VIDEO,
+            media_type=LogEntryMedia.MediaType.VIDEO,
             file=original,
             transcoded_file=transcoded,
             poster_file=poster,
-            transcode_status=LogEntryMedia.STATUS_READY,
+            transcode_status=LogEntryMedia.TranscodeStatus.READY,
         )
 
         original_name = video_media.file.name

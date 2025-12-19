@@ -18,7 +18,7 @@ We use a mixin (not a base class) to discourage adding unrelated behavior.
 
 ## Choice Fields
 
-**Target pattern** (migration pending [#131](https://github.com/deanmoses/the_flip/issues/131)):
+Use Django's `TextChoices` for fields with fixed options:
 
 ```python
 class ProblemReport(TimeStampedMixin):
@@ -33,7 +33,7 @@ if report.status == ProblemReport.Status.OPEN:
     ...
 ```
 
-TextChoices provides type safety and IDE autocomplete. Current code uses class constants (`STATUS_OPEN = "open"`) which works but is less explicit.
+TextChoices provides type safety and IDE autocomplete.
 
 ## Field Nullability
 
@@ -76,11 +76,11 @@ Encapsulate reusable queries in QuerySet classes instead of repeating filter log
 class PartRequestQuerySet(models.QuerySet):
     def active(self):
         """Return part requests that are not cancelled."""
-        return self.exclude(status=PartRequest.STATUS_CANCELLED)
+        return self.exclude(status=PartRequest.Status.CANCELLED)
 
     def pending(self):
         """Return part requests that are requested or ordered."""
-        return self.filter(status__in=[PartRequest.STATUS_REQUESTED, PartRequest.STATUS_ORDERED])
+        return self.filter(status__in=[PartRequest.Status.REQUESTED, PartRequest.Status.ORDERED])
 
 class PartRequest(TimeStampedMixin):
     objects = PartRequestQuerySet.as_manager()

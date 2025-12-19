@@ -47,7 +47,10 @@ def create_auto_log_entries(sender, instance, created, **kwargs):
     # Check for status change
     original_status = getattr(instance, "_original_operational_status", None)
     if original_status and original_status != instance.operational_status:
-        old_display = dict(MachineInstance.STATUS_CHOICES).get(original_status, original_status)
+        try:
+            old_display = MachineInstance.OperationalStatus(original_status).label
+        except ValueError:
+            old_display = original_status
         new_display = instance.get_operational_status_display()
         log_entry = LogEntry.objects.create(
             machine=instance,

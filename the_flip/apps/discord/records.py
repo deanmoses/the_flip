@@ -208,7 +208,7 @@ def _create_problem_report(
     return ProblemReport.objects.create(
         machine=machine,
         description=description,
-        problem_type=ProblemReport.PROBLEM_OTHER,
+        problem_type=ProblemReport.ProblemType.OTHER,
         reported_by_user=maintainer.user if maintainer else None,
         reported_by_name="" if maintainer else fallback_name,
     )

@@ -71,7 +71,7 @@ class PartRequestUpdateForm(StyledFormMixin, forms.ModelForm):
     )
     new_status = forms.ChoiceField(
         label="Change status to",
-        choices=[("", "No change")] + list(PartRequest.STATUS_CHOICES),
+        choices=[("", "No change")] + list(PartRequest.Status.choices),
         required=False,
         widget=forms.Select(attrs={"class": "form-input"}),
     )

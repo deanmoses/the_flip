@@ -27,16 +27,16 @@
     <div class="dropdown">
       <button type="button"
               id="status-pill"
-              class="pill {% if object.operational_status == 'good' %}pill--status-good{% elif object.operational_status == 'fixing' %}pill--status-fixing{% elif object.operational_status == 'broken' %}pill--status-broken{% else %}pill--neutral{% endif %}"
+              class="pill {% if object.operational_status == object.OperationalStatus.GOOD %}pill--status-good{% elif object.operational_status == object.OperationalStatus.FIXING %}pill--status-fixing{% elif object.operational_status == object.OperationalStatus.BROKEN %}pill--status-broken{% else %}pill--neutral{% endif %}"
               aria-haspopup="true"
               aria-expanded="false"
               onclick="toggleDropdown(this)">
-        <i class="fa-solid {% if object.operational_status == 'fixing' %}fa-wrench{% elif object.operational_status == 'good' %}fa-check{% elif object.operational_status == 'broken' %}fa-circle-xmark{% else %}fa-circle-question{% endif %} meta status-icon"></i>
+        <i class="fa-solid {% if object.operational_status == object.OperationalStatus.FIXING %}fa-wrench{% elif object.operational_status == object.OperationalStatus.GOOD %}fa-check{% elif object.operational_status == object.OperationalStatus.BROKEN %}fa-circle-xmark{% else %}fa-circle-question{% endif %} meta status-icon"></i>
         <span class="status-label">{{ object.get_operational_status_display }}</span>
         <i class="fa-solid fa-caret-down meta"></i>
       </button>
       <div class="dropdown__menu dropdown__menu--left hidden">
-        {% for value, label in object.STATUS_CHOICES %}
+        {% for value, label in object.OperationalStatus.choices %}
           <button type="button"
                   class="dropdown__item"
                   data-field="operational_status"

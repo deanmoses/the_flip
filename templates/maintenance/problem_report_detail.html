@@ -8,7 +8,7 @@
   <span><i class="fa-solid fa-bug"></i> #{{ report.pk }}</span>
 {% endblock %}
 {% block mobile_actions %}
-  {% if report.status == report.STATUS_OPEN %}
+  {% if report.status == report.Status.OPEN %}
     <form method="post">
       {% csrf_token %}
       <button type="submit" class="btn btn--log btn--full">
@@ -33,15 +33,15 @@
     <i class="fa-solid fa-bug"></i> #{{ report.pk }}
   </div>
   <div class="flex flex-wrap stack-tight space-above-sm">
-    <span class="pill {% if report.status == report.STATUS_OPEN %}pill--status-broken{% else %}pill--status-good{% endif %}">
-      {% if report.status == report.STATUS_OPEN %}
+    <span class="pill {% if report.status == report.Status.OPEN %}pill--status-broken{% else %}pill--status-good{% endif %}">
+      {% if report.status == report.Status.OPEN %}
         <i class="fa-solid fa-circle-exclamation meta"></i>
       {% else %}
         <i class="fa-solid fa-check meta"></i>
       {% endif %}
       {{ report.get_status_display }}
     </span>
-    {% if report.problem_type != report.PROBLEM_OTHER %}
+    {% if report.problem_type != report.ProblemType.OTHER %}
       <span class="pill pill--neutral">{{ report.get_problem_type_display }}</span>
     {% endif %}
   </div>
@@ -51,7 +51,7 @@
 {% include "components/machine_sidebar_card.html" with editable=True %}
 {% endsidebar_section %}
 {% sidebar_section %}
-{% if report.status == report.STATUS_OPEN %}
+{% if report.status == report.Status.OPEN %}
   <form method="post">
     {% csrf_token %}
     <button type="submit" class="btn btn--log btn--full">

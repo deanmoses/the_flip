@@ -18,27 +18,20 @@ from the_flip.apps.core.models import AbstractMedia, TimeStampedMixin
 
 class ProblemReportQuerySet(models.QuerySet):
     def open(self):
-        return self.filter(status=ProblemReport.STATUS_OPEN)
+        return self.filter(status=ProblemReport.Status.OPEN)
 
 
 class ProblemReport(TimeStampedMixin):
     """Visitor-submitted problem report about a machine."""
 
-    STATUS_OPEN = "open"
-    STATUS_CLOSED = "closed"
-    STATUS_CHOICES = [
-        (STATUS_OPEN, "Open"),
-        (STATUS_CLOSED, "Closed"),
-    ]
+    class Status(models.TextChoices):
+        OPEN = "open", "Open"
+        CLOSED = "closed", "Closed"
 
-    PROBLEM_STUCK_BALL = "stuck_ball"
-    PROBLEM_NO_CREDITS = "no_credits"
-    PROBLEM_OTHER = "other"
-    PROBLEM_TYPE_CHOICES = [
-        (PROBLEM_STUCK_BALL, "Stuck Ball"),
-        (PROBLEM_NO_CREDITS, "No Credits"),
-        (PROBLEM_OTHER, "Other"),
-    ]
+    class ProblemType(models.TextChoices):
+        STUCK_BALL = "stuck_ball", "Stuck Ball"
+        NO_CREDITS = "no_credits", "No Credits"
+        OTHER = "other", "Other"
 
     machine = models.ForeignKey(
         MachineInstance,
@@ -47,14 +40,14 @@ class ProblemReport(TimeStampedMixin):
     )
     status = models.CharField(
         max_length=20,
-        choices=STATUS_CHOICES,
-        default=STATUS_OPEN,
+        choices=Status.choices,
+        default=Status.OPEN,
         db_index=True,
     )
     problem_type = models.CharField(
         max_length=50,
-        choices=PROBLEM_TYPE_CHOICES,
-        default=PROBLEM_OTHER,
+        choices=ProblemType.choices,
+        default=ProblemType.OTHER,
         db_index=True,
     )
     description = models.TextField(blank=True)

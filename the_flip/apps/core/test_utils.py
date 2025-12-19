@@ -144,7 +144,7 @@ def create_machine_model(
     name: str | None = None,
     manufacturer: str = "Test Manufacturer",
     year: int = 2020,
-    era: str = MachineModel.ERA_SS,
+    era: str = MachineModel.Era.SS,
     **kwargs,
 ) -> MachineModel:
     """Create a test MachineModel.
@@ -173,7 +173,7 @@ def create_machine_model(
 def create_machine(
     model: MachineModel | None = None,
     slug: str | None = None,
-    operational_status: str = MachineInstance.STATUS_GOOD,
+    operational_status: str = MachineInstance.OperationalStatus.GOOD,
     skip_auto_log: bool = True,
     **kwargs,
 ) -> MachineInstance:
@@ -208,8 +208,8 @@ def create_machine(
 
 def create_problem_report(
     machine: MachineInstance | None = None,
-    status: str = ProblemReport.STATUS_OPEN,
-    problem_type: str = ProblemReport.PROBLEM_OTHER,
+    status: str = ProblemReport.Status.OPEN,
+    problem_type: str = ProblemReport.ProblemType.OTHER,
     description: str | None = None,
     **kwargs,
 ) -> ProblemReport:
@@ -299,7 +299,7 @@ def create_part_request(
     text: str | None = None,
     requested_by: Maintainer | None = None,
     machine: MachineInstance | None = None,
-    status: str = PartRequest.STATUS_REQUESTED,
+    status: str = PartRequest.Status.REQUESTED,
     **kwargs,
 ) -> PartRequest:
     """Create a test PartRequest.

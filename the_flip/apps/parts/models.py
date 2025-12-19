@@ -17,34 +17,29 @@ class PartRequestQuerySet(models.QuerySet):
 
     def active(self):
         """Return part requests that are not cancelled."""
-        return self.exclude(status=PartRequest.STATUS_CANCELLED)
+        return self.exclude(status=PartRequest.Status.CANCELLED)
 
     def pending(self):
         """Return part requests that are requested or ordered (not yet received)."""
-        return self.filter(status__in=[PartRequest.STATUS_REQUESTED, PartRequest.STATUS_ORDERED])
+        return self.filter(status__in=[PartRequest.Status.REQUESTED, PartRequest.Status.ORDERED])
 
 
 class PartRequest(TimeStampedMixin):
     """A request for a part needed for maintenance."""
 
-    STATUS_REQUESTED = "requested"
-    STATUS_ORDERED = "ordered"
-    STATUS_RECEIVED = "received"
-    STATUS_CANCELLED = "cancelled"
-    STATUS_CHOICES = [
-        (STATUS_REQUESTED, "Requested"),
-        (STATUS_ORDERED, "Ordered"),
-        (STATUS_RECEIVED, "Received"),
-        (STATUS_CANCELLED, "Cancelled"),
-    ]
+    class Status(models.TextChoices):
+        REQUESTED = "requested", "Requested"
+        ORDERED = "ordered", "Ordered"
+        RECEIVED = "received", "Received"
+        CANCELLED = "cancelled", "Cancelled"
 
     text = models.TextField(
         help_text="Description of the part needed and why.",
     )
     status = models.CharField(
         max_length=20,
-        choices=STATUS_CHOICES,
-        default=STATUS_REQUESTED,
+        choices=Status.choices,
+        default=Status.REQUESTED,
         db_index=True,
     )
     requested_by = models.ForeignKey(
@@ -86,10 +81,10 @@ class PartRequest(TimeStampedMixin):
     def status_display_class(self) -> str:
         """Return CSS class for status badge styling."""
         return {
-            self.STATUS_REQUESTED: "requested",
-            self.STATUS_ORDERED: "ordered",
-            self.STATUS_RECEIVED: "received",
-            self.STATUS_CANCELLED: "cancelled",
+            self.Status.REQUESTED.value: "requested",
+            self.Status.ORDERED.value: "ordered",
+            self.Status.RECEIVED.value: "received",
+            self.Status.CANCELLED.value: "cancelled",
         }.get(self.status, "")
 
     @property
@@ -159,7 +154,7 @@ class PartRequestUpdate(TimeStampedMixin):
     )
     new_status = models.CharField(
         max_length=20,
-        choices=PartRequest.STATUS_CHOICES,
+        choices=PartRequest.Status.choices,
         blank=True,
         help_text="If set, this update changed the part request status.",
     )

@@ -40,14 +40,10 @@ class Location(models.Model):
 class MachineModel(TimeStampedMixin):
     """Represents a pinball machine model."""
 
-    ERA_PM = "PM"
-    ERA_EM = "EM"
-    ERA_SS = "SS"
-    ERA_CHOICES = [
-        (ERA_PM, "Pure Mechanical"),
-        (ERA_EM, "Electromechanical"),
-        (ERA_SS, "Solid State"),
-    ]
+    class Era(models.TextChoices):
+        PM = "PM", "Pure Mechanical"
+        EM = "EM", "Electromechanical"
+        SS = "SS", "Solid State"
 
     name = models.CharField(
         max_length=200, unique=True, help_text="Official name of the pinball machine model"
@@ -66,7 +62,7 @@ class MachineModel(TimeStampedMixin):
     )
     year = models.PositiveIntegerField(null=True, blank=True, help_text="Year of manufacture")
     era = models.CharField(
-        max_length=2, choices=ERA_CHOICES, help_text="Technology era of the machine"
+        max_length=2, choices=Era.choices, help_text="Technology era of the machine"
     )
     system = models.CharField(
         max_length=100, blank=True, help_text="Electronic system type (e.g., WPC-95, System 11)"
@@ -168,23 +164,23 @@ class MachineInstanceQuerySet(models.QuerySet):
         Includes machines with active operational statuses.
         """
         return self.select_related("model").filter(
-            operational_status__in=["good", "fixing", "broken", "unknown"]
+            operational_status__in=[
+                MachineInstance.OperationalStatus.GOOD,
+                MachineInstance.OperationalStatus.FIXING,
+                MachineInstance.OperationalStatus.BROKEN,
+                MachineInstance.OperationalStatus.UNKNOWN,
+            ]
         )
 
 
 class MachineInstance(TimeStampedMixin):
     """Physical machine owned by the museum."""
 
-    STATUS_GOOD = "good"
-    STATUS_UNKNOWN = "unknown"
-    STATUS_FIXING = "fixing"
-    STATUS_BROKEN = "broken"
-    STATUS_CHOICES = [
-        (STATUS_GOOD, "Good"),
-        (STATUS_FIXING, "Fixing"),
-        (STATUS_BROKEN, "Broken"),
-        (STATUS_UNKNOWN, "Unknown"),
-    ]
+    class OperationalStatus(models.TextChoices):
+        GOOD = "good", "Good"
+        FIXING = "fixing", "Fixing"
+        BROKEN = "broken", "Broken"
+        UNKNOWN = "unknown", "Unknown"
 
     model = models.ForeignKey(
         MachineModel,
@@ -223,8 +219,8 @@ class MachineInstance(TimeStampedMixin):
     )
     operational_status = models.CharField(
         max_length=20,
-        choices=STATUS_CHOICES,
-        default=STATUS_UNKNOWN,
+        choices=OperationalStatus.choices,
+        default=OperationalStatus.UNKNOWN,
         verbose_name="Status",
         help_text="Current working condition",
     )

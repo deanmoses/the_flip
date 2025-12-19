@@ -99,7 +99,7 @@ class TranscodeStatusView(View):
     def _build_status_result(self, media, media_model) -> dict:
         """Build status result dict for a media item."""
         result = {"status": media.transcode_status}
-        if media.transcode_status == media_model.STATUS_READY:
+        if media.transcode_status == media_model.TranscodeStatus.READY:
             if media.transcoded_file:
                 result["video_url"] = media.transcoded_file.url
             if media.poster_file:
