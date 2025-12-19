@@ -57,7 +57,7 @@ Compare new/modified code against documented patterns:
 - Tests have descriptive names AND docstrings
 
 **Pattern Violation Format:**
-```
+```text
 VIOLATION: [Brief description]
 Location: [file:line]
 Pattern: [Which doc/section defines this]
@@ -77,7 +77,7 @@ Identify when new code introduces patterns that should be documented:
 - Non-obvious architectural decisions
 
 **Documentation Gap Format:**
-```
+```text
 GAP: [What's missing]
 Location: [file:line or general area]
 Suggestion: [Which doc should cover this, what to add]
@@ -98,7 +98,7 @@ Assess existing documentation for issues:
 - Broken links between docs
 
 **Clarity Issue Format:**
-```
+```text
 UNCLEAR: [What's confusing]
 Doc: [Which file/section]
 Problem: [Why it's unclear]
@@ -116,7 +116,7 @@ Assess existing documentation for issues:
 - Repeated documentation (except in CLAUDE.md, which DOES intentionally repeat stuff from other docs)
 
 **Verbosity Issue Format:**
-```
+```text
 TOO VERBOSE: [What's too verbose]
 Doc: [Which file/section]
 Problem: [Why it's unclear]
@@ -134,7 +134,7 @@ When code changes affect documented behavior:
 - Behavior differs from what docs describe
 
 **Update Recommendation Format:**
-```
+```text
 UPDATE NEEDED: [Brief description]
 Doc: [Which file needs updating]
 Current doc says: [Quote or paraphrase]
