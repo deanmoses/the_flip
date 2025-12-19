@@ -79,15 +79,15 @@ class PartRequestListView(CanAccessMaintainerPortalMixin, TemplateView):
         # Stats for sidebar
         stats = [
             {
-                "value": PartRequest.objects.filter(status=PartRequest.STATUS_REQUESTED).count(),
+                "value": PartRequest.objects.filter(status=PartRequest.Status.REQUESTED).count(),
                 "label": "Requested",
             },
             {
-                "value": PartRequest.objects.filter(status=PartRequest.STATUS_ORDERED).count(),
+                "value": PartRequest.objects.filter(status=PartRequest.Status.ORDERED).count(),
                 "label": "Ordered",
             },
             {
-                "value": PartRequest.objects.filter(status=PartRequest.STATUS_RECEIVED).count(),
+                "value": PartRequest.objects.filter(status=PartRequest.Status.RECEIVED).count(),
                 "label": "Received",
             },
         ]
@@ -229,11 +229,11 @@ class PartRequestCreateView(CanAccessMaintainerPortalMixin, FormView):
 
                 media = PartRequestMedia.objects.create(
                     part_request=part_request,
-                    media_type=PartRequestMedia.TYPE_VIDEO
+                    media_type=PartRequestMedia.MediaType.VIDEO
                     if is_video
-                    else PartRequestMedia.TYPE_PHOTO,
+                    else PartRequestMedia.MediaType.PHOTO,
                     file=media_file,
-                    transcode_status=PartRequestMedia.STATUS_PENDING if is_video else "",
+                    transcode_status=PartRequestMedia.TranscodeStatus.PENDING if is_video else "",
                 )
 
                 if is_video:
@@ -416,11 +416,13 @@ class PartRequestUpdateCreateView(CanAccessMaintainerPortalMixin, FormView):
 
                 media = PartRequestUpdateMedia.objects.create(
                     update=update,
-                    media_type=PartRequestUpdateMedia.TYPE_VIDEO
+                    media_type=PartRequestUpdateMedia.MediaType.VIDEO
                     if is_video
-                    else PartRequestUpdateMedia.TYPE_PHOTO,
+                    else PartRequestUpdateMedia.MediaType.PHOTO,
                     file=media_file,
-                    transcode_status=PartRequestUpdateMedia.STATUS_PENDING if is_video else "",
+                    transcode_status=PartRequestUpdateMedia.TranscodeStatus.PENDING
+                    if is_video
+                    else "",
                 )
 
                 if is_video:
@@ -502,7 +504,7 @@ class PartRequestStatusUpdateView(CanAccessMaintainerPortalMixin, View):
 
         if action == "update_status":
             new_status = request.POST.get("status")
-            if new_status not in dict(PartRequest.STATUS_CHOICES):
+            if new_status not in PartRequest.Status.values:
                 return JsonResponse({"error": "Invalid status"}, status=400)
 
             if part_request.status == new_status:
@@ -510,7 +512,7 @@ class PartRequestStatusUpdateView(CanAccessMaintainerPortalMixin, View):
 
             # Get old status display before change
             old_display = part_request.get_status_display()
-            new_display = dict(PartRequest.STATUS_CHOICES).get(new_status, new_status)
+            new_display = PartRequest.Status(new_status).label
 
             # Get the maintainer for the current user
             maintainer = get_object_or_404(Maintainer, user=request.user)

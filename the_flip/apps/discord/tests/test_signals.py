@@ -111,7 +111,7 @@ class PartRequestWebhookSignalTests(TestCase):
                 part_request=part_request,
                 posted_by=self.maintainer,
                 text="Ordered it",
-                new_status=PartRequest.STATUS_ORDERED,
+                new_status=PartRequest.Status.ORDERED,
             )
 
         # Should fire both update_created and status_changed

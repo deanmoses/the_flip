@@ -5,12 +5,12 @@
      class="machine-card__link">
     <span class="machine-card__title">{{ machine.display_name }}</span>
     <div class="machine-card__pills">
-      <span class="pill {% if machine.operational_status == 'good' %}pill--status-good{% elif machine.operational_status == 'fixing' %}pill--status-fixing{% elif machine.operational_status == 'broken' %}pill--status-broken{% else %}pill--neutral{% endif %}">
-        {% if machine.operational_status == 'fixing' %}
+      <span class="pill {% if machine.operational_status == machine.OperationalStatus.GOOD %}pill--status-good{% elif machine.operational_status == machine.OperationalStatus.FIXING %}pill--status-fixing{% elif machine.operational_status == machine.OperationalStatus.BROKEN %}pill--status-broken{% else %}pill--neutral{% endif %}">
+        {% if machine.operational_status == machine.OperationalStatus.FIXING %}
           <i class="fa-solid fa-wrench meta"></i>
-        {% elif machine.operational_status == 'good' %}
+        {% elif machine.operational_status == machine.OperationalStatus.GOOD %}
           <i class="fa-solid fa-check meta"></i>
-        {% elif machine.operational_status == 'broken' %}
+        {% elif machine.operational_status == machine.OperationalStatus.BROKEN %}
           <i class="fa-solid fa-circle-xmark meta"></i>
         {% else %}
           <i class="fa-solid fa-circle-question meta"></i>

@@ -590,7 +590,7 @@ class LogEntryProblemReportTests(TestDataMixin, TestCase):
         super().setUp()
         self.problem_report = create_problem_report(
             machine=self.machine,
-            problem_type=ProblemReport.PROBLEM_STUCK_BALL,
+            problem_type=ProblemReport.ProblemType.STUCK_BALL,
             description="Ball stuck in the playfield",
         )
         self.create_url = reverse(
@@ -686,7 +686,7 @@ class LogEntryProblemReportTests(TestDataMixin, TestCase):
     def test_close_problem_checkbox_closes_problem_report(self):
         """Checking 'close the problem report' should close it when creating log entry."""
         self.client.force_login(self.staff_user)
-        self.assertEqual(self.problem_report.status, ProblemReport.STATUS_OPEN)
+        self.assertEqual(self.problem_report.status, ProblemReport.Status.OPEN)
 
         response = self.client.post(
             self.create_url,
@@ -700,12 +700,12 @@ class LogEntryProblemReportTests(TestDataMixin, TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.problem_report.refresh_from_db()
-        self.assertEqual(self.problem_report.status, ProblemReport.STATUS_CLOSED)
+        self.assertEqual(self.problem_report.status, ProblemReport.Status.CLOSED)
 
     def test_without_close_problem_checkbox_leaves_problem_open(self):
         """Not checking 'close the problem report' should leave it open."""
         self.client.force_login(self.staff_user)
-        self.assertEqual(self.problem_report.status, ProblemReport.STATUS_OPEN)
+        self.assertEqual(self.problem_report.status, ProblemReport.Status.OPEN)
 
         response = self.client.post(
             self.create_url,
@@ -718,7 +718,7 @@ class LogEntryProblemReportTests(TestDataMixin, TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.problem_report.refresh_from_db()
-        self.assertEqual(self.problem_report.status, ProblemReport.STATUS_OPEN)
+        self.assertEqual(self.problem_report.status, ProblemReport.Status.OPEN)
 
 
 @tag("views")

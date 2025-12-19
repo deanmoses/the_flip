@@ -139,19 +139,19 @@ class MachineListViewForPublic(ListView):
             .annotate(
                 # Count open problem reports
                 open_report_count=Count(
-                    "problem_reports", filter=Q(problem_reports__status=ProblemReport.STATUS_OPEN)
+                    "problem_reports", filter=Q(problem_reports__status=ProblemReport.Status.OPEN)
                 ),
                 # Get the most recent open problem report date
                 latest_open_report_date=Max(
                     "problem_reports__created_at",
-                    filter=Q(problem_reports__status=ProblemReport.STATUS_OPEN),
+                    filter=Q(problem_reports__status=ProblemReport.Status.OPEN),
                 ),
             )
             .prefetch_related(
                 Prefetch(
                     "problem_reports",
                     queryset=ProblemReport.objects.filter(
-                        status=ProblemReport.STATUS_OPEN
+                        status=ProblemReport.Status.OPEN
                     ).order_by("-created_at")[:1],
                     to_attr="latest_open_report",
                 )
@@ -159,10 +159,16 @@ class MachineListViewForPublic(ListView):
             .order_by(
                 # 1. Status priority: fixing, broken, unknown, good
                 Case(
-                    When(operational_status=MachineInstance.STATUS_FIXING, then=Value(1)),
-                    When(operational_status=MachineInstance.STATUS_BROKEN, then=Value(2)),
-                    When(operational_status=MachineInstance.STATUS_UNKNOWN, then=Value(3)),
-                    When(operational_status=MachineInstance.STATUS_GOOD, then=Value(4)),
+                    When(
+                        operational_status=MachineInstance.OperationalStatus.FIXING, then=Value(1)
+                    ),
+                    When(
+                        operational_status=MachineInstance.OperationalStatus.BROKEN, then=Value(2)
+                    ),
+                    When(
+                        operational_status=MachineInstance.OperationalStatus.UNKNOWN, then=Value(3)
+                    ),
+                    When(operational_status=MachineInstance.OperationalStatus.GOOD, then=Value(4)),
                     default=Value(5),
                     output_field=CharField(),
                 ),
@@ -264,7 +270,7 @@ class MachineDetailViewForMaintainers(CanAccessMaintainerPortalMixin, MachineDet
 
         if action == "update_status":
             status = request.POST.get("operational_status")
-            if status in dict(MachineInstance.STATUS_CHOICES):
+            if status in MachineInstance.OperationalStatus.values:
                 self.object.operational_status = status
                 self.object.updated_by = request.user
                 self.object.save(update_fields=["operational_status", "updated_by", "updated_at"])
@@ -425,7 +431,7 @@ class MachineQuickCreateView(CanAccessMaintainerPortalMixin, FormView):
             instance = MachineInstance.objects.create(
                 model=model,
                 name_override=name_override or "",
-                operational_status=MachineInstance.STATUS_UNKNOWN,
+                operational_status=MachineInstance.OperationalStatus.UNKNOWN,
                 location=None,  # No location set initially
                 created_by=self.request.user,
                 updated_by=self.request.user,

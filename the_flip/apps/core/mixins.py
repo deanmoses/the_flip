@@ -107,9 +107,9 @@ class MediaUploadMixin:
 
         create_kwargs: dict[str, Any] = {
             parent_field_name: parent,
-            "media_type": media_model.TYPE_VIDEO if is_video else media_model.TYPE_PHOTO,
+            "media_type": media_model.MediaType.VIDEO if is_video else media_model.MediaType.PHOTO,
             "file": upload,
-            "transcode_status": media_model.STATUS_PENDING if is_video else "",
+            "transcode_status": media_model.TranscodeStatus.PENDING if is_video else "",
         }
 
         media = media_model.objects.create(**create_kwargs)

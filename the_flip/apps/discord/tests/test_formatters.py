@@ -66,7 +66,7 @@ class DiscordFormatterTests(TemporaryMediaMixin, TestCase):
         for i in range(3):
             media = ProblemReportMedia(
                 problem_report=report,
-                media_type=ProblemReportMedia.TYPE_PHOTO,
+                media_type=ProblemReportMedia.MediaType.PHOTO,
                 display_order=i,
             )
             media.file.save(f"test{i}.jpg", ContentFile(b"fake image data"), save=False)
@@ -137,7 +137,7 @@ class DiscordFormatterTests(TemporaryMediaMixin, TestCase):
         for i in range(3):
             media = LogEntryMedia(
                 log_entry=log_entry,
-                media_type=LogEntryMedia.TYPE_PHOTO,
+                media_type=LogEntryMedia.MediaType.PHOTO,
                 display_order=i,
             )
             media.file.save(f"test{i}.jpg", ContentFile(b"fake image data"), save=False)
@@ -237,7 +237,7 @@ class PartRequestWebhookFormatterTests(TemporaryMediaMixin, TestCase):
             text="Need new flipper rubbers",
             requested_by=self.maintainer,
             machine=self.machine,
-            status=PartRequest.STATUS_ORDERED,
+            status=PartRequest.Status.ORDERED,
         )
         message = format_discord_message("part_request_status_changed", part_request)
 
@@ -285,7 +285,7 @@ class PartRequestWebhookFormatterTests(TemporaryMediaMixin, TestCase):
         for i in range(3):
             media = PartRequestMedia(
                 part_request=part_request,
-                media_type=PartRequestMedia.TYPE_PHOTO,
+                media_type=PartRequestMedia.MediaType.PHOTO,
                 display_order=i,
             )
             media.file.save(f"test{i}.jpg", ContentFile(b"fake image data"), save=False)
@@ -330,7 +330,7 @@ class PartRequestWebhookFormatterTests(TemporaryMediaMixin, TestCase):
         for i in range(3):
             media = PartRequestUpdateMedia(
                 update=update,
-                media_type=PartRequestUpdateMedia.TYPE_PHOTO,
+                media_type=PartRequestUpdateMedia.MediaType.PHOTO,
                 display_order=i,
             )
             media.file.save(f"test{i}.jpg", ContentFile(b"fake image data"), save=False)

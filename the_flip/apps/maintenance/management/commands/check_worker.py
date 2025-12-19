@@ -59,8 +59,11 @@ class Command(BaseCommand):
 
     def _stuck_videos(self):
         stuck_videos = LogEntryMedia.objects.filter(
-            media_type=LogEntryMedia.TYPE_VIDEO,
-            transcode_status__in=[LogEntryMedia.STATUS_PENDING, LogEntryMedia.STATUS_PROCESSING],
+            media_type=LogEntryMedia.MediaType.VIDEO,
+            transcode_status__in=[
+                LogEntryMedia.TranscodeStatus.PENDING,
+                LogEntryMedia.TranscodeStatus.PROCESSING,
+            ],
             created__lt=timezone.now() - timedelta(minutes=15),
         ).count()
         if stuck_videos:

@@ -176,7 +176,10 @@ def problem_report_summary(report):
         return ""
 
     description = (getattr(report, "description", "") or "").strip()
-    is_other = getattr(report, "problem_type", None) == getattr(report, "PROBLEM_OTHER", None)
+    problem_type_class = getattr(report, "ProblemType", None)
+    is_other = (
+        problem_type_class and getattr(report, "problem_type", None) == problem_type_class.OTHER
+    )
     type_display = getattr(report, "get_problem_type_display", lambda: "")()
 
     if is_other:

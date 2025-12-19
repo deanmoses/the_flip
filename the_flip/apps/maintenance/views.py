@@ -167,19 +167,25 @@ class MachineAutocompleteView(CanAccessMaintainerPortalMixin, View):
             MachineInstance.objects.select_related("model", "location")
             .annotate(
                 open_report_count=Count(
-                    "problem_reports", filter=Q(problem_reports__status=ProblemReport.STATUS_OPEN)
+                    "problem_reports", filter=Q(problem_reports__status=ProblemReport.Status.OPEN)
                 ),
                 latest_open_report_date=Max(
                     "problem_reports__created_at",
-                    filter=Q(problem_reports__status=ProblemReport.STATUS_OPEN),
+                    filter=Q(problem_reports__status=ProblemReport.Status.OPEN),
                 ),
             )
             .order_by(
                 Case(
-                    When(operational_status=MachineInstance.STATUS_FIXING, then=Value(1)),
-                    When(operational_status=MachineInstance.STATUS_BROKEN, then=Value(2)),
-                    When(operational_status=MachineInstance.STATUS_UNKNOWN, then=Value(3)),
-                    When(operational_status=MachineInstance.STATUS_GOOD, then=Value(4)),
+                    When(
+                        operational_status=MachineInstance.OperationalStatus.FIXING, then=Value(1)
+                    ),
+                    When(
+                        operational_status=MachineInstance.OperationalStatus.BROKEN, then=Value(2)
+                    ),
+                    When(
+                        operational_status=MachineInstance.OperationalStatus.UNKNOWN, then=Value(3)
+                    ),
+                    When(operational_status=MachineInstance.OperationalStatus.GOOD, then=Value(4)),
                     default=Value(5),
                     output_field=CharField(),
                 ),
@@ -224,7 +230,7 @@ class ProblemReportAutocompleteView(CanAccessMaintainerPortalMixin, View):
         current_machine_slug = request.GET.get("current_machine", "")
 
         reports = (
-            ProblemReport.objects.filter(status=ProblemReport.STATUS_OPEN)
+            ProblemReport.objects.filter(status=ProblemReport.Status.OPEN)
             .select_related("machine", "machine__model", "machine__location")
             .order_by("-created_at")
         )
@@ -277,7 +283,7 @@ class ProblemReportAutocompleteView(CanAccessMaintainerPortalMixin, View):
 
     def _get_summary(self, report: ProblemReport) -> str:
         """Build a concise problem report summary for the dropdown."""
-        if report.problem_type == ProblemReport.PROBLEM_OTHER:
+        if report.problem_type == ProblemReport.ProblemType.OTHER:
             if report.description:
                 desc = report.description[:60]
                 if len(report.description) > 60:
@@ -310,11 +316,11 @@ class ProblemReportListView(CanAccessMaintainerPortalMixin, TemplateView):
         # Stats for sidebar
         stats = [
             {
-                "value": ProblemReport.objects.filter(status="open").count(),
+                "value": ProblemReport.objects.filter(status=ProblemReport.Status.OPEN).count(),
                 "label": "Open",
             },
             {
-                "value": ProblemReport.objects.filter(status="closed").count(),
+                "value": ProblemReport.objects.filter(status=ProblemReport.Status.CLOSED).count(),
                 "label": "Closed",
             },
         ]
@@ -552,11 +558,11 @@ class ProblemReportCreateView(CanAccessMaintainerPortalMixin, FormView):
 
                 media = ProblemReportMedia.objects.create(
                     problem_report=report,
-                    media_type=ProblemReportMedia.TYPE_VIDEO
+                    media_type=ProblemReportMedia.MediaType.VIDEO
                     if is_video
-                    else ProblemReportMedia.TYPE_PHOTO,
+                    else ProblemReportMedia.MediaType.PHOTO,
                     file=media_file,
-                    transcode_status=ProblemReportMedia.STATUS_PENDING if is_video else "",
+                    transcode_status=ProblemReportMedia.TranscodeStatus.PENDING if is_video else "",
                 )
 
                 if is_video:
@@ -687,12 +693,12 @@ class ProblemReportDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, 
             )
 
         # Toggle status (wrapped in transaction so status + log entry are atomic)
-        if self.report.status == ProblemReport.STATUS_OPEN:
-            self.report.status = ProblemReport.STATUS_CLOSED
+        if self.report.status == ProblemReport.Status.OPEN:
+            self.report.status = ProblemReport.Status.CLOSED
             action_text = "closed"
             log_text = "Closed problem report"
         else:
-            self.report.status = ProblemReport.STATUS_OPEN
+            self.report.status = ProblemReport.Status.OPEN
             action_text = "re-opened"
             log_text = "Re-opened problem report"
 
@@ -917,9 +923,11 @@ class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
 
                 media = LogEntryMedia.objects.create(
                     log_entry=log_entry,
-                    media_type=LogEntryMedia.TYPE_VIDEO if is_video else LogEntryMedia.TYPE_PHOTO,
+                    media_type=LogEntryMedia.MediaType.VIDEO
+                    if is_video
+                    else LogEntryMedia.MediaType.PHOTO,
                     file=media_file,
-                    transcode_status=LogEntryMedia.STATUS_PENDING if is_video else "",
+                    transcode_status=LogEntryMedia.TranscodeStatus.PENDING if is_video else "",
                 )
 
                 if is_video:
@@ -929,7 +937,7 @@ class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
 
         # Close problem report if checkbox was checked
         if self.problem_report and self.request.POST.get("close_problem"):
-            self.problem_report.status = ProblemReport.STATUS_CLOSED
+            self.problem_report.status = ProblemReport.Status.CLOSED
             self.problem_report.save(update_fields=["status"])
             messages.success(
                 self.request,
@@ -1455,7 +1463,7 @@ class ReceiveTranscodedMediaView(View):
                     media.poster_file = poster_file
 
                 # Update status
-                media.transcode_status = media_model.STATUS_READY
+                media.transcode_status = media_model.TranscodeStatus.READY
 
                 media.save()
 

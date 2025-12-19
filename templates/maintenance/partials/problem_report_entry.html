@@ -6,7 +6,7 @@
     <div class="timeline__header">
       <div class="flex items-center stack-tight">
         <span class="timeline__title timeline__title--problem">Problem</span>
-        <span class="badge {% if entry.status == 'open' %}badge--warning{% else %}badge--success{% endif %}">
+        <span class="badge {% if entry.status == entry.Status.OPEN %}badge--warning{% else %}badge--success{% endif %}">
           {{ entry.get_status_display }}
         </span>
       </div>

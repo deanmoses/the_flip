@@ -416,9 +416,9 @@ class VideoMediaTestMixin:
         video_file = SimpleUploadedFile("test.mp4", b"fake video content", content_type="video/mp4")
         self.media = LogEntryMedia.objects.create(
             log_entry=self.log_entry,
-            media_type=LogEntryMedia.TYPE_VIDEO,
+            media_type=LogEntryMedia.MediaType.VIDEO,
             file=video_file,
-            transcode_status=LogEntryMedia.STATUS_PENDING,
+            transcode_status=LogEntryMedia.TranscodeStatus.PENDING,
         )
 
 
@@ -449,7 +449,7 @@ class TranscodeVideoJobTests(VideoMediaTestMixin, TemporaryMediaMixin, TestCase)
 
         self.assertIn("DJANGO_WEB_SERVICE_URL", str(context.exception))
         self.media.refresh_from_db()
-        self.assertEqual(self.media.transcode_status, LogEntryMedia.STATUS_FAILED)
+        self.assertEqual(self.media.transcode_status, LogEntryMedia.TranscodeStatus.FAILED)
         download.assert_not_called()
         probe.assert_not_called()
         run_ffmpeg.assert_not_called()
@@ -467,14 +467,14 @@ class TranscodeVideoJobTests(VideoMediaTestMixin, TemporaryMediaMixin, TestCase)
         from the_flip.apps.core.tasks import transcode_video_job
 
         # Change media type to photo
-        self.media.media_type = LogEntryMedia.TYPE_PHOTO
+        self.media.media_type = LogEntryMedia.MediaType.PHOTO
         self.media.save()
 
         # Should not process, just return
         transcode_video_job(self.media.id, "LogEntryMedia")
         self.media.refresh_from_db()
         # Status should remain pending (not changed)
-        self.assertEqual(self.media.transcode_status, LogEntryMedia.STATUS_PENDING)
+        self.assertEqual(self.media.transcode_status, LogEntryMedia.TranscodeStatus.PENDING)
 
     @patch("the_flip.apps.core.tasks.TRANSCODING_UPLOAD_TOKEN", TEST_TOKEN)
     @patch("the_flip.apps.core.tasks.DJANGO_WEB_SERVICE_URL", "https://example.com")
@@ -517,7 +517,7 @@ class TranscodeVideoJobTests(VideoMediaTestMixin, TemporaryMediaMixin, TestCase)
         # Duration saved to media, status still PROCESSING (upload endpoint sets READY)
         self.media.refresh_from_db()
         self.assertEqual(self.media.duration, 120)
-        self.assertEqual(self.media.transcode_status, LogEntryMedia.STATUS_PROCESSING)
+        self.assertEqual(self.media.transcode_status, LogEntryMedia.TranscodeStatus.PROCESSING)
 
     @patch("the_flip.apps.core.tasks.TRANSCODING_UPLOAD_TOKEN", TEST_TOKEN)
     @patch("the_flip.apps.core.tasks.DJANGO_WEB_SERVICE_URL", "https://example.com")
@@ -547,7 +547,7 @@ class TranscodeVideoJobTests(VideoMediaTestMixin, TemporaryMediaMixin, TestCase)
         )
 
         # Status was PROCESSING during ffmpeg execution
-        self.assertEqual(statuses_during_run[0], LogEntryMedia.STATUS_PROCESSING)
+        self.assertEqual(statuses_during_run[0], LogEntryMedia.TranscodeStatus.PROCESSING)
 
 
 @tag("tasks", "unit")
@@ -582,7 +582,7 @@ class TranscodeVideoErrorHandlingTests(VideoMediaTestMixin, TemporaryMediaMixin,
             )
 
         self.media.refresh_from_db()
-        self.assertEqual(self.media.transcode_status, LogEntryMedia.STATUS_FAILED)
+        self.assertEqual(self.media.transcode_status, LogEntryMedia.TranscodeStatus.FAILED)
         download.assert_called_once()
         probe.assert_called_once()
         upload.assert_not_called()
@@ -609,7 +609,7 @@ class TranscodeVideoErrorHandlingTests(VideoMediaTestMixin, TemporaryMediaMixin,
             )
 
         self.media.refresh_from_db()
-        self.assertEqual(self.media.transcode_status, LogEntryMedia.STATUS_FAILED)
+        self.assertEqual(self.media.transcode_status, LogEntryMedia.TranscodeStatus.FAILED)
         download.assert_called_once()
         probe.assert_not_called()
         run_ffmpeg.assert_not_called()
@@ -637,7 +637,7 @@ class TranscodeVideoErrorHandlingTests(VideoMediaTestMixin, TemporaryMediaMixin,
             )
 
         self.media.refresh_from_db()
-        self.assertEqual(self.media.transcode_status, LogEntryMedia.STATUS_FAILED)
+        self.assertEqual(self.media.transcode_status, LogEntryMedia.TranscodeStatus.FAILED)
         download.assert_called_once()
         probe.assert_called_once()
         self.assertEqual(run_ffmpeg.call_count, 2)

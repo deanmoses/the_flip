@@ -18,17 +18,17 @@
          data-update-url="{% url 'machine-inline-update' machine.slug %}">
       <div class="dropdown">
         <button type="button"
-                class="btn btn--dropdown status-btn {% if machine.operational_status == 'good' %}btn--status-good{% elif machine.operational_status == 'fixing' %}btn--status-fixing{% elif machine.operational_status == 'broken' %}btn--status-broken{% else %}btn--secondary{% endif %}"
+                class="btn btn--dropdown status-btn {% if machine.operational_status == machine.OperationalStatus.GOOD %}btn--status-good{% elif machine.operational_status == machine.OperationalStatus.FIXING %}btn--status-fixing{% elif machine.operational_status == machine.OperationalStatus.BROKEN %}btn--status-broken{% else %}btn--secondary{% endif %}"
                 aria-haspopup="true"
                 aria-expanded="false"
                 aria-label="Change status"
                 title="Status: {{ machine.get_operational_status_display }}"
                 onclick="toggleDropdown(this)">
-          <i class="fa-solid {% if machine.operational_status == 'fixing' %}fa-wrench{% elif machine.operational_status == 'good' %}fa-check{% elif machine.operational_status == 'broken' %}fa-circle-xmark{% else %}fa-circle-question{% endif %} status-icon"></i>
+          <i class="fa-solid {% if machine.operational_status == machine.OperationalStatus.FIXING %}fa-wrench{% elif machine.operational_status == machine.OperationalStatus.GOOD %}fa-check{% elif machine.operational_status == machine.OperationalStatus.BROKEN %}fa-circle-xmark{% else %}fa-circle-question{% endif %} status-icon"></i>
           <i class="fa-solid fa-caret-down btn__caret"></i>
         </button>
         <div class="dropdown__menu dropdown__menu--left hidden">
-          {% for value, label in machine.STATUS_CHOICES %}
+          {% for value, label in machine.OperationalStatus.choices %}
             <button type="button"
                     class="dropdown__item{% if value == machine.operational_status %} dropdown__item--selected{% endif %}"
                     data-field="operational_status"
@@ -104,16 +104,16 @@
             <div class="dropdown">
               <button type="button"
                       id="status-pill"
-                      class="pill {% if machine.operational_status == 'good' %}pill--status-good{% elif machine.operational_status == 'fixing' %}pill--status-fixing{% elif machine.operational_status == 'broken' %}pill--status-broken{% else %}pill--neutral{% endif %}"
+                      class="pill {% if machine.operational_status == machine.OperationalStatus.GOOD %}pill--status-good{% elif machine.operational_status == machine.OperationalStatus.FIXING %}pill--status-fixing{% elif machine.operational_status == machine.OperationalStatus.BROKEN %}pill--status-broken{% else %}pill--neutral{% endif %}"
                       aria-haspopup="true"
                       aria-expanded="false"
                       onclick="toggleDropdown(this)">
-                <i class="fa-solid {% if machine.operational_status == 'fixing' %}fa-wrench{% elif machine.operational_status == 'good' %}fa-check{% elif machine.operational_status == 'broken' %}fa-circle-xmark{% else %}fa-circle-question{% endif %} meta status-icon"></i>
+                <i class="fa-solid {% if machine.operational_status == machine.OperationalStatus.FIXING %}fa-wrench{% elif machine.operational_status == machine.OperationalStatus.GOOD %}fa-check{% elif machine.operational_status == machine.OperationalStatus.BROKEN %}fa-circle-xmark{% else %}fa-circle-question{% endif %} meta status-icon"></i>
                 <span class="status-label">{{ machine.get_operational_status_display }}</span>
                 <i class="fa-solid fa-caret-down meta"></i>
               </button>
               <div class="dropdown__menu dropdown__menu--left hidden">
-                {% for value, label in machine.STATUS_CHOICES %}
+                {% for value, label in machine.OperationalStatus.choices %}
                   <button type="button"
                           class="dropdown__item{% if value == machine.operational_status %} dropdown__item--selected{% endif %}"
                           data-field="operational_status"

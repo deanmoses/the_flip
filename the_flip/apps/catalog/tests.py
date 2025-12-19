@@ -80,7 +80,7 @@ class MachineQuickCreateViewTests(AccessControlTestCase):
             name="Existing Machine",
             manufacturer="Williams",
             year=1995,
-            era=MachineModel.ERA_SS,
+            era=MachineModel.Era.SS,
         )
 
         # Create maintainer user
@@ -153,7 +153,7 @@ class MachineQuickCreateViewTests(AccessControlTestCase):
 
         # Verify the new instance was created correctly
         new_instance = MachineInstance.objects.get(model=new_model)
-        self.assertEqual(new_instance.operational_status, MachineInstance.STATUS_UNKNOWN)
+        self.assertEqual(new_instance.operational_status, MachineInstance.OperationalStatus.UNKNOWN)
         self.assertIsNone(new_instance.location)
         self.assertEqual(new_instance.created_by, self.maintainer_user)
         self.assertEqual(new_instance.updated_by, self.maintainer_user)
@@ -208,7 +208,7 @@ class MachineQuickCreateViewTests(AccessControlTestCase):
         # Verify the instance was created with the existing model
         new_instance = MachineInstance.objects.get(name_override="Machine #2")
         self.assertEqual(new_instance.model, self.existing_model)
-        self.assertEqual(new_instance.operational_status, MachineInstance.STATUS_UNKNOWN)
+        self.assertEqual(new_instance.operational_status, MachineInstance.OperationalStatus.UNKNOWN)
         self.assertIsNone(new_instance.location)
 
     def test_validation_error_no_model_or_model_name(self):
@@ -421,7 +421,7 @@ class MachineInlineUpdateViewTests(TestCase):
         # Get the Maintainer profile (created automatically for staff users)
         maintainer = Maintainer.objects.get(user=self.maintainer_user)
 
-        self.machine.operational_status = MachineInstance.STATUS_GOOD
+        self.machine.operational_status = MachineInstance.OperationalStatus.GOOD
         self.machine._skip_auto_log = True
         self.machine.save()
 
@@ -439,7 +439,7 @@ class MachineInlineUpdateViewTests(TestCase):
         # Ensure no Maintainer profile exists
         Maintainer.objects.filter(user=self.maintainer_user).delete()
 
-        self.machine.operational_status = MachineInstance.STATUS_GOOD
+        self.machine.operational_status = MachineInstance.OperationalStatus.GOOD
         self.machine._skip_auto_log = True
         self.machine.save()
 

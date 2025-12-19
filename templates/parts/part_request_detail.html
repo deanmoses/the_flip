@@ -23,7 +23,7 @@
         <i class="fa-solid fa-caret-down meta"></i>
       </button>
       <div class="dropdown__menu dropdown__menu--left hidden">
-        {% for value, label in part_request.STATUS_CHOICES %}
+        {% for value, label in part_request.Status.choices %}
           <button type="button"
                   class="dropdown__item{% if value == part_request.status %} dropdown__item--selected{% endif %}"
                   data-value="{{ value }}"

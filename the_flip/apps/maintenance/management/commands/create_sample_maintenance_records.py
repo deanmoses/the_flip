@@ -154,9 +154,9 @@ class Command(BaseCommand):
                 maintainer_name = (row.get("Maintainer") or "").strip()
                 maintainer = self.find_maintainer(maintainer_name) if maintainer_name else None
                 status = (
-                    ProblemReport.STATUS_CLOSED
+                    ProblemReport.Status.CLOSED
                     if (row.get("Checked / Unchecked") or "").lower() == "checked"
-                    else ProblemReport.STATUS_OPEN
+                    else ProblemReport.Status.OPEN
                 )
                 created_at = self.parse_date(row.get("Timestamp") or "")
 
@@ -164,7 +164,7 @@ class Command(BaseCommand):
                     machine=machine,
                     description=description,
                     status=status,
-                    problem_type=ProblemReport.PROBLEM_OTHER,
+                    problem_type=ProblemReport.ProblemType.OTHER,
                     reported_by_user=maintainer.user if maintainer else None,
                 )
                 ProblemReport.objects.filter(pk=report.pk).update(created_at=created_at)

@@ -15,14 +15,14 @@
       </div>
     </div>
     <div class="flip-card__main">
-      {% if report.problem_type != report.PROBLEM_OTHER %}
+      {% if report.problem_type != report.ProblemType.OTHER %}
         <p>
           <strong>{{ report.get_problem_type_display }}</strong>
         </p>
       {% endif %}
       {% if report.description %}
         <div class="markdown-content markdown-content--compact">{{ report.description|render_markdown }}</div>
-      {% elif report.problem_type == report.PROBLEM_OTHER %}
+      {% elif report.problem_type == report.ProblemType.OTHER %}
         <p class="text-muted">No description provided.</p>
       {% endif %}
     </div>
