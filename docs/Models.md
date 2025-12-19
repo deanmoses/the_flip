@@ -99,17 +99,7 @@ The project uses this pattern in:
 
 ## Query Optimization
 
-Use `select_related` for ForeignKey/OneToOne (single JOIN) and `prefetch_related` for reverse/ManyToMany (separate query):
-
-```python
-# From maintenance/views.py - actual project usage
-LogEntry.objects.filter(machine=self.machine)
-    .select_related("machine", "problem_report")
-    .prefetch_related("maintainers__user", "media")
-    .order_by("-work_date")
-```
-
-Add these in views or QuerySet methods where queries are built, not in model methods.
+Don't add `select_related`/`prefetch_related` in model methods—add them in views or QuerySet methods where queries are built. See `docs/Views.md` for patterns.
 
 ## Model Checklist
 
