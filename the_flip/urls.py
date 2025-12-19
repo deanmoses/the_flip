@@ -302,11 +302,12 @@ urlpatterns = [
     ),  # Part request update detail page
 ]
 
-media_url = settings.MEDIA_URL.lstrip("/")
-if media_url:
-    urlpatterns += [
-        re_path(rf"^{media_url}(?P<path>.*)$", serve_media, name="media"),  # Serve media files
-    ]
+if settings.DEBUG:
+    media_url = settings.MEDIA_URL.lstrip("/")
+    if media_url:
+        urlpatterns += [
+            re_path(rf"^{media_url}(?P<path>.*)$", serve_media, name="media"),  # Serve media files
+        ]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
