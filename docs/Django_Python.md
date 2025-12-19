@@ -33,6 +33,8 @@ Skip docstrings for:
 
 When modifying code, verify existing docstrings are still accurate. Misleading documentation is worse than no documentation.
 
+**Format**: Use simple descriptive docstrings. Type hints provide parameter and return types, so `Args:` and `Returns:` sections (Google/NumPy/Sphinx style) are unnecessary.
+
 ### General
 
 - Update docs when behavior changes
