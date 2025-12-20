@@ -149,12 +149,7 @@ Django's `static()` URL helper (used with `DEBUG=True`) can serve media files, b
 
 **Why not make use of a CDN?**
 
-A CDN caches content at edge locations, but only helps when the same asset is requested multiple times within the cache TTL. For this application:
-
-- Infrequent access (hours between users)
-- Long-tail content (each photo viewed rarely after initial upload)
-- Small user base (not many concurrent requests for same asset)
-- Most requests would be cache misses, still hitting origin
+A CDN caches content at edge locations, but only helps when the same asset is requested multiple times within the cache TTL. For this application, most requests would be cache misses, still hitting origin, because it will often be hours between the system being used by a user.
 
 A CDN adds complexity without benefit for this usage pattern.
 
