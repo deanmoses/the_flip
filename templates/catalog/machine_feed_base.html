@@ -18,13 +18,13 @@
          data-update-url="{% url 'machine-inline-update' machine.slug %}">
       <div class="dropdown">
         <button type="button"
-                class="btn btn--dropdown status-btn {% if machine.operational_status == machine.OperationalStatus.GOOD %}btn--status-good{% elif machine.operational_status == machine.OperationalStatus.FIXING %}btn--status-fixing{% elif machine.operational_status == machine.OperationalStatus.BROKEN %}btn--status-broken{% else %}btn--secondary{% endif %}"
+                class="btn btn--dropdown status-btn {{ machine.operational_status|machine_status_btn_class }}"
                 aria-haspopup="true"
                 aria-expanded="false"
                 aria-label="Change status"
                 title="Status: {{ machine.get_operational_status_display }}"
                 onclick="toggleDropdown(this)">
-          <i class="fa-solid {% if machine.operational_status == machine.OperationalStatus.FIXING %}fa-wrench{% elif machine.operational_status == machine.OperationalStatus.GOOD %}fa-check{% elif machine.operational_status == machine.OperationalStatus.BROKEN %}fa-circle-xmark{% else %}fa-circle-question{% endif %} status-icon"></i>
+          <i class="fa-solid {{ machine.operational_status|machine_status_icon }} status-icon"></i>
           <i class="fa-solid fa-caret-down btn__caret"></i>
         </button>
         <div class="dropdown__menu dropdown__menu--left hidden">
@@ -104,11 +104,11 @@
             <div class="dropdown">
               <button type="button"
                       id="status-pill"
-                      class="pill {% if machine.operational_status == machine.OperationalStatus.GOOD %}pill--status-good{% elif machine.operational_status == machine.OperationalStatus.FIXING %}pill--status-fixing{% elif machine.operational_status == machine.OperationalStatus.BROKEN %}pill--status-broken{% else %}pill--neutral{% endif %}"
+                      class="pill {{ machine.operational_status|machine_status_css_class }}"
                       aria-haspopup="true"
                       aria-expanded="false"
                       onclick="toggleDropdown(this)">
-                <i class="fa-solid {% if machine.operational_status == machine.OperationalStatus.FIXING %}fa-wrench{% elif machine.operational_status == machine.OperationalStatus.GOOD %}fa-check{% elif machine.operational_status == machine.OperationalStatus.BROKEN %}fa-circle-xmark{% else %}fa-circle-question{% endif %} meta status-icon"></i>
+                <i class="fa-solid {{ machine.operational_status|machine_status_icon }} meta status-icon"></i>
                 <span class="status-label">{{ machine.get_operational_status_display }}</span>
                 <i class="fa-solid fa-caret-down meta"></i>
               </button>

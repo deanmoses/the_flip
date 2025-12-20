@@ -301,4 +301,7 @@ Load with `{% load core_extras %}`, then use:
 | `problem_report_summary` | `{{ report\|problem_report_summary }}` | Concise summary: type + description |
 | `problem_report_meta` | `{{ report\|problem_report_meta }}` | Reporter name + timestamp |
 | `log_entry_meta` | `{{ entry\|log_entry_meta }}` | Maintainer names + timestamp |
+| `machine_status_css_class` | `{{ machine.operational_status\|machine_status_css_class }}` | Pill CSS class for machine status |
+| `machine_status_icon` | `{{ machine.operational_status\|machine_status_icon }}` | Font Awesome icon for machine status |
+| `machine_status_btn_class` | `{{ machine.operational_status\|machine_status_btn_class }}` | Button CSS class for machine status |
 | `getfield` | `{{ form\|getfield:"name" }}` | Get form field by name |
