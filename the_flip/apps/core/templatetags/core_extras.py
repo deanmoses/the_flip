@@ -235,6 +235,57 @@ def log_entry_meta(entry):
     return format_html("<strong>{}</strong>", ts)
 
 
+# Machine operational status display mappings
+# These map MachineInstance.operational_status values to CSS classes and icons
+_MACHINE_STATUS_CSS_CLASSES = {
+    "good": "pill--status-good",
+    "fixing": "pill--status-fixing",
+    "broken": "pill--status-broken",
+}
+
+_MACHINE_STATUS_ICONS = {
+    "good": "fa-check",
+    "fixing": "fa-wrench",
+    "broken": "fa-circle-xmark",
+}
+
+_MACHINE_STATUS_BTN_CLASSES = {
+    "good": "btn--status-good",
+    "fixing": "btn--status-fixing",
+    "broken": "btn--status-broken",
+}
+
+
+@register.filter
+def machine_status_css_class(status):
+    """Return pill CSS class for MachineInstance.operational_status.
+
+    Usage:
+        {{ machine.operational_status|machine_status_css_class }}
+    """
+    return _MACHINE_STATUS_CSS_CLASSES.get(status, "pill--neutral")
+
+
+@register.filter
+def machine_status_icon(status):
+    """Return Font Awesome icon class for MachineInstance.operational_status.
+
+    Usage:
+        {{ machine.operational_status|machine_status_icon }}
+    """
+    return _MACHINE_STATUS_ICONS.get(status, "fa-circle-question")
+
+
+@register.filter
+def machine_status_btn_class(status):
+    """Return button CSS class for MachineInstance.operational_status.
+
+    Usage:
+        {{ machine.operational_status|machine_status_btn_class }}
+    """
+    return _MACHINE_STATUS_BTN_CLASSES.get(status, "btn--secondary")
+
+
 # -----------------------------------------------------------------------------
 # UI Component template tags
 # -----------------------------------------------------------------------------
