@@ -1479,8 +1479,7 @@ class ReceiveTranscodedMediaView(View):
             # This prevents data loss if save() fails
             if original_file_name:
                 storage = media.transcoded_file.storage
-                file_to_delete = original_file_name
-                transaction.on_commit(lambda: storage.delete(file_to_delete))
+                transaction.on_commit(partial(storage.delete, name=original_file_name))
 
             return JsonResponse(
                 {
