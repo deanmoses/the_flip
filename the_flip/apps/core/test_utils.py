@@ -14,6 +14,7 @@ Usage:
 
 from __future__ import annotations
 
+import secrets
 import shutil
 import tempfile
 import uuid
@@ -34,8 +35,11 @@ if TYPE_CHECKING:
 
 UserModel = cast("type[User]", get_user_model())
 
-# Default password for all test users - centralized to avoid secret detection warnings
-TEST_PASSWORD = "testpass123"  # noqa: S105
+
+def _generate_test_password() -> str:
+    """Generate a random password for test users."""
+    return f"Test{secrets.token_hex(8)}!"
+
 
 # Minimal valid PNG (1x1 transparent pixel) for tests that need valid image data
 MINIMAL_PNG = (
@@ -89,7 +93,7 @@ def _unique_suffix() -> str:
 
 def create_user(
     username: str | None = None,
-    password: str = TEST_PASSWORD,
+    password: str | None = None,
     is_staff: bool = False,
     is_superuser: bool = False,
     first_name: str = "",
@@ -101,7 +105,7 @@ def create_user(
 
     Args:
         username: Username (auto-generated if not provided)
-        password: Password (defaults to 'testpass123')
+        password: Password (auto-generated if not provided)
         is_staff: Whether user is staff (maintainer)
         is_superuser: Whether user is superuser (admin)
         first_name: User's first name
@@ -116,6 +120,8 @@ def create_user(
         username = f"testuser-{_unique_suffix()}"
     if email is None:
         email = f"{username}@example.com"
+    if password is None:
+        password = _generate_test_password()
 
     if is_superuser:
         return UserModel.objects.create_superuser(
