@@ -10,6 +10,11 @@ set -euo pipefail
 
 staged_files=$(git diff --cached --name-only)
 
+# If generated files aren't actually staged, nothing to check
+if ! echo "$staged_files" | grep -qE "^(CLAUDE|AGENTS)\.md$"; then
+    exit 0
+fi
+
 # If source file or build script is staged, allow the commit
 # (the agent-docs hook will regenerate the output files)
 if echo "$staged_files" | grep -qE "(docs/AGENTS\.src\.md|scripts/build_agent_docs\.py)"; then
