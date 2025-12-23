@@ -15,6 +15,7 @@ make test-models       # Run model tests only
 - Keep `integration` tests runnable locally, but you can use `make test-fast` for quick iteration if you don't have ffmpeg installed; env-dependent checks will be skipped when the binaries are missing. Unit tests mock ffmpeg/probe/upload to stay fast and quiet.
 
 ### Test Tags
+
 | Tag | Use For |
 |-----|---------|
 | `models` | Model unit tests (no HTTP requests) |
@@ -56,7 +57,7 @@ For mocking patterns (subprocess, HTTP, settings, time), see `maintenance/tests/
 
 Organize tests by **feature**, not by layer. Name files `test_<entity>_<action>.py`:
 
-```
+```text
 the_flip/apps/maintenance/tests/
 ├── test_log_entry_create.py      # Log entry creation views
 ├── test_log_entry_detail.py      # Log entry detail view + AJAX

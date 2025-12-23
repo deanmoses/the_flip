@@ -1,5 +1,6 @@
 """Tests for parts feature flag behavior."""
 
+from constance.test import override_config
 from django.test import TestCase, tag
 from django.urls import reverse
 
@@ -15,17 +16,14 @@ class PartsFeatureFlagTests(TestDataMixin, TestCase):
     """Tests for the PARTS_ENABLED feature flag."""
 
     def setUp(self):
-        from constance.test import override_config
-
         super().setUp()
-        self.override_config = override_config
         self.maintainer = Maintainer.objects.get(user=self.maintainer_user)
 
     def test_nav_link_hidden_when_disabled(self):
         """Parts nav link is hidden when PARTS_ENABLED is False."""
         self.client.force_login(self.maintainer_user)
 
-        with self.override_config(PARTS_ENABLED=False):
+        with override_config(PARTS_ENABLED=False):
             response = self.client.get(reverse("maintainer-machine-list"))
             # The nav link to parts should not be present
             self.assertNotContains(response, 'href="/parts/"')
@@ -34,7 +32,7 @@ class PartsFeatureFlagTests(TestDataMixin, TestCase):
         """Parts nav link is shown when PARTS_ENABLED is True."""
         self.client.force_login(self.maintainer_user)
 
-        with self.override_config(PARTS_ENABLED=True):
+        with override_config(PARTS_ENABLED=True):
             response = self.client.get(reverse("maintainer-machine-list"))
             # The nav link to parts should be present
             self.assertContains(response, 'href="/parts/"')
@@ -50,7 +48,7 @@ class PartsFeatureFlagTests(TestDataMixin, TestCase):
             machine=self.machine,
         )
 
-        with self.override_config(PARTS_ENABLED=False):
+        with override_config(PARTS_ENABLED=False):
             logs, reports, part_requests, part_updates = get_activity_entries(self.machine)
             # Parts querysets should be empty
             self.assertEqual(list(part_requests), [])
@@ -67,7 +65,7 @@ class PartsFeatureFlagTests(TestDataMixin, TestCase):
             machine=self.machine,
         )
 
-        with self.override_config(PARTS_ENABLED=True):
+        with override_config(PARTS_ENABLED=True):
             logs, reports, part_requests, part_updates = get_activity_entries(self.machine)
             # Parts should be included
             self.assertEqual(list(part_requests), [part])
