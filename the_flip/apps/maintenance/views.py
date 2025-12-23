@@ -1405,7 +1405,7 @@ def _json_api_view(view_method):
         except _AuthenticationError as e:
             return JsonResponse({"success": False, "error": e.message}, status=e.status)
         except ValidationError as e:
-            return JsonResponse({"success": False, "error": str(e.message)}, status=400)
+            return JsonResponse({"success": False, "error": "; ".join(e.messages)}, status=400)
         except Http404 as e:
             return JsonResponse({"success": False, "error": str(e) or "Not found"}, status=404)
         except OSError as e:
