@@ -631,6 +631,33 @@ body {
   background-color: var(--color-accent-hover);
 }
 
+/* Removable pill (for file previews with remove button) */
+.pill--removable {
+  max-width: 16rem;
+  padding-right: var(--space-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pill__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: var(--space-1);
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  color: var(--color-gray-500);
+  font-size: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pill__remove:hover {
+  color: var(--color-gray-700);
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
