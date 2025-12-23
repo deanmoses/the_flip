@@ -9,7 +9,7 @@ Usage:
     class MyTestCase(TestDataMixin, TestCase):
         def setUp(self):
             super().setUp()
-            # self.machine, self.staff_user, etc. are now available
+            # self.machine, self.maintainer_user, etc. are now available
 """
 
 from __future__ import annotations
@@ -48,6 +48,12 @@ MINIMAL_PNG = (
     b"\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01"
     b"\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
 )
+
+# Date format constants for tests
+# HTML5 datetime-local input format (for form submission)
+DATETIME_INPUT_FORMAT = "%Y-%m-%dT%H:%M"
+# Display format for comparison (minute precision, space separator)
+DATETIME_DISPLAY_FORMAT = "%Y-%m-%d %H:%M"
 
 
 def create_uploaded_image(
@@ -485,7 +491,6 @@ class TestDataMixin:
         - self.machine_model: A MachineModel instance
         - self.machine: A MachineInstance instance
         - self.maintainer_user: A User with maintainer portal access
-        - self.staff_user: Alias for maintainer_user (deprecated)
         - self.regular_user: A User without special permissions
         - self.superuser: A superuser (admin)
 
@@ -505,6 +510,5 @@ class TestDataMixin:
             slug="test-machine",
         )
         self.maintainer_user = create_maintainer_user()
-        self.staff_user = self.maintainer_user  # Deprecated alias
         self.regular_user = create_user()
         self.superuser = create_superuser()
