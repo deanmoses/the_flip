@@ -4,12 +4,25 @@
 
 This project uses **Class-Based Views (CBVs)** for most views and **Function-Based Views (FBVs)** for simple endpoints.
 
-| Use | When |
+| Use | When to Use |
 |-----|------|
 | **CBV** | Standard CRUD: list, detail, create, update, delete. Django's generic views handle the boilerplate. |
 | **FBV** | Simple one-off endpoints: health checks, AJAX validation, webhooks, or views with unusual logic that doesn't fit CBV patterns. |
 
-Examples of FBVs in this project: `healthz` (health check), `check_username` (AJAX validation), registration views.
+Examples of FBVs in this project: `healthz` (health check), `check_username` (AJAX validation), user registration views.
+
+## Common CBV Types
+
+| CBV | When to Use |
+|-----|-------------|
+| `TemplateView` | GET-only pages with custom context (no object lookup needed) |
+| `ListView` | Paginated lists, search results, filtered collections |
+| `DetailView` | Single object by pk/slug from URL |
+| `FormView` | Forms that don't create/update a model directly |
+| `CreateView` | Model creation forms |
+| `UpdateView` | Model edit forms |
+| `DeleteView` | Deletion confirmation pages |
+| `View` | AJAX/JSON endpoints, multi-action POST handlers, or when generics don't fit |
 
 ## CBV Pattern
 
@@ -64,17 +77,6 @@ class MyListView(CanAccessMaintainerPortalMixin, ListView):
         return context
 ```
 
-## Common CBV Types
-
-| CBV | Purpose | Key Methods |
-|-----|---------|-------------|
-| `ListView` | Display list of objects | `get_queryset()`, `get_context_data()` |
-| `DetailView` | Display single object | `get_object()`, `get_context_data()` |
-| `CreateView` | Form to create object | `form_valid()`, `get_success_url()` |
-| `UpdateView` | Form to edit object | `get_object()`, `form_valid()` |
-| `DeleteView` | Confirm and delete | `get_object()`, `get_success_url()` |
-| `FormView` | Generic form handling | `form_valid()`, `form_invalid()` |
-
 ## Access Control
 
 Protect maintainer views with `CanAccessMaintainerPortalMixin`:
@@ -123,7 +125,7 @@ LogEntry.objects.filter(machine=self.machine)
 
 Add these in views or QuerySet methods where queries are built, not in model methods.
 
-## File Organization
+## View File Organization
 
 Keep views in a single `views.py` until it exceeds ~500 lines (per [Django_Python.md](Django_Python.md)). When splitting:
 
