@@ -62,10 +62,6 @@
     const iconEl = document.createElement('i');
     iconEl.className = `fa-solid ${icon} meta`;
 
-    const nameEl = document.createElement('span');
-    nameEl.className = 'pill__filename';
-    nameEl.textContent = file.name;
-
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
     removeBtn.className = 'pill__remove';
@@ -78,7 +74,7 @@
     });
 
     pill.appendChild(iconEl);
-    pill.appendChild(nameEl);
+    pill.appendChild(document.createTextNode(file.name));
     pill.appendChild(removeBtn);
 
     return pill;
