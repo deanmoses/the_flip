@@ -23,7 +23,11 @@ from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import Location, MachineInstance
 from the_flip.apps.core.forms import is_video_file
 from the_flip.apps.core.ip import get_real_ip
-from the_flip.apps.core.mixins import CanAccessMaintainerPortalMixin, MediaUploadMixin
+from the_flip.apps.core.mixins import (
+    CanAccessMaintainerPortalMixin,
+    InfiniteScrollMixin,
+    MediaUploadMixin,
+)
 from the_flip.apps.core.tasks import enqueue_transcode
 from the_flip.apps.maintenance.forms import (
     MaintainerProblemReportForm,
@@ -93,28 +97,14 @@ class ProblemReportListView(CanAccessMaintainerPortalMixin, TemplateView):
         return context
 
 
-class ProblemReportListPartialView(CanAccessMaintainerPortalMixin, View):
+class ProblemReportListPartialView(CanAccessMaintainerPortalMixin, InfiniteScrollMixin, View):
     """AJAX endpoint for infinite scrolling in the global problem report list."""
 
-    template_name = "maintenance/partials/global_problem_report_entry.html"
+    item_template = "maintenance/partials/global_problem_report_entry.html"
 
-    def get(self, request, *args, **kwargs):
-        search_query = request.GET.get("q", "").strip()
-        reports = get_problem_report_queryset(search_query)
-
-        paginator = Paginator(reports, 10)
-        page_obj = paginator.get_page(request.GET.get("page"))
-        items_html = "".join(
-            render_to_string(self.template_name, {"entry": report}, request=request)
-            for report in page_obj.object_list
-        )
-        return JsonResponse(
-            {
-                "items": items_html,
-                "has_next": page_obj.has_next(),
-                "next_page": page_obj.next_page_number() if page_obj.has_next() else None,
-            }
-        )
+    def get_queryset(self):
+        search_query = self.request.GET.get("q", "").strip()
+        return get_problem_report_queryset(search_query)
 
 
 class ProblemReportLogEntriesPartialView(CanAccessMaintainerPortalMixin, View):
