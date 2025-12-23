@@ -5,12 +5,11 @@ from django.urls import reverse
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.core.test_utils import (
-    AccessControlTestCase,
-    create_machine,
-    create_maintainer_user,
+    SharedAccountTestMixin,
+    SuppressRequestLogsMixin,
+    TestDataMixin,
     create_part_request,
     create_part_request_update,
-    create_user,
 )
 from the_flip.apps.parts.models import (
     PartRequest,
@@ -18,13 +17,13 @@ from the_flip.apps.parts.models import (
 )
 
 
-class PartRequestModelTests(TestCase):
+@tag("models")
+class PartRequestModelTests(TestDataMixin, TestCase):
     """Tests for the PartRequest model."""
 
     def setUp(self):
-        self.maintainer_user = create_maintainer_user()
+        super().setUp()
         self.maintainer = Maintainer.objects.get(user=self.maintainer_user)
-        self.machine = create_machine()
 
     def test_create_part_request(self):
         """Can create a part request."""
@@ -109,11 +108,12 @@ class PartRequestModelTests(TestCase):
         self.assertEqual(part_request.requester_display, str(self.maintainer))
 
 
-class PartRequestUpdateModelTests(TestCase):
+@tag("models")
+class PartRequestUpdateModelTests(TestDataMixin, TestCase):
     """Tests for the PartRequestUpdate model."""
 
     def setUp(self):
-        self.maintainer_user = create_maintainer_user(username="maintainer")
+        super().setUp()
         self.maintainer = Maintainer.objects.get(user=self.maintainer_user)
         self.part_request = create_part_request(requested_by=self.maintainer)
 
@@ -191,14 +191,12 @@ class PartRequestUpdateModelTests(TestCase):
 
 
 @tag("views")
-class PartRequestViewTests(AccessControlTestCase):
+class PartRequestViewTests(SuppressRequestLogsMixin, TestDataMixin, TestCase):
     """Tests for part request views."""
 
     def setUp(self):
-        self.maintainer_user = create_maintainer_user()
+        super().setUp()
         self.maintainer = Maintainer.objects.get(user=self.maintainer_user)
-        self.regular_user = create_user()
-        self.machine = create_machine()
 
     def test_list_view_requires_authentication(self):
         """Anonymous users should be redirected to login."""
@@ -293,11 +291,11 @@ class PartRequestViewTests(AccessControlTestCase):
 
 
 @tag("views")
-class PartRequestUpdateViewTests(TestCase):
+class PartRequestUpdateViewTests(SuppressRequestLogsMixin, TestDataMixin, TestCase):
     """Tests for part request update views."""
 
     def setUp(self):
-        self.maintainer_user = create_maintainer_user()
+        super().setUp()
         self.maintainer = Maintainer.objects.get(user=self.maintainer_user)
         self.part_request = create_part_request(requested_by=self.maintainer)
 
@@ -337,14 +335,12 @@ class PartRequestUpdateViewTests(TestCase):
 
 
 @tag("views", "ajax")
-class PartRequestDetailViewTextUpdateTests(AccessControlTestCase):
+class PartRequestDetailViewTextUpdateTests(SuppressRequestLogsMixin, TestDataMixin, TestCase):
     """Tests for PartRequestDetailView AJAX text updates."""
 
     def setUp(self):
         super().setUp()
-        self.maintainer_user = create_maintainer_user()
         self.maintainer = Maintainer.objects.get(user=self.maintainer_user)
-        self.regular_user = create_user()
         self.part_request = create_part_request(
             text="Original text",
             requested_by=self.maintainer,
@@ -399,13 +395,12 @@ class PartRequestDetailViewTextUpdateTests(AccessControlTestCase):
 
 
 @tag("views", "ajax")
-class PartRequestUpdateDetailViewTextUpdateTests(AccessControlTestCase):
+class PartRequestUpdateDetailViewTextUpdateTests(SuppressRequestLogsMixin, TestDataMixin, TestCase):
     """Tests for PartRequestUpdateDetailView AJAX text updates."""
 
     def setUp(self):
-        self.maintainer_user = create_maintainer_user()
+        super().setUp()
         self.maintainer = Maintainer.objects.get(user=self.maintainer_user)
-        self.regular_user = create_user()
         self.part_request = create_part_request(requested_by=self.maintainer)
         self.update = create_part_request_update(
             part_request=self.part_request,
@@ -465,13 +460,12 @@ class PartRequestUpdateDetailViewTextUpdateTests(AccessControlTestCase):
 
 
 @tag("views")
-class PartRequestListFilterTests(TestCase):
+class PartRequestListFilterTests(SuppressRequestLogsMixin, TestDataMixin, TestCase):
     """Tests for part request list filtering."""
 
     def setUp(self):
-        self.maintainer_user = create_maintainer_user()
+        super().setUp()
         self.maintainer = Maintainer.objects.get(user=self.maintainer_user)
-        self.machine = create_machine()
 
         # Create part requests with different statuses
         self.requested = create_part_request(
@@ -525,16 +519,15 @@ class PartRequestListFilterTests(TestCase):
 
 
 @tag("feature_flags")
-class PartsFeatureFlagTests(TestCase):
+class PartsFeatureFlagTests(TestDataMixin, TestCase):
     """Tests for the PARTS_ENABLED feature flag."""
 
     def setUp(self):
         from constance.test import override_config
 
+        super().setUp()
         self.override_config = override_config
-        self.maintainer_user = create_maintainer_user()
         self.maintainer = Maintainer.objects.get(user=self.maintainer_user)
-        self.machine = create_machine()
 
     def test_nav_link_hidden_when_disabled(self):
         """Parts nav link is hidden when PARTS_ENABLED is False."""
@@ -589,19 +582,10 @@ class PartsFeatureFlagTests(TestCase):
 
 
 @tag("views")
-class PartRequestSharedAccountTests(TestCase):
+class PartRequestSharedAccountTests(
+    SharedAccountTestMixin, SuppressRequestLogsMixin, TestDataMixin, TestCase
+):
     """Tests for part request creation from shared/terminal accounts."""
-
-    def setUp(self):
-        # Create a shared terminal account
-        self.shared_user = create_maintainer_user(username="terminal")
-        self.shared_maintainer = Maintainer.objects.get(user=self.shared_user)
-        self.shared_maintainer.is_shared_account = True
-        self.shared_maintainer.save()
-
-        # Create a regular maintainer for username lookup
-        self.regular_user = create_maintainer_user(username="alex")
-        self.regular_maintainer = Maintainer.objects.get(user=self.regular_user)
 
     def test_shared_account_with_valid_username_uses_fk(self):
         """Shared account selecting from dropdown saves to FK."""
@@ -610,13 +594,13 @@ class PartRequestSharedAccountTests(TestCase):
             reverse("part-request-create"),
             {
                 "text": "Need flipper rubbers",
-                "requester_name": str(self.regular_maintainer),
-                "requester_name_username": self.regular_user.username,
+                "requester_name": str(self.identifying_maintainer),
+                "requester_name_username": self.identifying_user.username,
             },
         )
         self.assertEqual(response.status_code, 302)
         part_request = PartRequest.objects.first()
-        self.assertEqual(part_request.requested_by, self.regular_maintainer)
+        self.assertEqual(part_request.requested_by, self.identifying_maintainer)
         self.assertEqual(part_request.requested_by_name, "")
 
     def test_shared_account_with_free_text_uses_text_field(self):
@@ -652,7 +636,7 @@ class PartRequestSharedAccountTests(TestCase):
 
     def test_regular_account_uses_current_user(self):
         """Regular account falls back to current user."""
-        self.client.force_login(self.regular_user)
+        self.client.force_login(self.identifying_user)
         response = self.client.post(
             reverse("part-request-create"),
             {
@@ -661,26 +645,19 @@ class PartRequestSharedAccountTests(TestCase):
         )
         self.assertEqual(response.status_code, 302)
         part_request = PartRequest.objects.first()
-        self.assertEqual(part_request.requested_by, self.regular_maintainer)
+        self.assertEqual(part_request.requested_by, self.identifying_maintainer)
 
 
 @tag("views")
-class PartRequestUpdateSharedAccountTests(TestCase):
+class PartRequestUpdateSharedAccountTests(
+    SharedAccountTestMixin, SuppressRequestLogsMixin, TestDataMixin, TestCase
+):
     """Tests for part request update creation from shared/terminal accounts."""
 
     def setUp(self):
-        # Create a shared terminal account
-        self.shared_user = create_maintainer_user(username="terminal")
-        self.shared_maintainer = Maintainer.objects.get(user=self.shared_user)
-        self.shared_maintainer.is_shared_account = True
-        self.shared_maintainer.save()
-
-        # Create a regular maintainer for username lookup
-        self.regular_user = create_maintainer_user(username="alex")
-        self.regular_maintainer = Maintainer.objects.get(user=self.regular_user)
-
+        super().setUp()
         # Create a part request to update
-        self.part_request = create_part_request(requested_by=self.regular_maintainer)
+        self.part_request = create_part_request(requested_by=self.identifying_maintainer)
 
     def test_shared_account_with_valid_username_uses_fk(self):
         """Shared account selecting from dropdown saves to FK."""
@@ -690,13 +667,13 @@ class PartRequestUpdateSharedAccountTests(TestCase):
             {
                 "text": "Ordered from Marco",
                 "new_status": "",
-                "requester_name": str(self.regular_maintainer),
-                "requester_name_username": self.regular_user.username,
+                "requester_name": str(self.identifying_maintainer),
+                "requester_name_username": self.identifying_user.username,
             },
         )
         self.assertEqual(response.status_code, 302)
         update = PartRequestUpdate.objects.first()
-        self.assertEqual(update.posted_by, self.regular_maintainer)
+        self.assertEqual(update.posted_by, self.identifying_maintainer)
         self.assertEqual(update.posted_by_name, "")
 
     def test_shared_account_with_free_text_uses_text_field(self):
@@ -734,7 +711,7 @@ class PartRequestUpdateSharedAccountTests(TestCase):
 
     def test_regular_account_uses_current_user(self):
         """Regular account falls back to current user."""
-        self.client.force_login(self.regular_user)
+        self.client.force_login(self.identifying_user)
         response = self.client.post(
             reverse("part-request-update-create", kwargs={"pk": self.part_request.pk}),
             {
@@ -744,15 +721,15 @@ class PartRequestUpdateSharedAccountTests(TestCase):
         )
         self.assertEqual(response.status_code, 302)
         update = PartRequestUpdate.objects.first()
-        self.assertEqual(update.posted_by, self.regular_maintainer)
+        self.assertEqual(update.posted_by, self.identifying_maintainer)
 
 
 @tag("views")
-class PartRequestSearchFreeTextNameTests(TestCase):
+class PartRequestSearchFreeTextNameTests(SuppressRequestLogsMixin, TestDataMixin, TestCase):
     """Tests for searching part requests by free-text name fields."""
 
     def setUp(self):
-        self.maintainer_user = create_maintainer_user()
+        super().setUp()
         self.maintainer = Maintainer.objects.get(user=self.maintainer_user)
 
     def test_search_by_requested_by_name(self):
@@ -849,19 +826,10 @@ class PartRequestSearchFreeTextNameTests(TestCase):
 
 
 @tag("views")
-class PartRequestFormReRenderTests(TestCase):
+class PartRequestFormReRenderTests(
+    SharedAccountTestMixin, SuppressRequestLogsMixin, TestDataMixin, TestCase
+):
     """Tests for form re-rendering preserving hidden username field."""
-
-    def setUp(self):
-        # Create a shared terminal account
-        self.shared_user = create_maintainer_user(username="terminal")
-        self.shared_maintainer = Maintainer.objects.get(user=self.shared_user)
-        self.shared_maintainer.is_shared_account = True
-        self.shared_maintainer.save()
-
-        # Create a regular maintainer for username lookup
-        self.regular_user = create_maintainer_user(username="alex")
-        self.regular_maintainer = Maintainer.objects.get(user=self.regular_user)
 
     def test_hidden_username_preserved_on_form_error(self):
         """Hidden username field is preserved when form re-renders with errors."""
@@ -872,8 +840,8 @@ class PartRequestFormReRenderTests(TestCase):
             reverse("part-request-create"),
             {
                 "text": "",  # Empty text should trigger validation error
-                "requester_name": str(self.regular_maintainer),
-                "requester_name_username": self.regular_user.username,
+                "requester_name": str(self.identifying_maintainer),
+                "requester_name_username": self.identifying_user.username,
             },
         )
 
@@ -884,6 +852,6 @@ class PartRequestFormReRenderTests(TestCase):
         # Hidden username should be preserved in re-rendered form
         self.assertContains(
             response,
-            f'value="{self.regular_user.username}"',
+            f'value="{self.identifying_user.username}"',
             msg_prefix="Hidden username field should be preserved on form re-render",
         )
