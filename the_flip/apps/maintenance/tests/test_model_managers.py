@@ -15,8 +15,8 @@ from the_flip.apps.maintenance.models import LogEntry, ProblemReport
 class ProblemReportSearchTests(TestDataMixin, TestCase):
     """Tests for ProblemReport.objects.search() method."""
 
-    def test_empty_query_returns_all_ordered(self):
-        """Empty query returns all reports, ordered by status then date descending."""
+    def test_empty_query_returns_all_unfiltered(self):
+        """Empty query returns all reports without filtering."""
         report1 = create_problem_report(machine=self.machine, description="First report")
         report2 = create_problem_report(
             machine=self.machine,
@@ -26,9 +26,10 @@ class ProblemReportSearchTests(TestDataMixin, TestCase):
 
         results = list(ProblemReport.objects.search(""))
 
-        # Open reports first, then closed, each group by date descending
-        self.assertEqual(results[0], report1)  # Open, newer
-        self.assertEqual(results[1], report2)  # Closed
+        # Should return both reports (ordering is caller's responsibility)
+        self.assertEqual(len(results), 2)
+        self.assertIn(report1, results)
+        self.assertIn(report2, results)
 
     def test_whitespace_query_returns_all(self):
         """Whitespace-only query is treated as empty, returns all."""
@@ -158,8 +159,8 @@ class ProblemReportSearchTests(TestDataMixin, TestCase):
 class LogEntrySearchTests(TestDataMixin, TestCase):
     """Tests for LogEntry.objects.search() method."""
 
-    def test_empty_query_returns_all_ordered(self):
-        """Empty query returns all entries, ordered by work_date descending."""
+    def test_empty_query_returns_all_unfiltered(self):
+        """Empty query returns all entries without filtering."""
         from datetime import timedelta
 
         from django.utils import timezone
@@ -173,8 +174,10 @@ class LogEntrySearchTests(TestDataMixin, TestCase):
 
         results = list(LogEntry.objects.search(""))
 
-        self.assertEqual(results[0], newer)
-        self.assertEqual(results[1], older)
+        # Should return both entries (ordering is caller's responsibility)
+        self.assertEqual(len(results), 2)
+        self.assertIn(older, results)
+        self.assertIn(newer, results)
 
     def test_whitespace_query_returns_all(self):
         """Whitespace-only query is treated as empty, returns all."""
