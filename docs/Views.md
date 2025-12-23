@@ -68,12 +68,23 @@ class MyListView(CanAccessMaintainerPortalMixin, ListView):
 
 | CBV | Purpose | Key Methods |
 |-----|---------|-------------|
+| `View` | Custom request handling | `get()`, `post()` - use when no generic view fits |
+| `TemplateView` | Static page or custom context | `get_context_data()` - simpler than `View` for GET-only |
 | `ListView` | Display list of objects | `get_queryset()`, `get_context_data()` |
 | `DetailView` | Display single object | `get_object()`, `get_context_data()` |
 | `CreateView` | Form to create object | `form_valid()`, `get_success_url()` |
 | `UpdateView` | Form to edit object | `get_object()`, `form_valid()` |
 | `DeleteView` | Confirm and delete | `get_object()`, `get_success_url()` |
 | `FormView` | Generic form handling | `form_valid()`, `form_invalid()` |
+
+### When to Use `View` vs Generic Views
+
+Use plain `View` when:
+- Building AJAX endpoints that return JSON (not HTML templates)
+- Handling multiple POST actions in one endpoint (e.g., detail page with edit/delete/reassign)
+- The generic view patterns don't fit your use case
+
+Use `TemplateView` for GET-only pages that render a template with custom context but don't need `ListView`'s queryset handling or `DetailView`'s object lookup.
 
 ## Access Control
 
