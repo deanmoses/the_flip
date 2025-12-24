@@ -1,4 +1,4 @@
-"""Tests for part request update views."""
+"""Tests for part request update creation views."""
 
 from django.test import TestCase, tag
 from django.urls import reverse
@@ -13,8 +13,8 @@ from the_flip.apps.parts.models import PartRequest, PartRequestUpdate
 
 
 @tag("views")
-class PartRequestUpdateViewTests(SuppressRequestLogsMixin, TestDataMixin, TestCase):
-    """Tests for part request update views."""
+class PartRequestUpdateCreateViewTests(SuppressRequestLogsMixin, TestDataMixin, TestCase):
+    """Tests for part request update creation views."""
 
     def setUp(self):
         super().setUp()

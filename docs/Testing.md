@@ -21,6 +21,7 @@ make test-models       # Run model tests only
 | `models` | Model unit tests (no HTTP requests) |
 | `views` | View tests that make HTTP requests |
 | `ajax` | AJAX endpoints (combine with `views`: `@tag("views", "ajax")`) |
+| `media` | Media upload, delete, and display tests (combine with `views`: `@tag("views", "media")`) |
 | `forms` | Form validation tests |
 | `api` | External API endpoint tests |
 | `feature_flags` | Tests for `constance` feature flag behavior |
