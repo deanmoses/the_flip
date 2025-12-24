@@ -7,7 +7,7 @@ from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection
 
-from the_flip.apps.catalog.models import MachineInstance, MachineModel
+from the_flip.apps.catalog.models import Location, MachineInstance, MachineModel
 
 
 class Command(BaseCommand):
@@ -47,6 +47,9 @@ class Command(BaseCommand):
             models_map[model.name] = model
             self.stdout.write(f"Created model: {model.name}")
 
+        # Cache locations to avoid repeated lookups
+        locations_map: dict[str, Location | None] = {"": None}
+
         for data in payload.get("instances", []):
             model_name = data.pop("model_name")
             model = models_map.get(model_name)
@@ -54,10 +57,22 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR(f"Skipping unknown model {model_name}"))
                 continue
             instance_data = data.copy()
-            instance = MachineInstance.objects.create(
-                model=model,
-                **instance_data,
-            )
+
+            # Convert location string to Location instance (case-insensitive lookup)
+            location_name = instance_data.pop("location", "")
+            if location_name and location_name not in locations_map:
+                location, created = Location.objects.get_or_create(
+                    name__iexact=location_name,
+                    defaults={"name": location_name.title()},
+                )
+                locations_map[location_name] = location
+                if created:
+                    self.stdout.write(f"Created location: {location_name}")
+            instance_data["location"] = locations_map.get(location_name)
+
+            instance = MachineInstance(model=model, **instance_data)
+            instance._skip_auto_log = True  # Don't create log entries for sample data
+            instance.save()
             self.stdout.write(f"Created instance: {instance.display_name}")
 
         self.stdout.write(self.style.SUCCESS("Sample machine data created."))
