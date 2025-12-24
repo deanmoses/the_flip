@@ -367,12 +367,12 @@ class ProblemReportDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, 
             old_machine_link = format_html(
                 '<a href="{}">{}</a>',
                 reverse("maintainer-machine-detail", kwargs={"slug": old_machine.slug}),
-                old_machine.display_name,
+                old_machine.short_display_name,
             )
             new_machine_link = format_html(
                 '<a href="{}">{}</a>',
                 reverse("maintainer-machine-detail", kwargs={"slug": new_machine.slug}),
-                new_machine.display_name,
+                new_machine.short_display_name,
             )
             if child_log_count:
                 messages.success(

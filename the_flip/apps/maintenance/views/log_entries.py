@@ -473,7 +473,7 @@ class LogEntryDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, Detai
             new_machine_link = format_html(
                 '<a href="{}">{}</a>',
                 reverse("maintainer-machine-detail", kwargs={"slug": new_report.machine.slug}),
-                new_report.machine.display_name,
+                new_report.machine.short_display_name,
             )
 
             if old_report is None:
@@ -511,7 +511,7 @@ class LogEntryDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, Detai
                 old_machine_link = format_html(
                     '<a href="{}">{}</a>',
                     reverse("maintainer-machine-detail", kwargs={"slug": old_machine.slug}),
-                    old_machine.display_name,
+                    old_machine.short_display_name,
                 )
                 messages.success(
                     request,
@@ -565,12 +565,12 @@ class LogEntryDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, Detai
             old_machine_link = format_html(
                 '<a href="{}">{}</a>',
                 reverse("maintainer-machine-detail", kwargs={"slug": old_machine.slug}),
-                old_machine.display_name,
+                old_machine.short_display_name,
             )
             new_machine_link = format_html(
                 '<a href="{}">{}</a>',
                 reverse("maintainer-machine-detail", kwargs={"slug": new_machine.slug}),
-                new_machine.display_name,
+                new_machine.short_display_name,
             )
             messages.success(
                 request,
