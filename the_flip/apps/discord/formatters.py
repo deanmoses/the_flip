@@ -138,7 +138,7 @@ def _format_problem_report_created(report: ProblemReport) -> dict:
     # Build the main embed
     color = 15158332  # Red color for problems
     main_embed: dict[str, Any] = {
-        "title": f"⚠️ Problem Report on {report.machine.display_name}",
+        "title": f"⚠️ Problem Report on {report.machine.short_display_name}",
         "description": description,
         "url": url,
         "color": color,
@@ -211,7 +211,7 @@ def _format_log_entry_created(log_entry: LogEntry) -> dict:
     # Build the main embed
     color = 3447003  # Blue color for work logs
     main_embed: dict[str, Any] = {
-        "title": f"🗒️ Log on {log_entry.machine.display_name}",
+        "title": f"🗒️ Log on {log_entry.machine.short_display_name}",
         "description": description,
         "url": url,
         "color": color,
@@ -248,7 +248,7 @@ def _format_part_request_created(part_request: PartRequest) -> dict:
 
     # Build title with machine name if available
     if part_request.machine:
-        title = f"📦 Parts Request #{part_request.pk} for {part_request.machine.display_name}"
+        title = f"📦 Parts Request #{part_request.pk} for {part_request.machine.short_display_name}"
     else:
         title = f"📦 Parts Request #{part_request.pk}"
 
@@ -297,7 +297,7 @@ def _format_part_request_status_changed(part_request: PartRequest) -> dict:
     return {
         "embeds": [
             {
-                "title": f"{emoji} Parts Request #{part_request.pk} for {part_request.machine.display_name}: {status_display}"
+                "title": f"{emoji} Parts Request #{part_request.pk} for {part_request.machine.short_display_name}: {status_display}"
                 if part_request.machine
                 else f"{emoji} Parts Request #{part_request.pk}: {status_display}",
                 "description": description,
@@ -341,7 +341,7 @@ def _format_part_request_update_created(update: PartRequestUpdate) -> dict:
 
     # Build title
     if update.part_request.machine:
-        title = f"💬 Update on Parts Request #{update.part_request.pk} for {update.part_request.machine.display_name}"
+        title = f"💬 Update on Parts Request #{update.part_request.pk} for {update.part_request.machine.short_display_name}"
     else:
         title = f"💬 Update on Parts Request #{update.part_request.pk}"
 
