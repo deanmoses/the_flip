@@ -31,7 +31,6 @@ make test-models       # Run model tests only
 | `admin` | Django admin tests |
 | `auth` | Authentication flow tests |
 | `registration` | User registration tests |
-| `terminals` | Shared terminal account tests |
 | `public` | Public-facing (non-authenticated) page tests |
 
 ### Running Tests by Tag
