@@ -12,5 +12,11 @@ watchPatterns = [
   "!.vscode/**",
   "!.pre-commit-config.yaml",
   "!.env.example",
-  "!.env.vscode"
+  "!.env.vscode",
+  "!.coderabbit.yaml",
+  "!.prettierrc",
+  "!.secrets.baseline",
+  "!.gitignore",
+  "!LICENSE",
+  "!scripts/**"
 ]
