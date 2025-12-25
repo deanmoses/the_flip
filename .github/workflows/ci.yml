@@ -16,6 +16,12 @@ on:
       - '.pre-commit-config.yaml'
       - '.env.example'
       - '.env.vscode'
+      - '.coderabbit.yaml'
+      - '.prettierrc'
+      - '.secrets.baseline'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'scripts/**'
   pull_request:
     branches: [ main ]
     # When updating this, also update what's ignored in railway.toml
@@ -27,6 +33,12 @@ on:
       - '.pre-commit-config.yaml'
       - '.env.example'
       - '.env.vscode'
+      - '.coderabbit.yaml'
+      - '.prettierrc'
+      - '.secrets.baseline'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'scripts/**'
 
 jobs:
   test:
