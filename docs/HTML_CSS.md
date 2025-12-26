@@ -117,6 +117,6 @@ Only use `{{ variable|safe }}` for HTML you control (e.g., markdown rendered ser
 
 ## Performance & Build
 
-- Stick to vanilla CSS compiled once (no external fonts, minimal animations).
-- Use `@layer base, components, utilities;` to control cascade if desired.
-- Gzip production CSS and ensure it is fingerprinted via Django's `collectstatic`.
+- Single vanilla CSS file (`styles.css`) for cacheability
+- Static files are gzipped and fingerprinted via WhiteNoise + `collectstatic`
+- Inter font loaded from Google Fonts with `display=swap`
