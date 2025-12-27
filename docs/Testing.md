@@ -3,8 +3,8 @@
 ## Running Tests
 
 ```bash
-make test              # Run full test suite
-make test-fast         # Run fast tests only (exclude integration)
+make test              # Run tests (excludes integration)
+make test-all          # Run full suite including integration tests
 make test-models       # Run model tests only
 ```
 
@@ -12,7 +12,7 @@ make test-models       # Run model tests only
 
 - GitHub Actions runs tests against PostgreSQL (matching production), while localhost `make test` uses SQLite for speed.
 - GitHub Actions installs ffmpeg/ffprobe (for video transcoding) and runs the full suite, so `integration` tests are expected to pass there.
-- Keep `integration` tests runnable locally, but you can use `make test-fast` for quick iteration if you don't have ffmpeg installed; env-dependent checks will be skipped when the binaries are missing. Unit tests mock ffmpeg/probe/upload to stay fast and quiet.
+- Keep `integration` tests runnable locally, but `make test` excludes them by default for quick iteration if you don't have ffmpeg installed; env-dependent checks will be skipped when the binaries are missing. Unit tests mock ffmpeg/probe/upload to stay fast and quiet.
 
 ### Test Tags
 
