@@ -27,7 +27,6 @@ Use these 6 tags to enable selective test execution. Each tag maps to a type of 
 | `admin` | Django admin customizations | Editing admin.py |
 | `integration` | Tests requiring external services (ffmpeg, S3) | Exclude for fast local runs |
 
-**Keep it simple.** Don't invent new tags or combine multiple tags. One tag per test class.
 
 ### Running Tests by Tag
 
@@ -40,17 +39,19 @@ python manage.py test --exclude-tag=integration # Fast local runs
 
 ## Writing New Tests
 
-1. Place tests in appropriate `test_*.py` file by feature (see below)
-2. Add `@tag` decorators for selective execution
-3. Use factory functions instead of manual object creation
-4. Keep tests independent — each test sets up its own data
-5. Use descriptive test names with docstrings:
-   - **One-line docstrings** for straightforward tests: `"""Staff can upload media."""`
-   - **Multi-line docstrings** for regression tests or tests needing context to explain *why* they exist
-
-For mocking patterns (subprocess, HTTP, settings, time), see `maintenance/tests/test_tasks.py`.
-
 ### Test File Organization
+
+**Use a `tests/` package**, not a single `tests.py` file. This keeps test files small and focused:
+
+```text
+the_flip/apps/myapp/
+├── models.py
+├── views.py
+└── tests/
+    ├── __init__.py
+    ├── test_models.py
+    └── test_views.py
+```
 
 Organize tests by **feature**, not by layer. Name files `test_<entity>_<action>.py`:
 
@@ -73,6 +74,17 @@ the_flip/apps/maintenance/tests/
 
 **Avoid layer-based naming** like `test_models.py`, `test_views.py`, `test_forms.py` — these grow large and mix unrelated features.
 
+### Test Writing Rules
+- Use descriptive test names with docstrings:
+   - **One-line docstrings** for straightforward tests: `"""Staff can upload media."""`
+   - **Multi-line docstrings** for regression tests or tests needing context to explain *why* they exist
+- Tags
+    - Add [`@tag` decorators](#test-tags) for selective execution.
+    - **Keep tags simple:** don't invent new tags or combine multiple tags. One tag per test class.
+- Test data
+    - Keep tests independent: each test sets up its own data
+    - Use [factory functions](#factory-functions) instead of manual object creation
+    - For mocking patterns (subprocess, HTTP, settings, time), see `maintenance/tests/test_tasks.py`
 
 ## Test Utilities
 
