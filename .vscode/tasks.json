@@ -80,16 +80,6 @@
       "group": "test"
     },
     {
-      "label": "Reset Database",
-      "type": "shell",
-      "command": "make reset-db",
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      }
-    },
-    {
       "label": "Create Sample Data",
       "type": "shell",
       "command": "make sample-data",

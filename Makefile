@@ -11,10 +11,7 @@ help:
 	@echo "Testing:"
 	@echo "  make test           - Run fast suite (excludes integration)"
 	@echo "  make test-all       - Run full test suite (includes integration)"
-	@echo "  make test-fast      - Run tests excluding integration"
 	@echo "  make test-models    - Run model tests only"
-	@echo "  make test-classifier - Run classifier unit tests"
-	@echo "  make eval-classifier - Output classifier results to CSV"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make format         - Auto-format code"
@@ -26,7 +23,6 @@ help:
 	@echo "Database:"
 	@echo "  make migrate        - Run database migrations"
 	@echo "  make migrations     - Create new migrations"
-	@echo "  make reset-db       - Reset database and migrations"
 	@echo "  make superuser      - Create superuser"
 	@echo "  make sample-data    - Create sample data (dev only)"
 	@echo ""
@@ -42,21 +38,9 @@ test:
 test-all:
 	DJANGO_SETTINGS_MODULE=the_flip.settings.test .venv/bin/python manage.py test --keepdb
 
-.PHONY: test-fast
-test-fast:
-	DJANGO_SETTINGS_MODULE=the_flip.settings.test .venv/bin/python manage.py test --keepdb --exclude-tag=integration
-
 .PHONY: test-models
 test-models:
 	DJANGO_SETTINGS_MODULE=the_flip.settings.test .venv/bin/python manage.py test --keepdb --tag=models
-
-.PHONY: test-classifier
-test-classifier:
-	DJANGO_SETTINGS_MODULE=the_flip.settings.test .venv/bin/python manage.py test the_flip.apps.discord.tests.test_classifier_eval --keepdb
-
-.PHONY: eval-classifier
-eval-classifier:
-	.venv/bin/python manage.py evaluate_classifier
 
 .PHONY: runserver
 runserver:
@@ -88,10 +72,6 @@ runq:
 runbot:
 	@pkill -f "manage.py run_discord_bot" 2>/dev/null || true
 	.venv/bin/python manage.py run_discord_bot
-
-.PHONY: reset-db
-reset-db:
-	./scripts/reset_migrations.sh
 
 .PHONY: sample-data
 sample-data:

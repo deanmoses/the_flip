@@ -97,8 +97,6 @@ make shell          # Django shell
 # Testing
 make test           # Run fast suite (excludes integration)
 make test-all       # Run full suite (includes integration checks)
-make test-classifier # Run classifier unit tests
-make eval-classifier # Output classifier results to CSV
 
 # Code Quality
 make format         # Auto-format code
@@ -110,7 +108,6 @@ make precommit      # Run pre-commit hooks
 # Database
 make migrate        # Run migrations
 make migrations     # Create new migrations
-make reset-db       # Reset database and migrations
 make superuser      # Create superuser
 make sample-data    # Create sample data (dev only)
 ```
