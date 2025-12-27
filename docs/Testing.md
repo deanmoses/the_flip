@@ -21,7 +21,7 @@ Use these 6 tags to enable selective test execution. Each tag maps to a type of 
 | Tag | Use For | When to Run |
 |-----|---------|-------------|
 | `models` | Model/queryset logic, signals, managers | Editing models, managers, signals |
-| `views` | HTTP request/response tests | Editing views, templates, URLs |
+| `views` | HTTP request/response tests, template filters/tags | Editing views, templates, URLs |
 | `forms` | Form validation logic | Editing form classes |
 | `tasks` | Background job tests (Django Q) | Editing async tasks |
 | `admin` | Django admin customizations | Editing admin.py |
