@@ -12,6 +12,7 @@ help:
 	@echo "  make test           - Run fast suite (excludes integration)"
 	@echo "  make test-all       - Run full test suite (includes integration)"
 	@echo "  make test-models    - Run model tests only"
+	@echo "  make eval-discord-bot-llm - Evaluate Discord bot LLM prompt"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make format         - Auto-format code"
@@ -41,6 +42,10 @@ test-all:
 .PHONY: test-models
 test-models:
 	DJANGO_SETTINGS_MODULE=the_flip.settings.test .venv/bin/python manage.py test --keepdb --tag=models
+
+.PHONY: eval-discord-bot-llm
+eval-discord-bot-llm:
+	.venv/bin/python manage.py eval_llm_prompt
 
 .PHONY: runserver
 runserver:
