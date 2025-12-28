@@ -1,25 +1,19 @@
 """Evaluate LLM prompt against test fixtures.
 
-This command runs the Discord bot's LLM classifier against curated test
-fixtures to measure prompt accuracy. Use this to iterate on prompts without
-modifying production code.
+This command measures the accuracy of the Discord bot's LLM classifier by
+running the prompt against test fixtures.
 
 Usage:
     python manage.py eval_llm_prompt              # Run all fixtures
-    python manage.py eval_llm_prompt --prompt-file /tmp/new_prompt.txt
-    python manage.py eval_llm_prompt --verbose    # Show all results
-    python manage.py eval_llm_prompt --output results.json
+    python manage.py eval_llm_prompt --fixture multi_item_todo_list1
+    python manage.py eval_llm_prompt --model claude-sonnet-4-20250514
 """
 
 from __future__ import annotations
 
 import asyncio
-import hashlib
-import json
 from collections import Counter
-from dataclasses import asdict, dataclass
-from datetime import datetime
-from pathlib import Path
+from dataclasses import dataclass
 
 from asgiref.sync import sync_to_async
 from constance import config
@@ -27,7 +21,6 @@ from django.core.management.base import BaseCommand, CommandError
 
 from the_flip.apps.catalog.models import MachineInstance
 from the_flip.apps.discord.llm import (
-    SYSTEM_PROMPT,
     RecordSuggestion,
     _build_user_message,
     _call_anthropic,
@@ -38,9 +31,6 @@ from the_flip.apps.discord.llm_eval_fixtures import (
     ExpectedSuggestion,
     LLMTestCase,
 )
-
-# Estimated cost per API call (Claude Sonnet, ~1k input + 1k output tokens)
-ESTIMATED_COST_PER_CALL = 0.003
 
 
 @dataclass
@@ -77,11 +67,7 @@ class FixtureResult:
 class EvalResults:
     """Aggregated evaluation results."""
 
-    prompt_source: str
-    prompt_hash: str
-    timestamp: str
     fixture_results: list[FixtureResult]
-    parts_enabled: bool
 
     @property
     def total(self) -> int:
@@ -91,32 +77,11 @@ class EvalResults:
     def passed(self) -> int:
         return sum(1 for r in self.fixture_results if r.passed)
 
-    @property
-    def accuracy(self) -> float:
-        return self.passed / self.total if self.total > 0 else 0.0
-
 
 class Command(BaseCommand):
     help = "Evaluate LLM prompt against test fixtures"
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "--prompt-file",
-            "-p",
-            type=str,
-            help="Path to alternate prompt file to test",
-        )
-        parser.add_argument(
-            "--verbose",
-            action="store_true",
-            help="Show all results, not just failures",
-        )
-        parser.add_argument(
-            "--output",
-            "-o",
-            type=str,
-            help="Export results to JSON file",
-        )
         parser.add_argument(
             "--fixture",
             "-f",
@@ -145,10 +110,6 @@ class Command(BaseCommand):
         # Check parts enabled
         parts_enabled = await self._get_parts_enabled()
 
-        # Get prompt
-        prompt_source, system_prompt = self._get_prompt(options.get("prompt_file"))
-        prompt_hash = hashlib.sha256(system_prompt.encode()).hexdigest()[:12]
-
         # Get fixtures
         fixtures = self._get_fixtures(parts_enabled, options.get("fixture"))
         if not fixtures:
@@ -167,19 +128,11 @@ class Command(BaseCommand):
             fixtures=fixtures,
             machines=machines,
             api_key=api_key,
-            system_prompt=system_prompt,
-            prompt_source=prompt_source,
-            prompt_hash=prompt_hash,
-            parts_enabled=parts_enabled,
             model=model,
         )
 
         # Display results
-        self._display_results(results, options.get("verbose", False))
-
-        # Export if requested
-        if options.get("output"):
-            self._export_results(results, options["output"])
+        self._display_results(results)
 
     @sync_to_async
     def _get_api_key(self) -> str:
@@ -193,15 +146,6 @@ class Command(BaseCommand):
     def _get_machines(self) -> list[dict]:
         machines = MachineInstance.objects.order_by("slug")
         return [{"slug": m.slug, "name": m.name} for m in machines]
-
-    def _get_prompt(self, prompt_file: str | None) -> tuple[str, str]:
-        """Return (source_description, prompt_text)."""
-        if prompt_file:
-            path = Path(prompt_file)
-            if not path.exists():
-                raise CommandError(f"Prompt file not found: {prompt_file}")
-            return (str(path), path.read_text())
-        return ("llm.py:SYSTEM_PROMPT", SYSTEM_PROMPT)
 
     def _get_fixtures(
         self, parts_enabled: bool, fixture_name: str | None = None
@@ -248,10 +192,6 @@ class Command(BaseCommand):
         fixtures: dict[str, LLMTestCase],
         machines: list[dict],
         api_key: str,
-        system_prompt: str,
-        prompt_source: str,
-        prompt_hash: str,
-        parts_enabled: bool,
         model: str | None = None,
     ) -> EvalResults:
         """Run all fixtures and collect results."""
@@ -266,7 +206,6 @@ class Command(BaseCommand):
                 fixture=fixture,
                 machines=machines,
                 api_key=api_key,
-                system_prompt=system_prompt,
                 model=model,
             )
             fixture_results.append(result)
@@ -278,13 +217,7 @@ class Command(BaseCommand):
             else:
                 self.stdout.write(self.style.ERROR(" FAIL"))
 
-        return EvalResults(
-            prompt_source=prompt_source,
-            prompt_hash=prompt_hash,
-            timestamp=datetime.now().isoformat(),
-            fixture_results=fixture_results,
-            parts_enabled=parts_enabled,
-        )
+        return EvalResults(fixture_results=fixture_results)
 
     async def _evaluate_fixture(
         self,
@@ -292,7 +225,6 @@ class Command(BaseCommand):
         fixture: LLMTestCase,
         machines: list[dict],
         api_key: str,
-        system_prompt: str,
         model: str | None = None,
     ) -> FixtureResult:
         """Evaluate a single fixture."""
@@ -300,8 +232,8 @@ class Command(BaseCommand):
             # Build user message
             user_message = _build_user_message(fixture.to_context(), machines)
 
-            # Call API
-            response = await _call_anthropic(api_key, user_message, system_prompt, model)
+            # Call API (uses SYSTEM_PROMPT from llm.py by default)
+            response = await _call_anthropic(api_key, user_message, None, model)
 
             # Parse response
             suggestions = _parse_tool_response(response)
@@ -373,29 +305,18 @@ class Command(BaseCommand):
 
         return correct, missing, extra
 
-    def _display_results(self, results: EvalResults, verbose: bool):
+    def _display_results(self, results: EvalResults):
         """Display evaluation results."""
         self.stdout.write("\n" + "=" * 60)
-        self.stdout.write("LLM Prompt Evaluation Results")
-        self.stdout.write("=" * 60)
 
-        self.stdout.write(f"\nPrompt: {results.prompt_source} (sha256: {results.prompt_hash})")
-        self.stdout.write(f"Timestamp: {results.timestamp}")
-
-        # Overall accuracy
-        accuracy_pct = results.accuracy * 100
-        if results.accuracy >= 0.9:
-            style = self.style.SUCCESS
-        elif results.accuracy >= 0.7:
-            style = self.style.WARNING
+        # Overall result - simple pass/fail
+        failed = results.total - results.passed
+        if failed > 0:
+            self.stdout.write(self.style.ERROR(f"Overall: {failed} of {results.total} incorrect"))
         else:
-            style = self.style.ERROR
-        self.stdout.write(
-            style(f"\nOverall: {accuracy_pct:.1f}% ({results.passed}/{results.total} correct)")
-        )
-
-        # By record type
-        self._display_by_record_type(results)
+            self.stdout.write(
+                self.style.SUCCESS(f"Overall: {results.total} of {results.total} correct")
+            )
 
         # Failures
         failures = [r for r in results.fixture_results if not r.passed]
@@ -405,45 +326,6 @@ class Command(BaseCommand):
             self.stdout.write("-" * 60)
             for result in failures:
                 self._display_failure(result)
-
-        # Verbose: show passes too
-        if verbose:
-            passes = [r for r in results.fixture_results if r.passed]
-            if passes:
-                self.stdout.write("\n" + "-" * 60)
-                self.stdout.write("Passes")
-                self.stdout.write("-" * 60)
-                for result in passes:
-                    self._display_pass(result)
-
-        # Run summary at the end
-        estimated_cost = results.total * ESTIMATED_COST_PER_CALL
-        self.stdout.write("\n" + "-" * 60)
-        self.stdout.write(f"Fixtures: {results.total}")
-        self.stdout.write(f"Estimated cost: ${estimated_cost:.3f}")
-
-    def _display_by_record_type(self, results: EvalResults):
-        """Display accuracy by record type."""
-        self.stdout.write("\nBy Record Type:")
-
-        # Gather all expected suggestions across fixtures
-        type_stats: dict[str, dict[str, int]] = {}
-        for result in results.fixture_results:
-            for exp in result.expected:
-                if exp.record_type not in type_stats:
-                    type_stats[exp.record_type] = {"total": 0, "correct": 0}
-                type_stats[exp.record_type]["total"] += 1
-
-            for correct in result.correct:
-                if correct.record_type in type_stats:
-                    type_stats[correct.record_type]["correct"] += 1
-
-        for record_type in sorted(type_stats.keys()):
-            stats = type_stats[record_type]
-            pct = (stats["correct"] / stats["total"] * 100) if stats["total"] > 0 else 0
-            self.stdout.write(
-                f"  {record_type:20} {pct:5.1f}% ({stats['correct']}/{stats['total']})"
-            )
 
     def _display_failure(self, result: FixtureResult):
         """Display a single failure."""
@@ -462,49 +344,3 @@ class Command(BaseCommand):
             self.stdout.write("  Extra:")
             for key in result.extra:
                 self.stdout.write(f"    + {key.record_type} for {key.machine_slug}")
-
-    def _display_pass(self, result: FixtureResult):
-        """Display a single pass (for verbose mode)."""
-        self.stdout.write(self.style.SUCCESS(f"\n[PASS] {result.fixture_id}"))
-        if result.correct:
-            for key in result.correct:
-                self.stdout.write(f"    {key.record_type} for {key.machine_slug}")
-
-    def _export_results(self, results: EvalResults, output_path: str):
-        """Export results to JSON."""
-        data = {
-            "prompt_source": results.prompt_source,
-            "prompt_hash": results.prompt_hash,
-            "timestamp": results.timestamp,
-            "parts_enabled": results.parts_enabled,
-            "summary": {
-                "total": results.total,
-                "passed": results.passed,
-                "accuracy": results.accuracy,
-            },
-            "fixtures": [
-                {
-                    "id": r.fixture_id,
-                    "passed": r.passed,
-                    "error": r.error,
-                    "expected": [asdict(e) for e in r.expected],
-                    "actual": [
-                        {"record_type": a.record_type, "machine_slug": a.machine_slug}
-                        for a in r.actual
-                    ],
-                    "missing": [
-                        {"record_type": k.record_type, "machine_slug": k.machine_slug}
-                        for k in r.missing
-                    ],
-                    "extra": [
-                        {"record_type": k.record_type, "machine_slug": k.machine_slug}
-                        for k in r.extra
-                    ],
-                }
-                for r in results.fixture_results
-            ],
-        }
-
-        path = Path(output_path)
-        path.write_text(json.dumps(data, indent=2))
-        self.stdout.write(f"\nResults exported to: {path}")
