@@ -9,6 +9,7 @@ import anthropic
 from anthropic.types import ToolChoiceToolParam, ToolParam
 from asgiref.sync import sync_to_async
 from constance import config
+from decouple import config as decouple_config
 
 from the_flip.apps.catalog.models import MachineInstance
 
@@ -206,19 +207,24 @@ def _get_parts_enabled() -> bool:
     return config.PARTS_ENABLED
 
 
+DEFAULT_MODEL = decouple_config("DISCORD_LLM_MODEL", default="claude-opus-4-5-20251101")
+
+
 @sync_to_async
 def _call_anthropic(
     api_key: str,
     user_message: str,
     system_prompt: str | None = None,
+    model: str | None = None,
 ) -> anthropic.types.Message:
     """Call Anthropic API with tool use for structured output.
 
     If system_prompt is provided, it overrides the default SYSTEM_PROMPT.
+    If model is provided, it overrides the default model.
     """
     client = anthropic.Anthropic(api_key=api_key)
     return client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model=model if model is not None else DEFAULT_MODEL,
         max_tokens=1024,
         system=system_prompt if system_prompt is not None else SYSTEM_PROMPT,
         tools=[RECORD_SUGGESTIONS_TOOL],
