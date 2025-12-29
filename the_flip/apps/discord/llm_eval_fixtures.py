@@ -763,20 +763,11 @@ webhook_reply_creates_part_update = LLMTestCase(
 # Webhook follow-up fixtures (non-reply messages after webhook)
 # =============================================================================
 
-# This fixture replicates a real-world failure where:
-# 1. Problem Report was created via web UI (webhook posted to Discord)
-# 2. User replied with fix suggestion
+# 1. Problem Report was created via Flipfix's web UI (webhook posted to Discord)
+# 2. Discord user replied with fix suggestion
 # 3. Several standalone messages (NOT replies) discussed the fix
 # 4. User clicked "Yay!" which should create a Log Entry linked to the Problem Report
-#
-# The key insight: the follow-up messages are NOT replies to the webhook,
-# they're standalone messages in the same channel. The LLM needs to understand
-# they're part of the same conversation based on content/timing, not reply_to_id.
 
-# Webhook embeds show "Flipfix" as the Discord author (webhook name), but we parse
-# the actual author from the "— AuthorName" suffix in the embed description.
-# The parsed author becomes the `author` field, the suffix is stripped from content.
-# author_id auto-generates to "flipfix/Sarah Chen" for webhook embeds
 _webhook_problem_follow_up = _msg(
     "Sarah Chen",  # Parsed from webhook embed's "— Sarah Chen" suffix
     "The ball return mechanism is jammed. Balls are not getting fed down the ramp. I tried lubricating the sliders but that didn't help.",
