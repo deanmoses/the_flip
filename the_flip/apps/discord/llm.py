@@ -335,6 +335,11 @@ async def analyze_gathered_context(
     # Build YAML prompt
     user_message = build_yaml_prompt(context, machines)
 
+    logger.debug(
+        "discord_llm_prompt",
+        extra={"prompt": user_message},
+    )
+
     # Count messages including nested thread messages
     message_count = sum(1 + len(m.thread) for m in context.messages)
 
@@ -350,6 +355,11 @@ async def _analyze_with_prompt(
     try:
         # Run the synchronous API call in a thread
         response = await _call_anthropic(api_key, user_message)
+
+        logger.debug(
+            "discord_llm_response",
+            extra={"response": response.model_dump_json()},
+        )
 
         # Extract tool use from response
         suggestions = _parse_tool_response(response)
