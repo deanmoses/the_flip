@@ -316,6 +316,11 @@ class SequentialWizardView(discord.ui.View):
             color=discord.Color.blue(),
         )
 
+        # Show parent link if this record will be attached to an existing one
+        if suggestion.parent_record_id:
+            parent_type = _get_parent_type_label(suggestion.record_type)
+            embed.set_footer(text=f"🔗 Links to {parent_type} #{suggestion.parent_record_id}")
+
         return embed
 
     async def build_completion_view(self) -> tuple[discord.Embed, discord.ui.View]:
@@ -609,6 +614,18 @@ def _format_record_type(record_type: RecordType) -> str:
         RecordType.PART_REQUEST_UPDATE: "Part Request Update",
     }
     return type_labels.get(record_type, record_type.value.replace("_", " ").title())
+
+
+def _get_parent_type_label(child_record_type: RecordType) -> str:
+    """Get the parent record type label for a child record type.
+
+    Log entries link to problem reports; part request updates link to part requests.
+    """
+    parent_labels = {
+        RecordType.LOG_ENTRY: "Problem Report",
+        RecordType.PART_REQUEST_UPDATE: "Part Request",
+    }
+    return parent_labels.get(child_record_type, "Record")
 
 
 async def _get_machine_name(slug: str | None) -> str | None:
