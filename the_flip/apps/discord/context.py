@@ -18,7 +18,6 @@ from urllib.parse import urlparse
 
 import discord
 from asgiref.sync import sync_to_async
-from django.conf import settings
 
 from the_flip.apps.discord.llm import RecordType
 from the_flip.apps.discord.models import DiscordMessageMapping
@@ -659,16 +658,15 @@ def _parse_webhook_embed(embed: discord.Embed) -> tuple[FlipfixRecord, str, str]
 
 
 def _is_flipfix_url(url: str) -> bool:
-    """Check if a URL is from a valid Flipfix domain."""
-    valid_domains = getattr(settings, "DISCORD_VALID_DOMAINS", [])
-    try:
-        parsed = urlparse(url)
-        hostname = parsed.hostname or ""
-        return any(
-            hostname == domain or hostname.endswith(f".{domain}") for domain in valid_domains
-        )
-    except Exception:
-        return False
+    """Check if a URL matches Flipfix record URL patterns.
+
+    We identify Flipfix URLs by their path structure (/log/N/, /problem/N/, etc.)
+    rather than requiring domain configuration. This is sufficient because:
+    - The path patterns are specific to Flipfix records
+    - False positives are rare (random sites rarely use /problem/<id>/ paths)
+    - False positives fail gracefully (parent lookup returns None, link not created)
+    """
+    return _parse_flipfix_url(url) is not None
 
 
 def _parse_flipfix_url(url: str) -> tuple[RecordType, int, str | None] | None:

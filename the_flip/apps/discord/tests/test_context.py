@@ -67,44 +67,41 @@ class ParseWebhookEmbedTests(TestCase):
 
     def test_parses_embed_with_author_suffix(self):
         """Parses author from description's — suffix."""
-        with self.settings(DISCORD_VALID_DOMAINS=["flipfix.example.com"]):
-            embed = MockEmbed(
-                url="https://flipfix.example.com/log/123/",
-                description="Fixed the flipper coil.\n\n— Bob",
-            )
-            result = _parse_webhook_embed(embed)
+        embed = MockEmbed(
+            url="https://flipfix.example.com/log/123/",
+            description="Fixed the flipper coil.\n\n— Bob",
+        )
+        result = _parse_webhook_embed(embed)
 
-            self.assertIsNotNone(result)
-            flipfix_record, author, content = result
-            self.assertEqual(flipfix_record.record_type, RecordType.LOG_ENTRY)
-            self.assertEqual(flipfix_record.record_id, 123)
-            self.assertEqual(author, "Bob")
-            self.assertEqual(content, "Fixed the flipper coil.")
+        self.assertIsNotNone(result)
+        flipfix_record, author, content = result
+        self.assertEqual(flipfix_record.record_type, RecordType.LOG_ENTRY)
+        self.assertEqual(flipfix_record.record_id, 123)
+        self.assertEqual(author, "Bob")
+        self.assertEqual(content, "Fixed the flipper coil.")
 
     def test_parses_embed_without_author_suffix(self):
         """Handles embeds without — author suffix."""
-        with self.settings(DISCORD_VALID_DOMAINS=["flipfix.example.com"]):
-            embed = MockEmbed(
-                url="https://flipfix.example.com/problem/456/",
-                description="Machine is broken",
-            )
-            result = _parse_webhook_embed(embed)
+        embed = MockEmbed(
+            url="https://flipfix.example.com/problem/456/",
+            description="Machine is broken",
+        )
+        result = _parse_webhook_embed(embed)
 
-            self.assertIsNotNone(result)
-            flipfix_record, author, content = result
-            self.assertEqual(flipfix_record.record_type, RecordType.PROBLEM_REPORT)
-            self.assertEqual(author, "")
-            self.assertEqual(content, "Machine is broken")
+        self.assertIsNotNone(result)
+        flipfix_record, author, content = result
+        self.assertEqual(flipfix_record.record_type, RecordType.PROBLEM_REPORT)
+        self.assertEqual(author, "")
+        self.assertEqual(content, "Machine is broken")
 
     def test_returns_none_for_non_flipfix_url(self):
-        """Returns None for non-Flipfix URLs."""
-        with self.settings(DISCORD_VALID_DOMAINS=["flipfix.example.com"]):
-            embed = MockEmbed(
-                url="https://other-site.com/page/",
-                description="Some content",
-            )
-            result = _parse_webhook_embed(embed)
-            self.assertIsNone(result)
+        """Returns None for URLs that don't match Flipfix record patterns."""
+        embed = MockEmbed(
+            url="https://other-site.com/page/",
+            description="Some content",
+        )
+        result = _parse_webhook_embed(embed)
+        self.assertIsNone(result)
 
     def test_returns_none_for_missing_url(self):
         """Returns None when embed has no URL."""
@@ -115,31 +112,42 @@ class ParseWebhookEmbedTests(TestCase):
 
 @tag("tasks")
 class IsFlipfixUrlTests(TestCase):
-    """Tests for _is_flipfix_url()."""
+    """Tests for _is_flipfix_url().
 
-    def test_recognizes_valid_domain(self):
-        """Returns True for configured domain."""
-        with self.settings(DISCORD_VALID_DOMAINS=["flipfix.example.com"]):
-            result = _is_flipfix_url("https://flipfix.example.com/log/123/")
-            self.assertTrue(result)
+    URL recognition is based on path patterns (/log/N/, /problem/N/, etc.),
+    not domain names. This avoids configuration complexity while reliably
+    identifying Flipfix webhook embeds.
+    """
 
-    def test_recognizes_subdomain(self):
-        """Returns True for subdomains of configured domain."""
-        with self.settings(DISCORD_VALID_DOMAINS=["example.com"]):
-            result = _is_flipfix_url("https://flipfix.example.com/log/123/")
-            self.assertTrue(result)
+    def test_recognizes_log_url(self):
+        """Returns True for log entry URLs."""
+        result = _is_flipfix_url("https://any-domain.com/log/123/")
+        self.assertTrue(result)
 
-    def test_rejects_unrecognized_domain(self):
-        """Returns False for unconfigured domain."""
-        with self.settings(DISCORD_VALID_DOMAINS=["flipfix.example.com"]):
-            result = _is_flipfix_url("https://other-site.com/log/123/")
-            self.assertFalse(result)
+    def test_recognizes_problem_url(self):
+        """Returns True for problem report URLs."""
+        result = _is_flipfix_url("https://any-domain.com/problem/456/")
+        self.assertTrue(result)
 
-    def test_handles_empty_domains_list(self):
-        """Returns False when no domains configured."""
-        with self.settings(DISCORD_VALID_DOMAINS=[]):
-            result = _is_flipfix_url("https://any-site.com/")
-            self.assertFalse(result)
+    def test_recognizes_parts_request_url(self):
+        """Returns True for parts request URLs."""
+        result = _is_flipfix_url("https://any-domain.com/parts/request/789/")
+        self.assertTrue(result)
+
+    def test_recognizes_machine_scoped_url(self):
+        """Returns True for machine-scoped record URLs."""
+        result = _is_flipfix_url("https://any-domain.com/machines/godzilla/log/42/")
+        self.assertTrue(result)
+
+    def test_rejects_non_matching_path(self):
+        """Returns False for URLs that don't match Flipfix patterns."""
+        result = _is_flipfix_url("https://example.com/page/")
+        self.assertFalse(result)
+
+    def test_rejects_similar_but_wrong_path(self):
+        """Returns False for paths that look similar but aren't Flipfix patterns."""
+        result = _is_flipfix_url("https://example.com/logs/123/")  # plural 'logs'
+        self.assertFalse(result)
 
 
 @tag("tasks")
