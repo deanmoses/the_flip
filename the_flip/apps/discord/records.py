@@ -41,13 +41,56 @@ def _get_base_url() -> str:
     return settings.SITE_URL.rstrip("/")
 
 
+# Prefix used to identify Flipfix user names (vs Discord snowflake IDs)
+FLIPFIX_AUTHOR_PREFIX = "flipfix/"
+
+
+def _resolve_author(
+    author_id: str,
+    author_id_map: dict[str, DiscordUserInfo],
+) -> tuple[Maintainer | None, str]:
+    """Resolve author_id to a Maintainer and fallback display name.
+
+    Args:
+        author_id: Either a Discord snowflake ID (17-19 digits) or a
+            "flipfix/Name" prefixed string for webhook-sourced authors.
+        author_id_map: Mapping of Discord user IDs to DiscordUserInfo.
+
+    Returns:
+        Tuple of (maintainer, display_name). Maintainer may be None if
+        the author can't be linked to a Flipfix user.
+    """
+    if author_id.startswith(FLIPFIX_AUTHOR_PREFIX):
+        # Webhook-sourced author: lookup by name
+        name = author_id[len(FLIPFIX_AUTHOR_PREFIX) :]
+        maintainer = Maintainer.match_by_name(name)
+        return maintainer, name
+    else:
+        # Discord user ID: lookup in map, then resolve to maintainer
+        discord_user = author_id_map.get(author_id)
+        if discord_user:
+            maintainer = _get_or_link_maintainer(discord_user)
+            fallback: str = discord_user.display_name or discord_user.username or "Discord"
+            return maintainer, fallback
+        # Unknown author_id - can't resolve
+        return None, "Discord"
+
+
 @sync_to_async
 @transaction.atomic
 def create_record(
     suggestion: RecordSuggestion,
-    discord_user: DiscordUserInfo,
+    author_id: str,
+    author_id_map: dict[str, DiscordUserInfo],
 ) -> RecordCreationResult:
-    """Create a Flipfix record from a suggestion (atomic transaction)."""
+    """Create a Flipfix record from a suggestion (atomic transaction).
+
+    Args:
+        suggestion: The record to create.
+        author_id: Author identifier - either a Discord snowflake ID (17-19 digits)
+            or a "flipfix/Name" prefixed string for webhook-sourced authors.
+        author_id_map: Mapping of Discord user IDs to DiscordUserInfo.
+    """
     # Get the machine (required for log_entry and problem_report, optional for parts)
     machine: MachineInstance | None = None
     if suggestion.slug:
@@ -55,8 +98,8 @@ def create_record(
         if not machine:
             raise ValueError(f"Machine not found: {suggestion.slug}")
 
-    # Resolve Discord user to Flipfix maintainer (auto-links if usernames match)
-    maintainer = _get_or_link_maintainer(discord_user)
+    # Resolve author_id to maintainer and fallback display name
+    maintainer, display_name = _resolve_author(author_id, author_id_map)
 
     base_url = _get_base_url()
     record_obj: LogEntry | ProblemReport | PartRequest | PartRequestUpdate
@@ -70,7 +113,7 @@ def create_record(
             machine,
             suggestion.description,
             maintainer,
-            discord_user.display_name,
+            display_name,
             suggestion.parent_record_id,
         )
         url = base_url + reverse("log-detail", kwargs={"pk": record_obj.pk})
@@ -81,15 +124,14 @@ def create_record(
                 f"Machine is required for problem_report (slug={suggestion.slug!r} not found)"
             )
         record_obj = _create_problem_report(
-            machine, suggestion.description, maintainer, discord_user.display_name
+            machine, suggestion.description, maintainer, display_name
         )
         url = base_url + reverse("problem-report-detail", kwargs={"pk": record_obj.pk})
 
     elif suggestion.record_type == RecordType.PART_REQUEST:
         if not maintainer:
             raise ValueError(
-                f"Cannot create part request without a linked maintainer "
-                f"(discord_user_id={discord_user.user_id!r})"
+                f"Cannot create part request without a linked maintainer (author_id={author_id!r})"
             )
         record_obj = _create_part_request(machine, suggestion.description, maintainer)
         url = base_url + reverse("part-request-detail", kwargs={"pk": record_obj.pk})
@@ -98,7 +140,7 @@ def create_record(
         if not maintainer:
             raise ValueError(
                 f"Cannot create part request update without a linked maintainer "
-                f"(discord_user_id={discord_user.user_id!r})"
+                f"(author_id={author_id!r})"
             )
         if not suggestion.parent_record_id:
             raise ValueError(
@@ -123,7 +165,7 @@ def create_record(
             "record_type": suggestion.record_type,
             "record_id": record_obj.pk,
             "slug": suggestion.slug,
-            "discord_user_id": discord_user.user_id,
+            "author_id": author_id,
             "source_message_count": len(suggestion.source_message_ids),
         },
     )

@@ -558,11 +558,14 @@ def _build_context_message(msg: discord.Message, target_id: str) -> ContextMessa
             flipfix_record, embed_author, embed_content = parsed
             if embed_author:
                 author = embed_author
+                # Use flipfix/ prefix for name-based author lookup
+                # This distinguishes from Discord snowflake IDs (17-19 digit numbers)
+                author_id = f"flipfix/{embed_author}"
+            else:
+                # No author in embed - can't attribute
+                author_id = None
             if embed_content:
                 content = embed_content
-            # Webhook embeds don't have a Discord user as author - it's the bot
-            # Set author_id to None so the LLM knows not to use it for attribution
-            author_id = None
             break
 
     reply_to_id = None

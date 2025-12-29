@@ -465,7 +465,8 @@ def build_yaml_prompt(
 
         msg_lines.append(f'{prefix}- id: "{msg.id}"')
         msg_lines.append(f'{prefix}  author: "{_escape_yaml_string(msg.author)}"')
-        # Only include author_id if present (not for webhook embeds)
+        # author_id: Discord snowflake (e.g., "123456789012345678") or
+        # flipfix/ prefixed name (e.g., "flipfix/Sarah Chen") for webhook embeds
         if msg.author_id:
             msg_lines.append(f'{prefix}  author_id: "{msg.author_id}"')
         msg_lines.append(f'{prefix}  content: "{_escape_yaml_string(msg.content)}"')

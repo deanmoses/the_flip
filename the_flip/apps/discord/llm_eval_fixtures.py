@@ -694,10 +694,11 @@ reply_chain_parts = LLMTestCase(
 # =============================================================================
 
 # Webhook embed that represents an existing problem report
+# Author is parsed from the embed's "— AuthorName" suffix, not "Flipfix" webhook name
+# author_id auto-generates to "flipfix/Mike Rodriguez" for webhook embeds
 _webhook_problem_report = _msg(
-    "Flipfix",  # Webhook uses string, not TestUser
+    "Mike Rodriguez",  # Parsed from webhook embed's "— Mike Rodriguez" suffix
     "Left flipper is weak on Gorgar",
-    author_id=None,  # Webhook messages don't have author_id
     flipfix_record=FlipfixRecord(
         record_type=RecordType.PROBLEM_REPORT,
         record_id=42,
@@ -726,10 +727,11 @@ webhook_reply_creates_linked_log = LLMTestCase(
 )
 
 # Webhook embed for existing part request
+# Author is parsed from the embed's "— AuthorName" suffix, not "Flipfix" webhook name
+# author_id auto-generates to "flipfix/Tom Baker" for webhook embeds
 _webhook_part_request = _msg(
-    "Flipfix",  # Webhook uses string, not TestUser
+    "Tom Baker",  # Parsed from webhook embed's "— Tom Baker" suffix
     "Need new rollover switch",
-    author_id=None,
     flipfix_record=FlipfixRecord(
         record_type=RecordType.PART_REQUEST,
         record_id=99,
@@ -771,14 +773,17 @@ webhook_reply_creates_part_update = LLMTestCase(
 # they're standalone messages in the same channel. The LLM needs to understand
 # they're part of the same conversation based on content/timing, not reply_to_id.
 
+# Webhook embeds show "Flipfix" as the Discord author (webhook name), but we parse
+# the actual author from the "— AuthorName" suffix in the embed description.
+# The parsed author becomes the `author` field, the suffix is stripped from content.
+# author_id auto-generates to "flipfix/Sarah Chen" for webhook embeds
 _webhook_problem_follow_up = _msg(
-    "Flipfix",  # Webhook uses string, not TestUser
+    "Sarah Chen",  # Parsed from webhook embed's "— Sarah Chen" suffix
     "The ball return mechanism is jammed. Balls are not getting fed down the ramp. I tried lubricating the sliders but that didn't help.",
-    author_id=None,  # Webhook messages don't have author_id
     flipfix_record=FlipfixRecord(
         record_type=RecordType.PROBLEM_REPORT,
         record_id=123,
-        machine_id=Machine.gorgar.slug,  # Using Gorgar as stand-in
+        machine_id=Machine.gorgar.slug,
     ),
 )
 _reply_to_webhook_fix_suggestion = _msg(
@@ -801,11 +806,11 @@ _follow_up_found = _msg(
 )
 _follow_up_worked = _msg(
     User.maintainer2,
-    "Ok, I tried that.  It was a little scary,  I thought I was going to break the metal tab.  But yeah it worked, the balls are returning smoothly.",
+    "Ok, I tried that.  It was a little scary, I thought I was going to break the metal tab.  But yeah it worked!  The balls are returning smoothly.",
 )
 _follow_up_yay = _msg(
     User.maintainer2,
-    "Yay!",
+    "Awesome!",
     target=True,
 )
 

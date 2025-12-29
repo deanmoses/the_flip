@@ -273,17 +273,16 @@ def _msg(
     else:
         # String author - for webhook embeds or backward compatibility
         author_name = author
-        # Auto-generate author_id unless explicitly set to None (for webhook embeds)
-        # or provided explicitly
         if author_id is not None:
+            # Explicitly provided author_id
             resolved_author_id = author_id
-        elif flipfix_record is None:
+        elif flipfix_record is not None:
+            # Webhook embeds use flipfix/ prefix for name-based author lookup
+            resolved_author_id = f"flipfix/{author_name}"
+        else:
             # Generate a unique author_id based on author name for consistency
             # This ensures same author name gets same ID across messages
             resolved_author_id = str(_author_id_counter + hash(author) % 1000000)
-        else:
-            # Webhook embeds don't have author_id
-            resolved_author_id = None
 
     return ContextMessage(
         id=str(_msg_id_counter),

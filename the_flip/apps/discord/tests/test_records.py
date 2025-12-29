@@ -159,22 +159,24 @@ class MultiMessageSourceTrackingTests(TestCase):
         from the_flip.apps.discord.types import DiscordUserInfo
 
         # Create suggestion with multiple source message IDs
+        author_id = "123456789012345678"  # Discord snowflake format
         suggestion = RecordSuggestion(
             record_type=RecordType.PROBLEM_REPORT,
             description="Flipper broken across multiple messages",
             source_message_ids=["111111111", "222222222", "333333333"],
-            author_id="discord123",
+            author_id=author_id,
             slug=self.machine.slug,
         )
 
         discord_user = DiscordUserInfo(
-            user_id="discord123",
+            user_id=author_id,
             username="testuser",
             display_name="Test User",
         )
+        author_id_map = {author_id: discord_user}
 
         # Call the async function synchronously
-        result = async_to_sync(create_record)(suggestion, discord_user)
+        result = async_to_sync(create_record)(suggestion, author_id, author_id_map)
 
         # All three messages should be marked as processed
         self.assertTrue(DiscordMessageMapping.is_processed("111111111"))
@@ -194,21 +196,23 @@ class MultiMessageSourceTrackingTests(TestCase):
         from the_flip.apps.discord.records import create_record
         from the_flip.apps.discord.types import DiscordUserInfo
 
+        author_id = "234567890123456789"  # Discord snowflake format
         suggestion = RecordSuggestion(
             record_type=RecordType.PROBLEM_REPORT,
             description="Something broken",
             source_message_ids=["999999999"],
-            author_id="discord456",
+            author_id=author_id,
             slug=self.machine.slug,
         )
 
         discord_user = DiscordUserInfo(
-            user_id="discord456",
+            user_id=author_id,
             username="anotheruser",
             display_name="Another User",
         )
+        author_id_map = {author_id: discord_user}
 
-        async_to_sync(create_record)(suggestion, discord_user)
+        async_to_sync(create_record)(suggestion, author_id, author_id_map)
 
         self.assertTrue(DiscordMessageMapping.is_processed("999999999"))
 
@@ -223,22 +227,24 @@ class MultiMessageSourceTrackingTests(TestCase):
         # Create a problem report to link to
         problem_report = create_problem_report(machine=self.machine)
 
+        author_id = "345678901234567890"  # Discord snowflake format
         suggestion = RecordSuggestion(
             record_type=RecordType.LOG_ENTRY,
             description="Fixed the issue reported earlier",
             source_message_ids=["444444444"],
-            author_id="discord789",
+            author_id=author_id,
             slug=self.machine.slug,
             parent_record_id=problem_report.pk,
         )
 
         discord_user = DiscordUserInfo(
-            user_id="discord789",
+            user_id=author_id,
             username="fixer",
             display_name="The Fixer",
         )
+        author_id_map = {author_id: discord_user}
 
-        result = async_to_sync(create_record)(suggestion, discord_user)
+        result = async_to_sync(create_record)(suggestion, author_id, author_id_map)
 
         # Verify the log entry links to the problem report
         log_entry = LogEntry.objects.get(pk=result.record_id)
@@ -261,26 +267,93 @@ class MultiMessageSourceTrackingTests(TestCase):
             requested_by=maintainer,
         )
 
+        author_id = "456789012345678901"  # Discord snowflake format
         suggestion = RecordSuggestion(
             record_type=RecordType.PART_REQUEST_UPDATE,
             description="Parts arrived today!",
             source_message_ids=["555555555"],
-            author_id="discord_parts",
+            author_id=author_id,
             slug=None,  # Optional for updates
             parent_record_id=part_request.pk,
         )
 
         # Use matching username so maintainer gets linked
         discord_user = DiscordUserInfo(
-            user_id="discord_parts",
+            user_id=author_id,
             username="partsuser",
             display_name="Parts User",
         )
+        author_id_map = {author_id: discord_user}
 
-        result = async_to_sync(create_record)(suggestion, discord_user)
+        result = async_to_sync(create_record)(suggestion, author_id, author_id_map)
 
         # Verify the update links to the part request
         from the_flip.apps.parts.models import PartRequestUpdate
 
         update = PartRequestUpdate.objects.get(pk=result.record_id)
         self.assertEqual(update.part_request, part_request)
+
+
+@tag("discord")
+class ResolveAuthorTests(TestCase):
+    """Tests for _resolve_author() function."""
+
+    def test_discord_snowflake_resolves_to_discord_user(self):
+        """Discord snowflake ID resolves via author_id_map."""
+        from the_flip.apps.discord.records import _resolve_author
+        from the_flip.apps.discord.types import DiscordUserInfo
+
+        author_id = "123456789012345678"
+        discord_user = DiscordUserInfo(
+            user_id=author_id,
+            username="testuser",
+            display_name="Test User",
+        )
+        author_id_map = {author_id: discord_user}
+
+        maintainer, display_name = _resolve_author(author_id, author_id_map)
+
+        # No maintainer linked yet, but display_name comes from Discord
+        self.assertIsNone(maintainer)
+        self.assertEqual(display_name, "Test User")
+
+    def test_flipfix_prefix_resolves_by_name(self):
+        """flipfix/ prefixed author_id resolves via Maintainer.match_by_name."""
+        from the_flip.apps.accounts.models import Maintainer
+        from the_flip.apps.discord.records import _resolve_author
+
+        # Create a maintainer with known name
+        user = create_maintainer_user(username="sarahchen", first_name="Sarah", last_name="Chen")
+        expected_maintainer = Maintainer.objects.get(user=user)
+
+        author_id = "flipfix/Sarah Chen"
+        author_id_map: dict = {}  # Empty - flipfix/ prefix doesn't use the map
+
+        maintainer, display_name = _resolve_author(author_id, author_id_map)
+
+        self.assertEqual(maintainer, expected_maintainer)
+        self.assertEqual(display_name, "Sarah Chen")
+
+    def test_flipfix_prefix_returns_name_when_no_match(self):
+        """flipfix/ prefix returns the name even when no maintainer matches."""
+        from the_flip.apps.discord.records import _resolve_author
+
+        author_id = "flipfix/Unknown Person"
+        author_id_map: dict = {}
+
+        maintainer, display_name = _resolve_author(author_id, author_id_map)
+
+        self.assertIsNone(maintainer)
+        self.assertEqual(display_name, "Unknown Person")
+
+    def test_unknown_author_id_returns_fallback(self):
+        """Unknown author_id not in map returns fallback."""
+        from the_flip.apps.discord.records import _resolve_author
+
+        author_id = "999999999999999999"
+        author_id_map: dict = {}  # Empty map
+
+        maintainer, display_name = _resolve_author(author_id, author_id_map)
+
+        self.assertIsNone(maintainer)
+        self.assertEqual(display_name, "Discord")

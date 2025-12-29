@@ -139,18 +139,45 @@ class WizardState:
             else:
                 break
 
-    def get_author_for_current(self) -> DiscordUserInfo:
-        """Get the Discord user to attribute the current suggestion to.
+    def get_author_id_for_current(self) -> str:
+        """Get the author_id to attribute the current suggestion to.
 
-        Uses the suggestion's author_id to look up the original message author.
-        Falls back to the button-clicker if author_id is not found in the map.
+        Returns the suggestion's author_id directly. This will be either:
+        - A Discord snowflake ID (17-19 digits) for regular Discord messages
+        - A "flipfix/Name" prefixed string for webhook-sourced authors
+
+        Falls back to the button-clicker's Discord ID if author_id is missing.
         """
         suggestion = self.current_suggestion
         if suggestion and suggestion.author_id:
-            author = self.author_id_map.get(suggestion.author_id)
-            if author:
-                return author
-        return self.discord_user
+            return suggestion.author_id
+        # Fallback to button-clicker's Discord ID
+        return self.discord_user.user_id
+
+    def get_author_display_name_for_current(self) -> str | None:
+        """Get the display name of the author for the current suggestion.
+
+        Returns None if the author is the same as the button-clicker.
+        This is used to show "Attributed to X" in the wizard when someone
+        is creating a record on behalf of another person.
+        """
+        author_id = self.get_author_id_for_current()
+
+        # Resolve author_id to display name
+        author_name: str | None
+        if author_id.startswith("flipfix/"):
+            author_name = author_id[len("flipfix/") :]
+        else:
+            discord_info = self.author_id_map.get(author_id)
+            if discord_info:
+                author_name = discord_info.display_name or discord_info.username
+            else:
+                author_name = None
+
+        # Only show if different from button-clicker
+        if author_name and author_name != self.discord_user.display_name:
+            return author_name
+        return None
 
     def get_parent_record_id_for_current(self) -> int | None:
         """Get the parent record ID for the current child suggestion.
@@ -209,7 +236,8 @@ class SuggestionEditorModal(discord.ui.Modal):
 
                 result = await create_record(
                     suggestion=suggestion,
-                    discord_user=state.get_author_for_current(),
+                    author_id=state.get_author_id_for_current(),
+                    author_id_map=state.author_id_map,
                 )
                 state.record_result("created", url=result.url, record_id=result.record_id)
 
@@ -316,10 +344,18 @@ class SequentialWizardView(discord.ui.View):
             color=discord.Color.blue(),
         )
 
-        # Show parent link if this record will be attached to an existing one
+        # Build footer with parent link and/or author attribution
+        footer_parts = []
         if suggestion.parent_record_id:
             parent_type = _get_parent_type_label(suggestion.record_type)
-            embed.set_footer(text=f"🔗 Links to {parent_type} #{suggestion.parent_record_id}")
+            footer_parts.append(f"🔗 Links to {parent_type} #{suggestion.parent_record_id}")
+
+        author_name = self.state.get_author_display_name_for_current()
+        if author_name:
+            footer_parts.append(f"👤 Attributed to {author_name}")
+
+        if footer_parts:
+            embed.set_footer(text="\n".join(footer_parts))
 
         return embed
 
@@ -408,7 +444,8 @@ class SequentialWizardView(discord.ui.View):
 
                 result = await create_record(
                     suggestion=suggestion,
-                    discord_user=self.state.get_author_for_current(),
+                    author_id=self.state.get_author_id_for_current(),
+                    author_id_map=self.state.author_id_map,
                 )
                 self.state.record_result("created", url=result.url, record_id=result.record_id)
 
