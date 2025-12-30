@@ -389,7 +389,7 @@ class SequentialWizardView(discord.ui.View):
             result = created[0]
             summary = await _format_record_summary(result)
             embed = discord.Embed(
-                description=f"Created a {summary}. [View in Flipfix ➡️]({result.url})",
+                description=f"Created a {summary}.",
                 color=discord.Color.green(),
             )
         elif created:
@@ -716,7 +716,7 @@ async def _format_record_summary(result: WizardResult, include_link: bool = True
         base = type_display
 
     if include_link and result.url:
-        return f"{base} — [View ➡️]({result.url})"
+        return f"{base} — [View in Flipfix ➡️]({result.url})"
     return base
 
 
