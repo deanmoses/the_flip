@@ -123,13 +123,13 @@ class ParseToolResponseTests(TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].record_type, RecordType.PART_REQUEST)
 
-    def test_filters_out_log_entry_without_machine_id(self):
-        """Log entries require machine_id."""
+    def test_filters_out_log_entry_without_machine_id_or_parent(self):
+        """Log entries require machine_id OR parent_record_id."""
         response = self._make_mock_response(
             [
                 {
                     "record_type": "log_entry",
-                    # missing machine_id - required for log_entry
+                    # missing both machine_id and parent_record_id
                     "description": "Fixed something",
                     "source_message_ids": ["123"],
                     "author_id": "111222333",
@@ -140,6 +140,28 @@ class ParseToolResponseTests(TestCase):
         result = _parse_tool_response(response)
 
         self.assertEqual(len(result), 0)
+
+    def test_log_entry_with_parent_record_id_but_no_machine_id_is_valid(self):
+        """Log entries can omit machine_id when linking to a parent problem report."""
+        response = self._make_mock_response(
+            [
+                {
+                    "record_type": "log_entry",
+                    # no machine_id - but has parent_record_id, so machine inherited
+                    "description": "Fixed the problem",
+                    "source_message_ids": ["123"],
+                    "author_id": "111222333",
+                    "parent_record_id": 42,
+                },
+            ]
+        )
+
+        result = _parse_tool_response(response)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].record_type, RecordType.LOG_ENTRY)
+        self.assertIsNone(result[0].slug)
+        self.assertEqual(result[0].parent_record_id, 42)
 
     def test_filters_out_problem_report_without_machine_id(self):
         """Problem reports require machine_id."""

@@ -250,6 +250,41 @@ class MultiMessageSourceTrackingTests(TestCase):
         log_entry = LogEntry.objects.get(pk=result.record_id)
         self.assertEqual(log_entry.problem_report, problem_report)
 
+    def test_log_entry_inherits_machine_from_parent_problem_report(self):
+        """Log entry without slug inherits machine from parent problem report."""
+        from asgiref.sync import async_to_sync
+
+        from the_flip.apps.discord.llm import RecordSuggestion, RecordType
+        from the_flip.apps.discord.records import create_record
+        from the_flip.apps.discord.types import DiscordUserInfo
+
+        # Create a problem report on a specific machine
+        problem_report = create_problem_report(machine=self.machine)
+
+        author_id = "345678901234567890"
+        suggestion = RecordSuggestion(
+            record_type=RecordType.LOG_ENTRY,
+            description="Fixed the issue",
+            source_message_ids=["555555555"],
+            author_id=author_id,
+            slug=None,  # No machine specified - should inherit from parent
+            parent_record_id=problem_report.pk,
+        )
+
+        discord_user = DiscordUserInfo(
+            user_id=author_id,
+            username="fixer",
+            display_name="The Fixer",
+        )
+        author_id_map = {author_id: discord_user}
+
+        result = async_to_sync(create_record)(suggestion, author_id, author_id_map)
+
+        # Verify the log entry is on the same machine as the problem report
+        log_entry = LogEntry.objects.get(pk=result.record_id)
+        self.assertEqual(log_entry.machine, self.machine)
+        self.assertEqual(log_entry.problem_report, problem_report)
+
     def test_part_request_update_links_correctly(self):
         """Part request update created via create_record links to parent."""
         from asgiref.sync import async_to_sync

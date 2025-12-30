@@ -105,6 +105,11 @@ def create_record(
     record_obj: LogEntry | ProblemReport | PartRequest | PartRequestUpdate
 
     if suggestion.record_type == RecordType.LOG_ENTRY:
+        # If no machine specified but has parent_record_id, inherit machine from parent
+        if not machine and suggestion.parent_record_id:
+            parent_report = ProblemReport.objects.filter(pk=suggestion.parent_record_id).first()
+            if parent_report:
+                machine = parent_report.machine
         if not machine:
             raise ValueError(
                 f"Machine is required for log_entry (slug={suggestion.slug!r} not found)"

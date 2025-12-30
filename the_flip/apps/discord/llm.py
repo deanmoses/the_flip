@@ -592,8 +592,13 @@ def _validate_suggestion_item(item: dict) -> RecordSuggestion | None:
     slug = item.get("machine_id")
     parent_record_id = item.get("parent_record_id")
 
-    # Validate slug requirement for log_entry and problem_report
-    if record_type in (RecordType.LOG_ENTRY, RecordType.PROBLEM_REPORT) and not slug:
+    # Validate slug requirement:
+    # - problem_report always requires machine_id
+    # - log_entry requires machine_id OR parent_record_id (inherits machine from parent)
+    if record_type == RecordType.PROBLEM_REPORT and not slug:
+        logger.warning("discord_llm_missing_machine_id", extra={"record_type": record_type})
+        return None
+    if record_type == RecordType.LOG_ENTRY and not slug and not parent_record_id:
         logger.warning("discord_llm_missing_machine_id", extra={"record_type": record_type})
         return None
 
