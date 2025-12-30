@@ -1,47 +1,111 @@
-"""Tests for Discord media download and attachment functionality."""
+"""Tests for Discord media download and upload functionality."""
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from django.test import TestCase, override_settings, tag
+from django.test import TestCase, tag
 
 from the_flip.apps.core.media import ALLOWED_MEDIA_EXTENSIONS, ALLOWED_VIDEO_EXTENSIONS
-from the_flip.apps.core.test_utils import (
-    TemporaryMediaMixin,
-    create_machine,
-    create_maintainer_user,
-)
+from the_flip.apps.core.test_utils import create_machine, create_maintainer_user
 from the_flip.apps.discord.context import (
     ContextMessage,
     _filter_supported_attachments,
 )
 from the_flip.apps.discord.media import (
     _dedupe_by_url,
-    _get_media_class_and_parent_field,
+    _get_media_model_name,
     _is_video,
 )
 from the_flip.apps.maintenance.models import (
     LogEntry,
-    LogEntryMedia,
     ProblemReport,
-    ProblemReportMedia,
 )
 from the_flip.apps.parts.models import (
     PartRequest,
-    PartRequestMedia,
     PartRequestUpdate,
-    PartRequestUpdateMedia,
 )
+
+# Extension to content type mapping for realistic test data
+_EXTENSION_CONTENT_TYPES = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+    ".heic": "image/heic",
+    ".heif": "image/heif",
+    ".mp4": "video/mp4",
+    ".mov": "video/quicktime",
+    ".m4v": "video/x-m4v",
+    ".webm": "video/webm",
+}
 
 
 def _make_mock_attachment(
     filename: str, url: str | None = None, content_type: str | None = None
 ) -> MagicMock:
-    """Create a mock Discord attachment."""
+    """Create a mock Discord attachment.
+
+    If content_type is not provided, it's inferred from the filename extension
+    to create more realistic test data.
+    """
+    from pathlib import Path
+
     attachment = MagicMock()
     attachment.filename = filename
     attachment.url = url or f"https://cdn.discordapp.com/attachments/12345/{filename}"
-    attachment.content_type = content_type or "image/jpeg"
+
+    # Infer content_type from extension if not provided
+    if content_type is None:
+        ext = Path(filename).suffix.lower()
+        content_type = _EXTENSION_CONTENT_TYPES.get(ext, "application/octet-stream")
+    attachment.content_type = content_type
+
     return attachment
+
+
+def _mock_successful_upload(media_type: str = "photo", media_id: int = 1) -> MagicMock:
+    """Create a mock httpx.AsyncClient configured for successful upload.
+
+    Returns a MagicMock that can be used as a context manager for httpx.AsyncClient.
+
+    Usage:
+        with patch("...httpx.AsyncClient") as mock_client_cls:
+            mock_client_cls.return_value = _mock_successful_upload()
+            success, failed = await download_and_create_media(...)
+    """
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "success": True,
+        "media_id": media_id,
+        "media_type": media_type,
+    }
+
+    mock_client = MagicMock()
+    mock_client.post = AsyncMock(return_value=mock_response)
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+
+    return mock_client
+
+
+def _mock_failed_upload(
+    status_code: int = 500, error_text: str = "Internal Server Error"
+) -> MagicMock:
+    """Create a mock httpx.AsyncClient configured for failed upload.
+
+    Returns a MagicMock that can be used as a context manager for httpx.AsyncClient.
+    """
+    mock_response = MagicMock()
+    mock_response.status_code = status_code
+    mock_response.text = error_text
+
+    mock_client = MagicMock()
+    mock_client.post = AsyncMock(return_value=mock_response)
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+
+    return mock_client
 
 
 @tag("discord")
@@ -183,8 +247,8 @@ class DedupeByUrlTests(TestCase):
 
 
 @tag("discord")
-class GetMediaClassAndParentFieldTests(TestCase):
-    """Tests for _get_media_class_and_parent_field() helper."""
+class GetMediaModelNameTests(TestCase):
+    """Tests for _get_media_model_name() helper."""
 
     def setUp(self):
         self.machine = create_machine()
@@ -192,48 +256,42 @@ class GetMediaClassAndParentFieldTests(TestCase):
         self.maintainer = self.user.maintainer
 
     def test_log_entry(self):
-        """Returns correct class for LogEntry."""
+        """Returns correct model name for LogEntry."""
         log_entry = LogEntry.objects.create(
             machine=self.machine,
             text="Test",
             maintainer_names="Test User",
         )
 
-        media_class, parent_field, model_name = _get_media_class_and_parent_field(log_entry)
+        model_name = _get_media_model_name(log_entry)
 
-        self.assertEqual(media_class, LogEntryMedia)
-        self.assertEqual(parent_field, "log_entry")
         self.assertEqual(model_name, "LogEntryMedia")
 
     def test_problem_report(self):
-        """Returns correct class for ProblemReport."""
+        """Returns correct model name for ProblemReport."""
         problem_report = ProblemReport.objects.create(
             machine=self.machine,
             description="Test",
             problem_type=ProblemReport.ProblemType.OTHER,
         )
 
-        media_class, parent_field, model_name = _get_media_class_and_parent_field(problem_report)
+        model_name = _get_media_model_name(problem_report)
 
-        self.assertEqual(media_class, ProblemReportMedia)
-        self.assertEqual(parent_field, "problem_report")
         self.assertEqual(model_name, "ProblemReportMedia")
 
     def test_part_request(self):
-        """Returns correct class for PartRequest."""
+        """Returns correct model name for PartRequest."""
         part_request = PartRequest.objects.create(
             text="Test",
             requested_by=self.maintainer,
         )
 
-        media_class, parent_field, model_name = _get_media_class_and_parent_field(part_request)
+        model_name = _get_media_model_name(part_request)
 
-        self.assertEqual(media_class, PartRequestMedia)
-        self.assertEqual(parent_field, "part_request")
         self.assertEqual(model_name, "PartRequestMedia")
 
     def test_part_request_update(self):
-        """Returns correct class for PartRequestUpdate."""
+        """Returns correct model name for PartRequestUpdate."""
         part_request = PartRequest.objects.create(
             text="Test",
             requested_by=self.maintainer,
@@ -244,10 +302,8 @@ class GetMediaClassAndParentFieldTests(TestCase):
             posted_by=self.maintainer,
         )
 
-        media_class, parent_field, model_name = _get_media_class_and_parent_field(update)
+        model_name = _get_media_model_name(update)
 
-        self.assertEqual(media_class, PartRequestUpdateMedia)
-        self.assertEqual(parent_field, "update")
         self.assertEqual(model_name, "PartRequestUpdateMedia")
 
 
@@ -283,8 +339,7 @@ class ContextMessageAttachmentsTests(TestCase):
 
 
 @tag("discord")
-@override_settings(SITE_URL="https://flipfix.example.com")
-class DownloadAndCreateMediaTests(TemporaryMediaMixin, TestCase):
+class DownloadAndCreateMediaTests(TestCase):
     """Tests for download_and_create_media()."""
 
     def setUp(self):
@@ -293,34 +348,30 @@ class DownloadAndCreateMediaTests(TemporaryMediaMixin, TestCase):
         self.user = create_maintainer_user()
         self.maintainer = self.user.maintainer
 
-    async def test_downloads_and_creates_photo_media(self):
-        """Downloads attachment and creates photo media record."""
-        from asgiref.sync import sync_to_async
-
+    @patch("the_flip.apps.discord.media.DJANGO_WEB_SERVICE_URL", "http://test.local")
+    @patch("the_flip.apps.discord.media.TRANSCODING_UPLOAD_TOKEN", "test-token")
+    async def test_downloads_and_uploads_photo(self):
+        """Downloads attachment and uploads to web service."""
         from the_flip.apps.discord.media import download_and_create_media
 
         log_entry = await self._create_log_entry()
 
         # Create mock attachment that returns image data
-        attachment = _make_mock_attachment("photo.jpg", content_type="image/jpeg")
-        attachment.read = AsyncMock(return_value=self._create_test_image_bytes())
+        attachment = _make_mock_attachment("photo.jpg")
+        attachment.read = AsyncMock(return_value=b"fake image data")
 
-        success, failed = await download_and_create_media(log_entry, [attachment])
+        with patch("the_flip.apps.discord.media.httpx.AsyncClient") as mock_client_cls:
+            mock_client_cls.return_value = _mock_successful_upload()
+            success, failed = await download_and_create_media(log_entry, [attachment])
 
         self.assertEqual(success, 1)
         self.assertEqual(failed, 0)
+        attachment.read.assert_awaited_once()
 
-        # Verify media record was created
-        await sync_to_async(log_entry.refresh_from_db)()
-        media_count = await sync_to_async(log_entry.media.count)()
-        self.assertEqual(media_count, 1)
-        media = await sync_to_async(log_entry.media.first)()
-        self.assertEqual(media.media_type, LogEntryMedia.MediaType.PHOTO)
-
+    @patch("the_flip.apps.discord.media.DJANGO_WEB_SERVICE_URL", "http://test.local")
+    @patch("the_flip.apps.discord.media.TRANSCODING_UPLOAD_TOKEN", "test-token")
     async def test_handles_download_failure(self):
         """Handles download failures gracefully."""
-        from asgiref.sync import sync_to_async
-
         from the_flip.apps.discord.media import download_and_create_media
 
         log_entry = await self._create_log_entry()
@@ -334,31 +385,44 @@ class DownloadAndCreateMediaTests(TemporaryMediaMixin, TestCase):
         self.assertEqual(success, 0)
         self.assertEqual(failed, 1)
 
-        # No media should be created
-        await sync_to_async(log_entry.refresh_from_db)()
-        media_count = await sync_to_async(log_entry.media.count)()
-        self.assertEqual(media_count, 0)
+    @patch("the_flip.apps.discord.media.DJANGO_WEB_SERVICE_URL", "http://test.local")
+    @patch("the_flip.apps.discord.media.TRANSCODING_UPLOAD_TOKEN", "test-token")
+    async def test_handles_upload_failure(self):
+        """Handles upload failures gracefully."""
+        from the_flip.apps.discord.media import download_and_create_media
 
+        log_entry = await self._create_log_entry()
+
+        attachment = _make_mock_attachment("photo.jpg")
+        attachment.read = AsyncMock(return_value=b"fake image data")
+
+        with patch("the_flip.apps.discord.media.httpx.AsyncClient") as mock_client_cls:
+            mock_client_cls.return_value = _mock_failed_upload()
+            success, failed = await download_and_create_media(log_entry, [attachment])
+
+        self.assertEqual(success, 0)
+        self.assertEqual(failed, 1)
+
+    @patch("the_flip.apps.discord.media.DJANGO_WEB_SERVICE_URL", "http://test.local")
+    @patch("the_flip.apps.discord.media.TRANSCODING_UPLOAD_TOKEN", "test-token")
     async def test_dedupes_by_url(self):
         """Deduplicates attachments with same URL."""
-        from asgiref.sync import sync_to_async
-
         from the_flip.apps.discord.media import download_and_create_media
 
         log_entry = await self._create_log_entry()
 
         url = "https://cdn.discordapp.com/attachments/123/photo.jpg"
         attachment1 = _make_mock_attachment("photo.jpg", url=url)
-        attachment1.read = AsyncMock(return_value=self._create_test_image_bytes())
+        attachment1.read = AsyncMock(return_value=b"fake image data")
         attachment2 = _make_mock_attachment("photo.jpg", url=url)  # Same URL
-        attachment2.read = AsyncMock(return_value=self._create_test_image_bytes())
+        attachment2.read = AsyncMock(return_value=b"fake image data")
 
-        success, failed = await download_and_create_media(log_entry, [attachment1, attachment2])
+        with patch("the_flip.apps.discord.media.httpx.AsyncClient") as mock_client_cls:
+            mock_client_cls.return_value = _mock_successful_upload()
+            success, failed = await download_and_create_media(log_entry, [attachment1, attachment2])
 
-        self.assertEqual(success, 1)  # Only one download despite two attachments
+        self.assertEqual(success, 1)  # Only one upload despite two attachments
         self.assertEqual(failed, 0)
-        media_count = await sync_to_async(log_entry.media.count)()
-        self.assertEqual(media_count, 1)
 
     async def test_empty_attachments_returns_zero(self):
         """Empty attachment list returns zero counts."""
@@ -371,29 +435,53 @@ class DownloadAndCreateMediaTests(TemporaryMediaMixin, TestCase):
         self.assertEqual(success, 0)
         self.assertEqual(failed, 0)
 
-    async def test_video_creates_media_with_pending_status(self):
-        """Video attachments create media record with PENDING transcode status."""
-        from asgiref.sync import sync_to_async
-
+    @patch("the_flip.apps.discord.media.DJANGO_WEB_SERVICE_URL", "")
+    @patch("the_flip.apps.discord.media.TRANSCODING_UPLOAD_TOKEN", "test-token")
+    async def test_missing_url_config_fails_all(self):
+        """Missing URL configuration fails all attachments."""
         from the_flip.apps.discord.media import download_and_create_media
 
         log_entry = await self._create_log_entry()
 
-        attachment = _make_mock_attachment("video.mp4", content_type="video/mp4")
-        attachment.read = AsyncMock(return_value=b"fake video data")
+        attachment = _make_mock_attachment("photo.jpg")
 
         success, failed = await download_and_create_media(log_entry, [attachment])
 
+        self.assertEqual(success, 0)
+        self.assertEqual(failed, 1)
+
+    @patch("the_flip.apps.discord.media.DJANGO_WEB_SERVICE_URL", "http://test.local")
+    @patch("the_flip.apps.discord.media.TRANSCODING_UPLOAD_TOKEN", "")
+    async def test_missing_token_config_fails_all(self):
+        """Missing token configuration fails all attachments."""
+        from the_flip.apps.discord.media import download_and_create_media
+
+        log_entry = await self._create_log_entry()
+
+        attachment = _make_mock_attachment("photo.jpg")
+
+        success, failed = await download_and_create_media(log_entry, [attachment])
+
+        self.assertEqual(success, 0)
+        self.assertEqual(failed, 1)
+
+    @patch("the_flip.apps.discord.media.DJANGO_WEB_SERVICE_URL", "http://test.local")
+    @patch("the_flip.apps.discord.media.TRANSCODING_UPLOAD_TOKEN", "test-token")
+    async def test_video_upload_succeeds(self):
+        """Video attachments upload successfully."""
+        from the_flip.apps.discord.media import download_and_create_media
+
+        log_entry = await self._create_log_entry()
+
+        attachment = _make_mock_attachment("video.mp4")
+        attachment.read = AsyncMock(return_value=b"fake video data")
+
+        with patch("the_flip.apps.discord.media.httpx.AsyncClient") as mock_client_cls:
+            mock_client_cls.return_value = _mock_successful_upload(media_type="video")
+            success, failed = await download_and_create_media(log_entry, [attachment])
+
         self.assertEqual(success, 1)
         self.assertEqual(failed, 0)
-
-        # Verify media record was created with correct type and status
-        await sync_to_async(log_entry.refresh_from_db)()
-        media = await sync_to_async(log_entry.media.first)()
-        self.assertEqual(media.media_type, LogEntryMedia.MediaType.VIDEO)
-        self.assertEqual(media.transcode_status, LogEntryMedia.TranscodeStatus.PENDING)
-        # Note: on_commit callbacks don't fire during tests (transaction is rolled back),
-        # so we verify the status is PENDING rather than checking enqueue_transcode was called
 
     # Helper methods
 
@@ -410,14 +498,3 @@ class DownloadAndCreateMediaTests(TemporaryMediaMixin, TestCase):
             )
 
         return await create()
-
-    def _create_test_image_bytes(self) -> bytes:
-        """Create minimal valid JPEG bytes."""
-        from io import BytesIO
-
-        from PIL import Image
-
-        img = Image.new("RGB", (100, 100), color="red")
-        buffer = BytesIO()
-        img.save(buffer, format="JPEG")
-        return buffer.getvalue()

@@ -1,35 +1,27 @@
-"""Media download and creation for Discord bot.
+"""Media download and upload for Discord bot.
 
-Downloads Discord attachments and creates media records for Flipfix records.
-Uses discord.py's attachment.read() for auth-handled downloads from Discord CDN.
+Downloads Discord attachments and uploads them to the web service via HTTP API.
+The Discord bot service on Railway cannot store media directly (no persistent storage).
+Instead, it downloads from Discord CDN and uploads to the web service's media API endpoint.
 """
 
 from __future__ import annotations
 
 import logging
-from functools import partial
-from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from asgiref.sync import sync_to_async
-from django.core.files.uploadedfile import InMemoryUploadedFile
-from django.db import transaction
+import httpx
+from decouple import config
 
 from the_flip.apps.core.media import ALLOWED_VIDEO_EXTENSIONS
-from the_flip.apps.core.models import AbstractMedia
-from the_flip.apps.core.tasks import enqueue_transcode
 from the_flip.apps.maintenance.models import (
     LogEntry,
-    LogEntryMedia,
     ProblemReport,
-    ProblemReportMedia,
 )
 from the_flip.apps.parts.models import (
     PartRequest,
-    PartRequestMedia,
     PartRequestUpdate,
-    PartRequestUpdateMedia,
 )
 
 if TYPE_CHECKING:
@@ -37,10 +29,21 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Type alias for media model classes that can be created from Discord attachments
-MediaModelClass = type[
-    LogEntryMedia | ProblemReportMedia | PartRequestMedia | PartRequestUpdateMedia
-]
+# Configuration for web service communication
+DJANGO_WEB_SERVICE_URL = config("DJANGO_WEB_SERVICE_URL", default="")
+TRANSCODING_UPLOAD_TOKEN = config("TRANSCODING_UPLOAD_TOKEN", default="")
+
+# HTTP timeout for uploads (60 seconds)
+HTTP_UPLOAD_TIMEOUT = 60
+
+
+def is_media_upload_configured() -> bool:
+    """Check if media upload to web service is configured.
+
+    Call this at bot startup to fail fast if configuration is missing.
+    Returns True if both DJANGO_WEB_SERVICE_URL and TRANSCODING_UPLOAD_TOKEN are set.
+    """
+    return bool(DJANGO_WEB_SERVICE_URL and TRANSCODING_UPLOAD_TOKEN)
 
 
 def _is_video(filename: str) -> bool:
@@ -62,22 +65,18 @@ def _dedupe_by_url(attachments: list[discord.Attachment]) -> list[discord.Attach
     return unique
 
 
-def _get_media_class_and_parent_field(
+def _get_media_model_name(
     record: LogEntry | ProblemReport | PartRequest | PartRequestUpdate,
-) -> tuple[type, str, str]:
-    """Get the media model class, parent field name, and model name for a record.
-
-    Returns:
-        Tuple of (MediaClass, parent_field_name, model_name_for_transcode)
-    """
+) -> str:
+    """Get the media model name for the web service API."""
     if isinstance(record, LogEntry):
-        return LogEntryMedia, "log_entry", "LogEntryMedia"
+        return "LogEntryMedia"
     elif isinstance(record, ProblemReport):
-        return ProblemReportMedia, "problem_report", "ProblemReportMedia"
+        return "ProblemReportMedia"
     elif isinstance(record, PartRequest):
-        return PartRequestMedia, "part_request", "PartRequestMedia"
+        return "PartRequestMedia"
     elif isinstance(record, PartRequestUpdate):
-        return PartRequestUpdateMedia, "update", "PartRequestUpdateMedia"
+        return "PartRequestUpdateMedia"
     else:
         raise ValueError(f"Unknown record type: {type(record)}")
 
@@ -86,12 +85,10 @@ async def download_and_create_media(
     record: LogEntry | ProblemReport | PartRequest | PartRequestUpdate,
     attachments: list[discord.Attachment],
 ) -> tuple[int, int]:
-    """Download attachments and create media records for a record.
+    """Download attachments from Discord and upload to web service.
 
-    Uses discord.py's attachment.read() for auth-handled downloads.
-    Downloads are processed serially; each attachment is read into memory
-    then passed to the existing media pipeline. Discord's 25MB limit per
-    attachment keeps memory usage reasonable.
+    Downloads from Discord CDN using discord.py's attachment.read() for auth handling.
+    Uploads to web service via HTTP API for persistent storage.
 
     Args:
         record: The Flipfix record to attach media to.
@@ -103,91 +100,106 @@ async def download_and_create_media(
     if not attachments:
         return 0, 0
 
+    # Validate configuration (use is_media_upload_configured() at bot startup for fail-fast)
+    if not is_media_upload_configured():
+        logger.error(
+            "discord_media_upload_not_configured",
+            extra={
+                "has_url": bool(DJANGO_WEB_SERVICE_URL),
+                "has_token": bool(TRANSCODING_UPLOAD_TOKEN),
+            },
+        )
+        return 0, len(attachments)
+
     unique_attachments = _dedupe_by_url(attachments)
-    media_class, parent_field, model_name = _get_media_class_and_parent_field(record)
+    model_name = _get_media_model_name(record)
+    parent_id = record.pk
 
     success = 0
     failed = 0
 
-    for attachment in unique_attachments:
-        try:
-            data = await attachment.read()
+    async with httpx.AsyncClient(timeout=HTTP_UPLOAD_TIMEOUT) as client:
+        for attachment in unique_attachments:
+            try:
+                # Download from Discord CDN
+                file_bytes = await attachment.read()
 
-            # Create media record synchronously (uses Django's DB)
-            await _create_media_record(
-                media_class=media_class,
-                parent_field=parent_field,
-                record=record,
-                model_name=model_name,
-                attachment_filename=attachment.filename,
-                data=data,
-                content_type=attachment.content_type or "",
-            )
-            success += 1
+                # Upload to web service
+                await _upload_to_web_service(
+                    client=client,
+                    model_name=model_name,
+                    parent_id=parent_id,
+                    filename=attachment.filename,
+                    file_bytes=file_bytes,
+                    content_type=attachment.content_type or "",
+                )
+                success += 1
 
-            logger.info(
-                "discord_attachment_downloaded",
-                extra={
-                    "record_type": type(record).__name__,
-                    "record_id": record.pk,
-                    "attachment_filename": attachment.filename,
-                    "size": len(data),
-                },
-            )
+                logger.info(
+                    "discord_attachment_downloaded",
+                    extra={
+                        "record_type": type(record).__name__,
+                        "record_id": record.pk,
+                        "attachment_filename": attachment.filename,
+                        "size": len(file_bytes),
+                    },
+                )
 
-        except Exception:
-            logger.warning(
-                "discord_attachment_download_failed",
-                extra={
-                    "record_type": type(record).__name__,
-                    "record_id": record.pk,
-                    "attachment_filename": attachment.filename,
-                    "attachment_url": attachment.url,
-                },
-                exc_info=True,
-            )
-            failed += 1
+            except Exception:
+                logger.warning(
+                    "discord_attachment_download_failed",
+                    extra={
+                        "record_type": type(record).__name__,
+                        "record_id": record.pk,
+                        "attachment_filename": attachment.filename,
+                        "attachment_url": attachment.url,
+                    },
+                    exc_info=True,
+                )
+                failed += 1
 
     return success, failed
 
 
-@sync_to_async
-def _create_media_record(
-    media_class: MediaModelClass,
-    parent_field: str,
-    record: LogEntry | ProblemReport | PartRequest | PartRequestUpdate,
+async def _upload_to_web_service(
+    client: httpx.AsyncClient,
     model_name: str,
-    attachment_filename: str,
-    data: bytes,
+    parent_id: int,
+    filename: str,
+    file_bytes: bytes,
     content_type: str,
 ) -> None:
-    """Create a media record from downloaded data.
+    """Upload media file to web service via HTTP API.
 
-    Wraps in transaction and enqueues video transcoding if needed.
+    Args:
+        client: httpx async client for HTTP requests.
+        model_name: Media model name (e.g., "LogEntryMedia").
+        parent_id: ID of the parent record.
+        filename: Original filename from Discord.
+        file_bytes: File content as bytes.
+        content_type: MIME type of the file.
+
+    Raises:
+        RuntimeError: If upload fails.
     """
-    is_video = _is_video(attachment_filename)
+    url = f"{DJANGO_WEB_SERVICE_URL.rstrip('/')}/api/media/{model_name}/{parent_id}/"
+    headers = {"Authorization": f"Bearer {TRANSCODING_UPLOAD_TOKEN}"}
 
-    # Create an InMemoryUploadedFile to feed to the media model
-    # This allows the model's save() to process photos (resize, thumbnail)
-    file_buffer = BytesIO(data)
-    uploaded_file = InMemoryUploadedFile(
-        file=file_buffer,
-        field_name="file",
-        name=attachment_filename,
-        content_type=content_type,
-        size=len(data),
-        charset=None,
+    # httpx file upload format: (filename, content, content_type)
+    files = {"file": (filename, file_bytes, content_type or "application/octet-stream")}
+
+    response = await client.post(url, files=files, headers=headers)
+
+    if response.status_code != 200:
+        raise RuntimeError(f"Upload failed: HTTP {response.status_code} - {response.text[:200]}")
+
+    result = response.json()
+    logger.info(
+        "discord_media_upload_success",
+        extra={
+            "model_name": model_name,
+            "parent_id": parent_id,
+            "media_id": result.get("media_id"),
+            "media_type": result.get("media_type"),
+        },
     )
-
-    with transaction.atomic():
-        media = media_class.objects.create(
-            **{parent_field: record},
-            media_type=AbstractMedia.MediaType.VIDEO if is_video else AbstractMedia.MediaType.PHOTO,
-            file=uploaded_file,
-            transcode_status=AbstractMedia.TranscodeStatus.PENDING if is_video else "",
-        )
-
-        if is_video:
-            transaction.on_commit(
-                partial(enqueue_transcode, media_id=media.id, model_name=model_name)
-            )
