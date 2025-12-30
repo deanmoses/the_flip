@@ -117,7 +117,7 @@ async def _gather_thread_context(message: discord.Message) -> GatheredContext:
     thread = message.channel
 
     # Fetch all raw messages
-    thread_messages, thread_truncated = await _fetch_thread_messages(thread)
+    thread_messages, thread_truncated = await _fetch_thread_messages(thread, message)
     thread_starter = await _fetch_thread_starter(thread)
     # thread.parent is ForumChannel | TextChannel | None, all Messageable
     preroll_messages = await _fetch_preroll_messages(
@@ -161,15 +161,22 @@ async def _gather_thread_context(message: discord.Message) -> GatheredContext:
 
 async def _fetch_thread_messages(
     thread: discord.Thread,
+    target_message: discord.Message,
 ) -> tuple[list[discord.Message], bool]:
-    """Fetch messages from a thread, returning (messages, was_truncated)."""
+    """Fetch messages from a thread up to and including the target message.
+
+    Fetches messages BEFORE the target (historical context), then includes
+    the target itself. This ensures we get the conversation leading up to
+    what the user clicked, not just the most recent messages.
+    """
     messages: list[discord.Message] = []
     truncated = False
 
     try:
-        async for msg in thread.history(limit=MAX_THREAD_MESSAGES):
+        # Fetch messages before the target (limit-1 to leave room for target)
+        async for msg in thread.history(limit=MAX_THREAD_MESSAGES - 1, before=target_message):
             messages.append(msg)
-        if len(messages) >= MAX_THREAD_MESSAGES:
+        if len(messages) >= MAX_THREAD_MESSAGES - 1:
             truncated = True
             logger.warning(
                 "discord_thread_truncated",
@@ -180,6 +187,9 @@ async def _fetch_thread_messages(
             "discord_thread_fetch_failed",
             extra={"thread_id": thread.id, "error": str(e)},
         )
+
+    # Always include the target message
+    messages.append(target_message)
 
     messages.sort(key=lambda m: m.created_at)
     return messages, truncated
