@@ -400,10 +400,10 @@ class PartRequestUpdateCreateView(CanAccessMaintainerPortalMixin, FormView):
     def get_initial(self):
         initial = super().get_initial()
 
-        # Pre-fill requester_name with current user's display name (for non-shared accounts)
+        # Pre-fill poster_name with current user's display name (for non-shared accounts)
         if hasattr(self.request.user, "maintainer"):
             if not self.request.user.maintainer.is_shared_account:
-                initial["requester_name"] = str(self.request.user.maintainer)
+                initial["poster_name"] = str(self.request.user.maintainer)
         return initial
 
     @transaction.atomic
@@ -414,8 +414,8 @@ class PartRequestUpdateCreateView(CanAccessMaintainerPortalMixin, FormView):
             self.request,
             current_maintainer,
             form,
-            username_field="requester_name_username",
-            text_field="requester_name",
+            username_field="poster_name_username",
+            text_field="poster_name",
         )
         if not attribution:
             return self.form_invalid(form)

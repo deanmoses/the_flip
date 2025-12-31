@@ -157,21 +157,25 @@ class LogEntryEditMaintainersTests(SuppressRequestLogsMixin, TestDataMixin, Test
             self.log_entry.maintainers.all(),
         )
 
-    def test_edit_clears_all_maintainers(self):
-        """Can clear all maintainers via edit."""
+    def test_edit_rejects_no_maintainers(self):
+        """Edit view rejects submission with no maintainers."""
         self.client.force_login(self.maintainer_user)
 
         response = self.client.post(
             self.edit_url,
             {
                 "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
-                # No maintainer_usernames submitted
+                # No maintainer_usernames or maintainer_freetext submitted
             },
         )
 
-        self.assertEqual(response.status_code, 302)
+        # Should return form with error, not redirect
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "at least one maintainer")
+
+        # Should not have modified the record
         self.log_entry.refresh_from_db()
-        self.assertEqual(self.log_entry.maintainers.count(), 0)
+        self.assertEqual(self.log_entry.maintainers.count(), 1)
 
     def test_edit_updates_freetext_names(self):
         """Can update freetext maintainer names via edit."""

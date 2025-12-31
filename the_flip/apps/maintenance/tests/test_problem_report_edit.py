@@ -70,3 +70,28 @@ class ProblemReportEditViewTests(SuppressRequestLogsMixin, TestDataMixin, TestCa
         )
 
         self.assertEqual(response.status_code, 302)  # Redirect on success
+
+    def test_edit_rejects_empty_reporter(self):
+        """Edit view rejects submission with no reporter name or user."""
+        # First, set up a problem report with a known reporter
+        self.problem_report.reported_by_user = self.maintainer_user
+        self.problem_report.save()
+
+        self.client.force_login(self.maintainer_user)
+
+        response = self.client.post(
+            self.edit_url,
+            {
+                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
+                "reporter_name": "",  # Empty reporter
+                "reporter_name_username": "",  # No username selected
+            },
+        )
+
+        # Should return form with error, not redirect
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Please enter a reporter name")
+
+        # Should not have modified the record
+        self.problem_report.refresh_from_db()
+        self.assertEqual(self.problem_report.reported_by_user, self.maintainer_user)

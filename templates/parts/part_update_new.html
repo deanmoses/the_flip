@@ -21,7 +21,7 @@
 {% endif %}
 {% if not is_shared_account %}
   {% sidebar_section label="Who" %}
-  {% maintainer_autocomplete_field form.requester_name size="sm" show_label=False form_id="part-request-update-form" %}
+  {% maintainer_autocomplete_field form.poster_name size="sm" show_label=False form_id="part-request-update-form" %}
 {% endsidebar_section %}
 {% endif %}
 {% sidebar_section label="When" %}
@@ -42,7 +42,7 @@
     <input type="hidden" name="browser_timezone" id="browser-timezone">
     {% if is_shared_account %}
       <!-- WHO (shared accounts only - in main content for mobile visibility) -->
-      {% maintainer_autocomplete_field form.requester_name label="Who is posting this?" %}
+      {% maintainer_autocomplete_field form.poster_name label="Who is posting this?" %}
     {% endif %}
     <!-- Comment -->
     <div class="form-field">

@@ -7,7 +7,12 @@ from django.test import TestCase, tag
 from django.urls import reverse
 from django.utils import timezone
 
-from the_flip.apps.core.test_utils import DATETIME_INPUT_FORMAT, TestDataMixin
+from the_flip.apps.core.test_utils import (
+    DATETIME_INPUT_FORMAT,
+    SharedAccountTestMixin,
+    SuppressRequestLogsMixin,
+    TestDataMixin,
+)
 from the_flip.apps.maintenance.models import ProblemReport
 
 
@@ -196,3 +201,75 @@ class MaintainerProblemReportCreateViewTests(TestDataMixin, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "future")
         self.assertEqual(ProblemReport.objects.count(), 0)
+
+
+@tag("views")
+class ProblemReportSharedAccountTests(
+    SharedAccountTestMixin, SuppressRequestLogsMixin, TestDataMixin, TestCase
+):
+    """Tests for problem report creation from shared/terminal accounts."""
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse("problem-report-create-machine", kwargs={"slug": self.machine.slug})
+
+    def test_shared_account_with_valid_username_uses_user_fk(self):
+        """Shared account selecting from dropdown saves to reported_by_user."""
+        self.client.force_login(self.shared_user)
+        response = self.client.post(
+            self.url,
+            {
+                "description": "Machine is broken",
+                "reporter_name": str(self.identifying_maintainer),
+                "reporter_name_username": self.identifying_user.username,
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        report = ProblemReport.objects.first()
+        self.assertEqual(report.reported_by_user, self.identifying_user)
+        self.assertEqual(report.reported_by_name, "")
+
+    def test_shared_account_with_free_text_uses_text_field(self):
+        """Shared account typing free text saves to reported_by_name field."""
+        self.client.force_login(self.shared_user)
+        response = self.client.post(
+            self.url,
+            {
+                "description": "Machine is broken",
+                "reporter_name": "Jane Visitor",
+                "reporter_name_username": "",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        report = ProblemReport.objects.first()
+        self.assertIsNone(report.reported_by_user)
+        self.assertEqual(report.reported_by_name, "Jane Visitor")
+
+    def test_shared_account_with_empty_name_shows_error(self):
+        """Shared account with empty name shows form error."""
+        self.client.force_login(self.shared_user)
+        response = self.client.post(
+            self.url,
+            {
+                "description": "Machine is broken",
+                "reporter_name": "",
+                "reporter_name_username": "",
+            },
+        )
+        self.assertEqual(response.status_code, 200)  # Form re-rendered with errors
+        self.assertContains(response, "Please enter your name")
+        self.assertEqual(ProblemReport.objects.count(), 0)
+
+    def test_regular_account_with_no_reporter_uses_current_user(self):
+        """Regular account with no reporter selection defaults to current user."""
+        self.client.force_login(self.identifying_user)
+        response = self.client.post(
+            self.url,
+            {
+                "description": "Machine is broken",
+                # No reporter_name or reporter_name_username
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        report = ProblemReport.objects.first()
+        self.assertEqual(report.reported_by_user, self.identifying_user)

@@ -96,8 +96,8 @@ class PartRequestUpdateSharedAccountTests(
             {
                 "text": "Ordered from Marco",
                 "new_status": "",
-                "requester_name": str(self.identifying_maintainer),
-                "requester_name_username": self.identifying_user.username,
+                "poster_name": str(self.identifying_maintainer),
+                "poster_name_username": self.identifying_user.username,
             },
         )
         self.assertEqual(response.status_code, 302)
@@ -113,8 +113,8 @@ class PartRequestUpdateSharedAccountTests(
             {
                 "text": "Ordered from Marco",
                 "new_status": "",
-                "requester_name": "Jane Visitor",
-                "requester_name_username": "",
+                "poster_name": "Jane Visitor",
+                "poster_name_username": "",
             },
         )
         self.assertEqual(response.status_code, 302)
@@ -130,8 +130,8 @@ class PartRequestUpdateSharedAccountTests(
             {
                 "text": "Ordered from Marco",
                 "new_status": "",
-                "requester_name": "",
-                "requester_name_username": "",
+                "poster_name": "",
+                "poster_name_username": "",
             },
         )
         self.assertEqual(response.status_code, 200)  # Form re-rendered with errors

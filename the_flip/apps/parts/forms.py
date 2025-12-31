@@ -75,9 +75,9 @@ class PartRequestForm(StyledFormMixin, forms.ModelForm):
 
 
 class PartRequestUpdateForm(StyledFormMixin, forms.ModelForm):
-    """Form for creating an update/comment on a part request."""
+    """Form for posting an update/comment on a part request."""
 
-    requester_name = forms.CharField(
+    poster_name = forms.CharField(
         label="Who is posting this?",
         max_length=200,
         required=False,

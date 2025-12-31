@@ -7,7 +7,6 @@ from functools import partial
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Prefetch
@@ -22,6 +21,10 @@ from django.views.generic import FormView, ListView, TemplateView, UpdateView
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import Location, MachineInstance
+from the_flip.apps.core.attribution import (
+    resolve_maintainer_for_create,
+    resolve_maintainer_for_edit,
+)
 from the_flip.apps.core.datetime import apply_browser_timezone, validate_not_future
 from the_flip.apps.core.ip import get_real_ip
 from the_flip.apps.core.media import is_video_file
@@ -272,10 +275,28 @@ class ProblemReportCreateView(CanAccessMaintainerPortalMixin, FormView):
                 form.add_error("machine_slug", "Select a machine.")
                 return self.form_invalid(form)
 
+        # Resolve reporter attribution
+        current_maintainer = get_object_or_404(Maintainer, user=self.request.user)
+        attribution = resolve_maintainer_for_create(
+            self.request,
+            current_maintainer,
+            form,
+            username_field="reporter_name_username",
+            text_field="reporter_name",
+        )
+        if not attribution:
+            return self.form_invalid(form)
+
         report = form.save(commit=False)
         report.machine = machine
         report.ip_address = get_real_ip(self.request)
         report.device_info = self.request.META.get("HTTP_USER_AGENT", "")[:200]
+
+        # Set reporter: user FK from maintainer, or freetext name
+        if attribution.maintainer:
+            report.reported_by_user = attribution.maintainer.user
+        report.reported_by_name = attribution.freetext_name
+
         occurred_at = apply_browser_timezone(form.cleaned_data.get("occurred_at"), self.request)
 
         # Validate after timezone conversion (form validation runs before conversion)
@@ -283,12 +304,6 @@ class ProblemReportCreateView(CanAccessMaintainerPortalMixin, FormView):
             return self.form_invalid(form)
 
         report.occurred_at = occurred_at
-        if self.request.user.is_authenticated:
-            report.reported_by_user = self.request.user
-        # Save reporter name for shared accounts
-        reporter_name = (form.cleaned_data.get("reporter_name") or "").strip()
-        if reporter_name:
-            report.reported_by_name = reporter_name
         report.save()
 
         # Handle media uploads
@@ -520,24 +535,27 @@ class ProblemReportEditView(CanAccessMaintainerPortalMixin, UpdateView):
         return context
 
     def form_valid(self, form):
-        # Handle reporter attribution from hidden username field or text input
-        reporter_username = self.request.POST.get("reporter_name_username", "").strip()
-        reporter_name_text = form.cleaned_data.get("reporter_name", "").strip()
-
-        reporter_user = None
-        reporter_name = ""
-
-        if reporter_username:
-            user_model = get_user_model()
-            reporter_user = user_model.objects.filter(username__iexact=reporter_username).first()
-
-        if not reporter_user and reporter_name_text:
-            # No valid username selected, but text was entered - use text field
-            reporter_name = reporter_name_text
+        # Resolve reporter attribution
+        attribution = resolve_maintainer_for_edit(
+            self.request,
+            form,
+            username_field="reporter_name_username",
+            text_field="reporter_name",
+            error_message="Please enter a reporter name.",
+        )
+        if not attribution:
+            return self.form_invalid(form)
 
         report = form.save(commit=False)
-        report.reported_by_user = reporter_user
-        report.reported_by_name = reporter_name
+
+        # Set reporter: user FK from maintainer, or freetext name
+        if attribution.maintainer:
+            report.reported_by_user = attribution.maintainer.user
+            report.reported_by_name = ""
+        else:
+            report.reported_by_user = None
+            report.reported_by_name = attribution.freetext_name
+
         occurred_at = apply_browser_timezone(form.cleaned_data.get("occurred_at"), self.request)
 
         # Validate after timezone conversion (form validation runs before conversion)

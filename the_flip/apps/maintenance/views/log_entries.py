@@ -182,14 +182,30 @@ class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
                 form.add_error("machine_slug", "Select a machine.")
                 return self.form_invalid(form)
 
-        # Validate at least one maintainer is specified (linked or freetext)
+        # Get maintainer selections from chip input
         usernames = self.request.POST.getlist("maintainer_usernames")
         freetext_names = [
             n.strip() for n in self.request.POST.getlist("maintainer_freetext") if n.strip()
         ]
-        if not usernames and not freetext_names:
-            form.add_error(None, "Please add at least one maintainer.")
-            return self.form_invalid(form)
+
+        # Query for valid maintainers (shared accounts are filtered out)
+        maintainers = list(
+            Maintainer.objects.filter(
+                user__username__in=usernames,
+                is_shared_account=False,
+            )
+        )
+
+        # Handle empty maintainers based on account type
+        current_maintainer = get_object_or_404(Maintainer, user=self.request.user)
+        if not maintainers and not freetext_names:
+            if current_maintainer.is_shared_account:
+                # Shared terminal: require explicit maintainer selection
+                form.add_error(None, "Please add at least one maintainer.")
+                return self.form_invalid(form)
+            else:
+                # Regular account: default to current user
+                maintainers = [current_maintainer]
 
         log_entry = LogEntry.objects.create(
             machine=machine,
@@ -200,12 +216,7 @@ class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
         )
         self.machine = machine
 
-        # Add linked maintainers (from chip input autocomplete selections)
-        # usernames was extracted above for validation
-        maintainers = Maintainer.objects.filter(
-            user__username__in=usernames,
-            is_shared_account=False,
-        )
+        # Add linked maintainers
         for maintainer in maintainers:
             log_entry.maintainers.add(maintainer)
 
@@ -641,6 +652,12 @@ class LogEntryEditView(CanAccessMaintainerPortalMixin, UpdateView):
         # Normalize: strip whitespace, de-dup, filter empty
         freetext_names = self.request.POST.getlist("maintainer_freetext")
         freetext_names = list(dict.fromkeys(n.strip() for n in freetext_names if n.strip()))
+
+        # Validate at least one maintainer is specified (linked or freetext)
+        if not maintainers and not freetext_names:
+            form.add_error(None, "Please add at least one maintainer.")
+            return self.form_invalid(form)
+
         entry.maintainer_names = ", ".join(freetext_names)
 
         # Save then set M2M (M2M requires saved object)
