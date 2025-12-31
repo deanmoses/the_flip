@@ -21,7 +21,11 @@ from django.views.generic import DetailView, FormView, TemplateView, UpdateView
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import Location, MachineInstance
-from the_flip.apps.core.datetime import apply_browser_timezone, parse_datetime_with_browser_timezone
+from the_flip.apps.core.datetime import (
+    apply_browser_timezone,
+    parse_datetime_with_browser_timezone,
+    validate_not_future,
+)
 from the_flip.apps.core.media import is_video_file
 from the_flip.apps.core.mixins import (
     CanAccessMaintainerPortalMixin,
@@ -164,6 +168,11 @@ class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
         description = form.cleaned_data["text"].strip()
         media_files = form.cleaned_data["media_file"]
         occurred_at = apply_browser_timezone(form.cleaned_data["occurred_at"], self.request)
+
+        # Validate after timezone conversion (form validation runs before conversion)
+        if not validate_not_future(occurred_at, form):
+            return self.form_invalid(form)
+
         machine = self.machine
 
         if not machine:
@@ -172,6 +181,15 @@ class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
             if not machine:
                 form.add_error("machine_slug", "Select a machine.")
                 return self.form_invalid(form)
+
+        # Validate at least one maintainer is specified (linked or freetext)
+        usernames = self.request.POST.getlist("maintainer_usernames")
+        freetext_names = [
+            n.strip() for n in self.request.POST.getlist("maintainer_freetext") if n.strip()
+        ]
+        if not usernames and not freetext_names:
+            form.add_error(None, "Please add at least one maintainer.")
+            return self.form_invalid(form)
 
         log_entry = LogEntry.objects.create(
             machine=machine,
@@ -182,8 +200,8 @@ class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
         )
         self.machine = machine
 
-        # Get linked maintainers (from chip input autocomplete selections)
-        usernames = self.request.POST.getlist("maintainer_usernames")
+        # Add linked maintainers (from chip input autocomplete selections)
+        # usernames was extracted above for validation
         maintainers = Maintainer.objects.filter(
             user__username__in=usernames,
             is_shared_account=False,
@@ -191,10 +209,9 @@ class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
         for maintainer in maintainers:
             log_entry.maintainers.add(maintainer)
 
-        # Get free-text names (not linked to accounts)
-        # Normalize: strip whitespace, de-dup, filter empty
-        freetext_names = self.request.POST.getlist("maintainer_freetext")
-        freetext_names = list(dict.fromkeys(n.strip() for n in freetext_names if n.strip()))
+        # Add free-text names (not linked to accounts)
+        # freetext_names was extracted above for validation, now de-dup
+        freetext_names = list(dict.fromkeys(freetext_names))
         if freetext_names:
             log_entry.maintainer_names = ", ".join(freetext_names)
             log_entry.save(update_fields=["maintainer_names"])
@@ -354,9 +371,11 @@ class LogEntryDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, Detai
             if not occurred_at:
                 return JsonResponse({"success": False, "error": "Invalid date format"}, status=400)
 
-            # Validate not in the future (compare in browser's timezone)
-            now_in_browser_tz = timezone.now().astimezone(occurred_at.tzinfo)
-            if occurred_at.date() > now_in_browser_tz.date():
+            # Validate not in the future
+            # Make aware if naive (when browser_timezone not provided)
+            if timezone.is_naive(occurred_at):
+                occurred_at = timezone.make_aware(occurred_at)
+            if occurred_at > timezone.now():
                 return JsonResponse(
                     {"success": False, "error": "Date cannot be in the future."}, status=400
                 )
@@ -602,9 +621,13 @@ class LogEntryEditView(CanAccessMaintainerPortalMixin, UpdateView):
         entry = form.save(commit=False)
 
         # Apply browser timezone to occurred_at
-        entry.occurred_at = apply_browser_timezone(
-            form.cleaned_data.get("occurred_at"), self.request
-        )
+        occurred_at = apply_browser_timezone(form.cleaned_data.get("occurred_at"), self.request)
+
+        # Validate after timezone conversion (form validation runs before conversion)
+        if not validate_not_future(occurred_at, form):
+            return self.form_invalid(form)
+
+        entry.occurred_at = occurred_at
 
         # Get linked maintainers (from chip input autocomplete selections)
         # De-dup while preserving order
@@ -613,15 +636,16 @@ class LogEntryEditView(CanAccessMaintainerPortalMixin, UpdateView):
             user__username__in=usernames,
             is_shared_account=False,
         )
-        entry.save()
-        entry.maintainers.set(maintainers)
 
         # Get free-text names (not linked to accounts)
         # Normalize: strip whitespace, de-dup, filter empty
         freetext_names = self.request.POST.getlist("maintainer_freetext")
         freetext_names = list(dict.fromkeys(n.strip() for n in freetext_names if n.strip()))
         entry.maintainer_names = ", ".join(freetext_names)
-        entry.save(update_fields=["maintainer_names"])
+
+        # Save then set M2M (M2M requires saved object)
+        entry.save()
+        entry.maintainers.set(maintainers)
 
         return redirect(self.get_success_url())
 

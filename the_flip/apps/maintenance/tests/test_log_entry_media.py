@@ -34,7 +34,7 @@ class LogEntryVideoUploadTests(TestDataMixin, TestCase):
             self.create_url,
             {
                 "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
-                "submitter_name": "Test User",
+                "maintainer_usernames": [self.maintainer.user.username],
                 "text": "Test entry",
             },
         )
@@ -92,7 +92,7 @@ class LogEntryVideoUploadTests(TestDataMixin, TestCase):
                 self.create_url,
                 {
                     "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
-                    "submitter_name": "Test User",
+                    "maintainer_usernames": [self.maintainer.user.username],
                     "text": "Test entry with video",
                     "media_file": video_file,
                 },

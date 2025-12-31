@@ -17,7 +17,11 @@ from django.views.generic import FormView, TemplateView, UpdateView, View
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import MachineInstance
-from the_flip.apps.core.datetime import apply_browser_timezone
+from the_flip.apps.core.attribution import (
+    resolve_maintainer_for_create,
+    resolve_maintainer_for_edit,
+)
+from the_flip.apps.core.datetime import apply_browser_timezone, validate_not_future
 from the_flip.apps.core.media import is_video_file
 from the_flip.apps.core.mixins import (
     CanAccessMaintainerPortalMixin,
@@ -174,45 +178,29 @@ class PartRequestCreateView(CanAccessMaintainerPortalMixin, FormView):
             if slug:
                 machine = MachineInstance.objects.filter(slug=slug).first()
 
-        # Determine the requester from hidden username field or text input
+        # Resolve requester attribution
         current_maintainer = get_object_or_404(Maintainer, user=self.request.user)
-        requester_username = self.request.POST.get("requester_name_username", "").strip()
-        requester_name_text = form.cleaned_data.get("requester_name", "").strip()
-
-        maintainer = None
-        requester_name = ""
-
-        if current_maintainer.is_shared_account:
-            # For shared accounts: try username lookup first, then fall back to text
-            if requester_username:
-                maintainer = Maintainer.objects.filter(
-                    user__username__iexact=requester_username,
-                    is_shared_account=False,
-                ).first()
-            if not maintainer and requester_name_text:
-                # No valid username selected, but text was entered - use text field
-                requester_name = requester_name_text
-            if not maintainer and not requester_name:
-                form.add_error("requester_name", "Please enter your name.")
-                return self.form_invalid(form)
-        else:
-            # For non-shared accounts, use selected user or fall back to current user
-            maintainer = current_maintainer
-            if requester_username:
-                matched = Maintainer.objects.filter(
-                    user__username__iexact=requester_username,
-                    is_shared_account=False,
-                ).first()
-                if matched:
-                    maintainer = matched
+        attribution = resolve_maintainer_for_create(
+            self.request,
+            current_maintainer,
+            form,
+            username_field="requester_name_username",
+            text_field="requester_name",
+        )
+        if not attribution:
+            return self.form_invalid(form)
 
         part_request = form.save(commit=False)
-        part_request.requested_by = maintainer
-        part_request.requested_by_name = requester_name
+        part_request.requested_by = attribution.maintainer
+        part_request.requested_by_name = attribution.freetext_name
         part_request.machine = machine
-        part_request.occurred_at = apply_browser_timezone(
-            form.cleaned_data.get("occurred_at"), self.request
-        )
+        occurred_at = apply_browser_timezone(form.cleaned_data.get("occurred_at"), self.request)
+
+        # Validate after timezone conversion (form validation runs before conversion)
+        if not validate_not_future(occurred_at, form):
+            return self.form_invalid(form)
+
+        part_request.occurred_at = occurred_at
         part_request.save()
 
         # Handle media uploads
@@ -354,29 +342,29 @@ class PartRequestEditView(CanAccessMaintainerPortalMixin, UpdateView):
         return context
 
     def form_valid(self, form):
-        # Handle requester attribution from hidden username field or text input
-        requester_username = self.request.POST.get("requester_name_username", "").strip()
-        requester_name_text = form.cleaned_data.get("requester_name", "").strip()
-
-        maintainer = None
-        requester_name = ""
-
-        if requester_username:
-            maintainer = Maintainer.objects.filter(
-                user__username__iexact=requester_username,
-                is_shared_account=False,
-            ).first()
-
-        if not maintainer and requester_name_text:
-            # No valid username selected, but text was entered - use text field
-            requester_name = requester_name_text
+        # Resolve requester attribution
+        attribution = resolve_maintainer_for_edit(
+            self.request,
+            form,
+            username_field="requester_name_username",
+            text_field="requester_name",
+            error_message="Please enter a requester name.",
+        )
+        if not attribution:
+            return self.form_invalid(form)
 
         part_request = form.save(commit=False)
-        part_request.requested_by = maintainer
-        part_request.requested_by_name = requester_name
-        part_request.occurred_at = apply_browser_timezone(
-            form.cleaned_data.get("occurred_at"), self.request
-        )
+        part_request.requested_by = attribution.maintainer
+        part_request.requested_by_name = attribution.freetext_name
+
+        # Apply browser timezone to occurred_at
+        occurred_at = apply_browser_timezone(form.cleaned_data.get("occurred_at"), self.request)
+
+        # Validate after timezone conversion (form validation runs before conversion)
+        if not validate_not_future(occurred_at, form):
+            return self.form_invalid(form)
+
+        part_request.occurred_at = occurred_at
         part_request.save()
 
         return redirect(self.get_success_url())
@@ -420,45 +408,29 @@ class PartRequestUpdateCreateView(CanAccessMaintainerPortalMixin, FormView):
 
     @transaction.atomic
     def form_valid(self, form):
-        # Determine the poster from hidden username field or text input
+        # Resolve poster attribution
         current_maintainer = get_object_or_404(Maintainer, user=self.request.user)
-        requester_username = self.request.POST.get("requester_name_username", "").strip()
-        requester_name_text = form.cleaned_data.get("requester_name", "").strip()
-
-        maintainer = None
-        poster_name = ""
-
-        if current_maintainer.is_shared_account:
-            # For shared accounts: try username lookup first, then fall back to text
-            if requester_username:
-                maintainer = Maintainer.objects.filter(
-                    user__username__iexact=requester_username,
-                    is_shared_account=False,
-                ).first()
-            if not maintainer and requester_name_text:
-                # No valid username selected, but text was entered - use text field
-                poster_name = requester_name_text
-            if not maintainer and not poster_name:
-                form.add_error("requester_name", "Please enter your name.")
-                return self.form_invalid(form)
-        else:
-            # For non-shared accounts, use selected user or fall back to current user
-            maintainer = current_maintainer
-            if requester_username:
-                matched = Maintainer.objects.filter(
-                    user__username__iexact=requester_username,
-                    is_shared_account=False,
-                ).first()
-                if matched:
-                    maintainer = matched
+        attribution = resolve_maintainer_for_create(
+            self.request,
+            current_maintainer,
+            form,
+            username_field="requester_name_username",
+            text_field="requester_name",
+        )
+        if not attribution:
+            return self.form_invalid(form)
 
         update = form.save(commit=False)
         update.part_request = self.part_request
-        update.posted_by = maintainer
-        update.posted_by_name = poster_name
-        update.occurred_at = apply_browser_timezone(
-            form.cleaned_data.get("occurred_at"), self.request
-        )
+        update.posted_by = attribution.maintainer
+        update.posted_by_name = attribution.freetext_name
+        occurred_at = apply_browser_timezone(form.cleaned_data.get("occurred_at"), self.request)
+
+        # Validate after timezone conversion (form validation runs before conversion)
+        if not validate_not_future(occurred_at, form):
+            return self.form_invalid(form)
+
+        update.occurred_at = occurred_at
         update.save()
 
         # Handle media uploads
@@ -689,29 +661,29 @@ class PartRequestUpdateEditView(CanAccessMaintainerPortalMixin, UpdateView):
         return context
 
     def form_valid(self, form):
-        # Handle poster attribution from hidden username field or text input
-        poster_username = self.request.POST.get("poster_name_username", "").strip()
-        poster_name_text = form.cleaned_data.get("poster_name", "").strip()
-
-        maintainer = None
-        poster_name = ""
-
-        if poster_username:
-            maintainer = Maintainer.objects.filter(
-                user__username__iexact=poster_username,
-                is_shared_account=False,
-            ).first()
-
-        if not maintainer and poster_name_text:
-            # No valid username selected, but text was entered - use text field
-            poster_name = poster_name_text
+        # Resolve poster attribution
+        attribution = resolve_maintainer_for_edit(
+            self.request,
+            form,
+            username_field="poster_name_username",
+            text_field="poster_name",
+            error_message="Please enter a poster name.",
+        )
+        if not attribution:
+            return self.form_invalid(form)
 
         update = form.save(commit=False)
-        update.posted_by = maintainer
-        update.posted_by_name = poster_name
-        update.occurred_at = apply_browser_timezone(
-            form.cleaned_data.get("occurred_at"), self.request
-        )
+        update.posted_by = attribution.maintainer
+        update.posted_by_name = attribution.freetext_name
+
+        # Apply browser timezone to occurred_at
+        occurred_at = apply_browser_timezone(form.cleaned_data.get("occurred_at"), self.request)
+
+        # Validate after timezone conversion (form validation runs before conversion)
+        if not validate_not_future(occurred_at, form):
+            return self.form_invalid(form)
+
+        update.occurred_at = occurred_at
         update.save()
 
         return redirect(self.get_success_url())

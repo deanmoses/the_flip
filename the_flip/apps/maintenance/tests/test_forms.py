@@ -3,8 +3,18 @@
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, tag
 
-from the_flip.apps.core.test_utils import DATETIME_INPUT_FORMAT, MINIMAL_PNG
-from the_flip.apps.maintenance.forms import LogEntryQuickForm
+from the_flip.apps.core.test_utils import (
+    DATETIME_INPUT_FORMAT,
+    MINIMAL_PNG,
+    TestDataMixin,
+    create_log_entry,
+    create_problem_report,
+)
+from the_flip.apps.maintenance.forms import (
+    LogEntryEditForm,
+    LogEntryQuickForm,
+    ProblemReportEditForm,
+)
 
 
 @tag("forms")
@@ -104,3 +114,52 @@ class LogEntryQuickFormMediaValidationTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("media_file", form.errors)
         self.assertIn("200MB", form.errors["media_file"][0])
+
+
+@tag("forms")
+class ProblemReportEditFormTests(TestDataMixin, TestCase):
+    """Tests for ProblemReportEditForm validation.
+
+    Note: Future date validation is tested in test_problem_report_edit.py
+    as a view test, since validation happens after timezone conversion
+    in form_valid().
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.problem_report = create_problem_report(machine=self.machine)
+
+    def test_occurred_at_is_required(self):
+        """Form requires occurred_at field."""
+        form = ProblemReportEditForm(
+            data={"occurred_at": ""},
+            instance=self.problem_report,
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("occurred_at", form.errors)
+
+
+@tag("forms")
+class LogEntryEditFormTests(TestDataMixin, TestCase):
+    """Tests for LogEntryEditForm validation.
+
+    Note: Future date validation is tested in test_log_entry_edit.py
+    as a view test, since validation happens after timezone conversion
+    in form_valid().
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.log_entry = create_log_entry(machine=self.machine)
+        self.log_entry.maintainers.add(self.maintainer)
+
+    def test_occurred_at_is_required(self):
+        """Form requires occurred_at field."""
+        form = LogEntryEditForm(
+            data={"occurred_at": ""},
+            instance=self.log_entry,
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("occurred_at", form.errors)

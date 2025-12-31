@@ -3,6 +3,7 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from django import forms
 from django.http import HttpRequest
 from django.utils import timezone
 
@@ -61,11 +62,30 @@ def parse_datetime_with_browser_timezone(value: str, request: HttpRequest):
         return None
 
     try:
-        # Parse as naive datetime
+        # Parse as naive datetime, then apply browser timezone
         naive_dt = datetime.strptime(value, "%Y-%m-%dT%H:%M")
-        # Make aware with server timezone first (Django's default behavior)
-        aware_dt = timezone.make_aware(naive_dt)
-        # Then apply browser timezone correction
-        return apply_browser_timezone(aware_dt, request)
+        return apply_browser_timezone(naive_dt, request)
     except (ValueError, TypeError):
         return None
+
+
+def validate_not_future(dt, form: forms.Form, field_name: str = "occurred_at") -> bool:
+    """
+    Add a form error if the datetime is in the future.
+
+    Call this after apply_browser_timezone() to validate user-entered dates.
+    Form validation runs before timezone conversion, so this check must happen
+    in the view's form_valid() method.
+
+    Args:
+        dt: A timezone-aware datetime to validate
+        form: The form to add errors to
+        field_name: The field name for the error (default: "occurred_at")
+
+    Returns:
+        True if valid (not in the future), False if invalid (error added to form)
+    """
+    if dt and dt > timezone.now():
+        form.add_error(field_name, "Date cannot be in the future.")
+        return False
+    return True

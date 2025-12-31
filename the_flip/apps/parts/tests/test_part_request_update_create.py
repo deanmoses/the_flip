@@ -1,9 +1,13 @@
 """Tests for part request update creation views."""
 
+from datetime import timedelta
+
 from django.test import TestCase, tag
 from django.urls import reverse
+from django.utils import timezone
 
 from the_flip.apps.core.test_utils import (
+    DATETIME_INPUT_FORMAT,
     SharedAccountTestMixin,
     SuppressRequestLogsMixin,
     TestDataMixin,
@@ -53,6 +57,24 @@ class PartRequestUpdateCreateViewTests(SuppressRequestLogsMixin, TestDataMixin, 
         # Check the part request status was updated
         self.part_request.refresh_from_db()
         self.assertEqual(self.part_request.status, PartRequest.Status.ORDERED)
+
+    def test_create_rejects_future_date(self):
+        """View rejects updates with future occurred_at dates."""
+        self.client.force_login(self.maintainer_user)
+        future_date = timezone.now() + timedelta(days=5)
+        response = self.client.post(
+            reverse("part-request-update-create", kwargs={"pk": self.part_request.pk}),
+            {
+                "text": "Future update",
+                "new_status": "",
+                "occurred_at": future_date.strftime(DATETIME_INPUT_FORMAT),
+            },
+        )
+
+        # Should return form with error, not redirect
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "future")
+        self.assertEqual(PartRequestUpdate.objects.count(), 0)
 
 
 @tag("views")

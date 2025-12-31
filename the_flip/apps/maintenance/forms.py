@@ -156,10 +156,6 @@ class ProblemReportEditForm(StyledFormMixin, forms.ModelForm):
             "occurred_at": "When",
         }
 
-    def clean_occurred_at(self):
-        """Preserve existing value if occurred_at is empty."""
-        return self.cleaned_data.get("occurred_at") or self.instance.occurred_at
-
 
 class LogEntryEditForm(StyledFormMixin, forms.ModelForm):
     """Form for editing a log entry's metadata (maintainer, timestamp)."""
@@ -182,10 +178,6 @@ class LogEntryEditForm(StyledFormMixin, forms.ModelForm):
         labels = {
             "occurred_at": "When",
         }
-
-    def clean_occurred_at(self):
-        """Preserve existing value if occurred_at is empty."""
-        return self.cleaned_data.get("occurred_at") or self.instance.occurred_at
 
 
 class SearchForm(forms.Form):

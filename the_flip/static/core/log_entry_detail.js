@@ -49,11 +49,10 @@
       showStatus(occurredAtStatus, 'Saving...', 'saving');
 
       try {
-        const tzOffsetMinutes = new Date().getTimezoneOffset();
         const formData = new FormData();
         formData.append('action', 'update_occurred_at');
         formData.append('occurred_at', occurredAtInput.value);
-        formData.append('tz_offset', tzOffsetMinutes);
+        formData.append('browser_timezone', Intl.DateTimeFormat().resolvedOptions().timeZone);
         formData.append('csrfmiddlewaretoken', getCsrfToken());
 
         const response = await fetch(window.location.href, {

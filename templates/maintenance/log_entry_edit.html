@@ -36,7 +36,8 @@
                id="{{ form.occurred_at.id_for_label }}"
                name="{{ form.occurred_at.html_name }}"
                class="form-input"
-               data-utc="{{ entry.occurred_at.isoformat }}">
+               data-utc="{{ entry.occurred_at.isoformat }}"
+               required>
         {% field_errors form.occurred_at %}
       </div>
       <div class="form-actions">

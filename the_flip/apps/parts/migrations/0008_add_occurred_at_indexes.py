@@ -6,7 +6,6 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0005_seed_maintainers_group'),
         ('parts', '0007_alter_partrequest_options_and_more'),
     ]
 

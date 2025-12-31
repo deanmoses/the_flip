@@ -153,10 +153,6 @@ class PartRequestUpdateEditForm(StyledFormMixin, forms.ModelForm):
             "occurred_at": "When",
         }
 
-    def clean_occurred_at(self):
-        """Preserve existing value if occurred_at is empty."""
-        return self.cleaned_data.get("occurred_at") or self.instance.occurred_at
-
 
 class PartRequestEditForm(StyledFormMixin, forms.ModelForm):
     """Form for editing a part request's metadata (requester, timestamp)."""
@@ -179,7 +175,3 @@ class PartRequestEditForm(StyledFormMixin, forms.ModelForm):
         labels = {
             "occurred_at": "When",
         }
-
-    def clean_occurred_at(self):
-        """Preserve existing value if occurred_at is empty."""
-        return self.cleaned_data.get("occurred_at") or self.instance.occurred_at

@@ -22,7 +22,7 @@ from django.views.generic import FormView, ListView, TemplateView, UpdateView
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import Location, MachineInstance
-from the_flip.apps.core.datetime import apply_browser_timezone
+from the_flip.apps.core.datetime import apply_browser_timezone, validate_not_future
 from the_flip.apps.core.ip import get_real_ip
 from the_flip.apps.core.media import is_video_file
 from the_flip.apps.core.mixins import (
@@ -276,9 +276,13 @@ class ProblemReportCreateView(CanAccessMaintainerPortalMixin, FormView):
         report.machine = machine
         report.ip_address = get_real_ip(self.request)
         report.device_info = self.request.META.get("HTTP_USER_AGENT", "")[:200]
-        report.occurred_at = apply_browser_timezone(
-            form.cleaned_data.get("occurred_at"), self.request
-        )
+        occurred_at = apply_browser_timezone(form.cleaned_data.get("occurred_at"), self.request)
+
+        # Validate after timezone conversion (form validation runs before conversion)
+        if not validate_not_future(occurred_at, form):
+            return self.form_invalid(form)
+
+        report.occurred_at = occurred_at
         if self.request.user.is_authenticated:
             report.reported_by_user = self.request.user
         # Save reporter name for shared accounts
@@ -534,9 +538,13 @@ class ProblemReportEditView(CanAccessMaintainerPortalMixin, UpdateView):
         report = form.save(commit=False)
         report.reported_by_user = reporter_user
         report.reported_by_name = reporter_name
-        report.occurred_at = apply_browser_timezone(
-            form.cleaned_data.get("occurred_at"), self.request
-        )
+        occurred_at = apply_browser_timezone(form.cleaned_data.get("occurred_at"), self.request)
+
+        # Validate after timezone conversion (form validation runs before conversion)
+        if not validate_not_future(occurred_at, form):
+            return self.form_invalid(form)
+
+        report.occurred_at = occurred_at
         report.save()
 
         return redirect(self.get_success_url())

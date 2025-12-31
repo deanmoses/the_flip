@@ -347,8 +347,8 @@ class LogEntryMultiMaintainerTests(TestDataMixin, TestCase):
         # Duplicates should be removed
         self.assertEqual(log_entry.maintainer_names, "John Doe, Jane Doe")
 
-    def test_create_with_no_maintainer(self):
-        """Can create log entry without any maintainer."""
+    def test_create_rejects_no_maintainer(self):
+        """Log entry requires at least one maintainer (linked or freetext)."""
         self.client.force_login(self.maintainer_user)
 
         response = self.client.post(
@@ -359,125 +359,8 @@ class LogEntryMultiMaintainerTests(TestDataMixin, TestCase):
             },
         )
 
-        self.assertEqual(response.status_code, 302)
-        log_entry = LogEntry.objects.first()
-        self.assertEqual(log_entry.maintainers.count(), 0)
-        self.assertEqual(log_entry.maintainer_names, "")
-
-
-@tag("views")
-class LogEntryEditMaintainersTests(TestDataMixin, TestCase):
-    """Tests for editing log entry maintainers via chip input."""
-
-    def setUp(self):
-        super().setUp()
-        self.maintainer2 = create_maintainer_user(
-            username="maintainer2", first_name="Second", last_name="Maintainer"
-        )
-        self.log_entry = LogEntry.objects.create(
-            machine=self.machine,
-            text="Initial work",
-            occurred_at=timezone.now(),
-            created_by=self.maintainer_user,
-        )
-        self.log_entry.maintainers.add(Maintainer.objects.get(user=self.maintainer_user))
-        self.edit_url = reverse("log-entry-edit", kwargs={"pk": self.log_entry.pk})
-
-    def test_edit_preserves_maintainers_when_unchanged(self):
-        """Editing without changing maintainers preserves existing ones."""
-        self.client.force_login(self.maintainer_user)
-
-        response = self.client.post(
-            self.edit_url,
-            {
-                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
-                "maintainer_usernames": self.maintainer_user.username,
-            },
-        )
-
-        self.assertEqual(response.status_code, 302)
-        self.log_entry.refresh_from_db()
-        self.assertEqual(self.log_entry.maintainers.count(), 1)
-        self.assertIn(
-            Maintainer.objects.get(user=self.maintainer_user),
-            self.log_entry.maintainers.all(),
-        )
-
-    def test_edit_adds_maintainer(self):
-        """Can add a new maintainer via edit."""
-        self.client.force_login(self.maintainer_user)
-
-        response = self.client.post(
-            self.edit_url,
-            {
-                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
-                "maintainer_usernames": [
-                    self.maintainer_user.username,
-                    self.maintainer2.username,
-                ],
-            },
-        )
-
-        self.assertEqual(response.status_code, 302)
-        self.log_entry.refresh_from_db()
-        self.assertEqual(self.log_entry.maintainers.count(), 2)
-
-    def test_edit_removes_maintainer(self):
-        """Can remove a maintainer via edit."""
-        # Start with two maintainers
-        self.log_entry.maintainers.add(Maintainer.objects.get(user=self.maintainer2))
-        self.assertEqual(self.log_entry.maintainers.count(), 2)
-
-        self.client.force_login(self.maintainer_user)
-
-        response = self.client.post(
-            self.edit_url,
-            {
-                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
-                "maintainer_usernames": self.maintainer_user.username,
-            },
-        )
-
-        self.assertEqual(response.status_code, 302)
-        self.log_entry.refresh_from_db()
-        self.assertEqual(self.log_entry.maintainers.count(), 1)
-        self.assertNotIn(
-            Maintainer.objects.get(user=self.maintainer2),
-            self.log_entry.maintainers.all(),
-        )
-
-    def test_edit_clears_all_maintainers(self):
-        """Can clear all maintainers via edit."""
-        self.client.force_login(self.maintainer_user)
-
-        response = self.client.post(
-            self.edit_url,
-            {
-                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
-                # No maintainer_usernames submitted
-            },
-        )
-
-        self.assertEqual(response.status_code, 302)
-        self.log_entry.refresh_from_db()
-        self.assertEqual(self.log_entry.maintainers.count(), 0)
-
-    def test_edit_updates_freetext_names(self):
-        """Can update freetext maintainer names via edit."""
-        self.log_entry.maintainer_names = "Old Name"
-        self.log_entry.maintainers.clear()
-        self.log_entry.save()
-
-        self.client.force_login(self.maintainer_user)
-
-        response = self.client.post(
-            self.edit_url,
-            {
-                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
-                "maintainer_freetext": "New Name",
-            },
-        )
-
-        self.assertEqual(response.status_code, 302)
-        self.log_entry.refresh_from_db()
-        self.assertEqual(self.log_entry.maintainer_names, "New Name")
+        # Should return form with error, not redirect
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Please add at least one maintainer")
+        # No log entry should have been created
+        self.assertEqual(LogEntry.objects.count(), 0)

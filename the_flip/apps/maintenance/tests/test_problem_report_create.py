@@ -7,10 +7,7 @@ from django.test import TestCase, tag
 from django.urls import reverse
 from django.utils import timezone
 
-from the_flip.apps.core.test_utils import (
-    TestDataMixin,
-    create_maintainer_user,
-)
+from the_flip.apps.core.test_utils import DATETIME_INPUT_FORMAT, TestDataMixin
 from the_flip.apps.maintenance.models import ProblemReport
 
 
@@ -83,8 +80,7 @@ class ProblemReportCreateViewTests(TestDataMixin, TestCase):
 
     def test_create_problem_report_records_logged_in_user(self):
         """Submitting while authenticated should set reported_by_user."""
-        maintainer = create_maintainer_user()
-        self.client.force_login(maintainer)
+        self.client.force_login(self.maintainer_user)
         data = {
             "problem_type": ProblemReport.ProblemType.STUCK_BALL,
             "description": "Ball locked up",
@@ -92,7 +88,7 @@ class ProblemReportCreateViewTests(TestDataMixin, TestCase):
         self.client.post(self.url, data, REMOTE_ADDR="203.0.113.42")
 
         report = ProblemReport.objects.first()
-        self.assertEqual(report.reported_by_user, maintainer)
+        self.assertEqual(report.reported_by_user, self.maintainer_user)
         self.assertEqual(report.ip_address, "203.0.113.42")
 
     def test_rate_limiting_blocks_excessive_submissions(self):
@@ -157,8 +153,7 @@ class MaintainerProblemReportCreateViewTests(TestDataMixin, TestCase):
 
     def setUp(self):
         super().setUp()
-        self.maintainer = create_maintainer_user()
-        self.client.force_login(self.maintainer)
+        self.client.force_login(self.maintainer_user)
         self.url = reverse("problem-report-create-machine", kwargs={"slug": self.machine.slug})
 
     def test_create_with_empty_occurred_at_defaults_to_now(self):
@@ -185,3 +180,19 @@ class MaintainerProblemReportCreateViewTests(TestDataMixin, TestCase):
         # Should be within last minute
         time_diff = timezone.now() - report.occurred_at
         self.assertLess(time_diff.total_seconds(), 60)
+
+    def test_create_rejects_future_date(self):
+        """View rejects problem reports with future occurred_at dates."""
+        future_date = timezone.now() + timedelta(days=5)
+        response = self.client.post(
+            self.url,
+            {
+                "description": "Machine is broken",
+                "occurred_at": future_date.strftime(DATETIME_INPUT_FORMAT),
+            },
+        )
+
+        # Should return form with error, not redirect
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "future")
+        self.assertEqual(ProblemReport.objects.count(), 0)
