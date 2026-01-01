@@ -5,6 +5,7 @@ from __future__ import annotations
 from uuid import uuid4
 
 from django.db import models, transaction
+from django.urls import reverse
 from django.utils import timezone
 from simple_history.models import HistoricalRecords
 
@@ -72,6 +73,7 @@ class PartRequest(TimeStampedMixin):
     )
 
     objects = PartRequestQuerySet.as_manager()
+    history = HistoricalRecords()
 
     class Meta:
         ordering = ["-occurred_at"]
@@ -100,6 +102,10 @@ class PartRequest(TimeStampedMixin):
         if self.requested_by:
             return str(self.requested_by)
         return self.requested_by_name
+
+    def get_admin_history_url(self) -> str:
+        """Return URL to this part request's Django admin change history."""
+        return reverse("admin:parts_partrequest_history", args=[self.pk])
 
 
 def part_request_media_upload_to(instance: PartRequestMedia, filename: str) -> str:
@@ -133,6 +139,10 @@ class PartRequestMedia(AbstractMedia):
 
     def __str__(self) -> str:
         return f"{self.get_media_type_display()} for part request {self.part_request_id}"
+
+    def get_admin_history_url(self) -> str:
+        """Return URL to this media's Django admin change history."""
+        return reverse("admin:parts_partrequestmedia_history", args=[self.pk])
 
 
 class PartRequestUpdate(TimeStampedMixin):
@@ -170,6 +180,8 @@ class PartRequestUpdate(TimeStampedMixin):
         help_text="When the update was posted. Defaults to now if not specified.",
     )
 
+    history = HistoricalRecords()
+
     class Meta:
         ordering = ["-occurred_at"]
         indexes = [
@@ -187,6 +199,10 @@ class PartRequestUpdate(TimeStampedMixin):
         if self.posted_by:
             return str(self.posted_by)
         return self.posted_by_name
+
+    def get_admin_history_url(self) -> str:
+        """Return URL to this update's Django admin change history."""
+        return reverse("admin:parts_partrequestupdate_history", args=[self.pk])
 
     def save(self, *args, **kwargs):
         # If new_status is set, also update the parent part request status.
@@ -233,3 +249,7 @@ class PartRequestUpdateMedia(AbstractMedia):
 
     def __str__(self) -> str:
         return f"{self.get_media_type_display()} for update {self.update_id}"
+
+    def get_admin_history_url(self) -> str:
+        """Return URL to this media's Django admin change history."""
+        return reverse("admin:parts_partrequestupdatemedia_history", args=[self.pk])

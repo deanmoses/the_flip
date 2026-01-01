@@ -23,6 +23,7 @@
      class="btn btn--secondary btn--full">{% icon "pen" class="meta" label="Edit Details" %}</a>
 {% endblock %}
 {% block sidebar %}
+  {% include "components/history_link.html" with history_url=part_request.get_admin_history_url %}
   {% sidebar_section label="Parts Request" %}
   <div class="sidebar__title">{% icon "box-open" %} #{{ part_request.pk }}</div>
   <div class="flex flex-wrap stack-tight space-above-sm">
