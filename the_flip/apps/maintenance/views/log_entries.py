@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from datetime import timezone as dt_timezone
 from functools import partial
 
 from django.contrib import messages
@@ -18,10 +17,15 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from django.views import View
-from django.views.generic import DetailView, FormView, TemplateView
+from django.views.generic import DetailView, FormView, TemplateView, UpdateView
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import Location, MachineInstance
+from the_flip.apps.core.datetime import (
+    apply_browser_timezone,
+    parse_datetime_with_browser_timezone,
+    validate_not_future,
+)
 from the_flip.apps.core.media import is_video_file
 from the_flip.apps.core.mixins import (
     CanAccessMaintainerPortalMixin,
@@ -30,7 +34,7 @@ from the_flip.apps.core.mixins import (
     can_access_maintainer_portal,
 )
 from the_flip.apps.core.tasks import enqueue_transcode
-from the_flip.apps.maintenance.forms import LogEntryQuickForm, SearchForm
+from the_flip.apps.maintenance.forms import LogEntryEditForm, LogEntryQuickForm, SearchForm
 from the_flip.apps.maintenance.models import (
     LogEntry,
     LogEntryMedia,
@@ -49,7 +53,7 @@ def get_log_entry_queryset(search_query: str = ""):
         .select_related("machine", "machine__model", "problem_report")
         .prefetch_related("maintainers__user", "media")
         .search(search_query)
-        .order_by("-work_date")
+        .order_by("-occurred_at")
     )
 
     return queryset
@@ -72,7 +76,7 @@ class MachineLogView(CanAccessMaintainerPortalMixin, TemplateView):
             .search_for_machine(search_query)
             .select_related("machine", "problem_report")
             .prefetch_related("maintainers__user", "media")
-            .order_by("-work_date")
+            .order_by("-occurred_at")
         )
 
         paginator = Paginator(logs, 10)
@@ -133,7 +137,7 @@ class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
                 )
         if self.machine:
             initial["machine_slug"] = self.machine.slug
-        # work_date default is set by JavaScript to use browser's local timezone
+        # occurred_at default is set by JavaScript to use browser's local timezone
         return initial
 
     def get_context_data(self, **kwargs):
@@ -142,10 +146,15 @@ class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
         context["problem_report"] = self.problem_report
         context["is_global"] = self.is_global
         # Check if current user is a shared account (show autocomplete for maintainer selection)
+        # Also pass current maintainer for pre-filling chip input
         is_shared_account = False
         if hasattr(self.request.user, "maintainer"):
-            is_shared_account = self.request.user.maintainer.is_shared_account
+            maintainer = self.request.user.maintainer
+            is_shared_account = maintainer.is_shared_account
+            if not is_shared_account:
+                context["initial_maintainers"] = [maintainer]
         context["is_shared_account"] = is_shared_account
+        context["maintainer_errors"] = getattr(self, "maintainer_errors", [])
         selected_slug = (
             self.request.POST.get("machine_slug") if self.request.method == "POST" else ""
         )
@@ -157,25 +166,15 @@ class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
 
     @transaction.atomic
     def form_valid(self, form):
-        submitter_name = form.cleaned_data["submitter_name"].strip()
         description = form.cleaned_data["text"].strip()
         media_files = form.cleaned_data["media_file"]
-        work_date = form.cleaned_data["work_date"]
-        machine = self.machine
+        occurred_at = apply_browser_timezone(form.cleaned_data["occurred_at"], self.request)
 
-        # Convert work_date to browser's timezone if offset provided
-        tz_offset_str = self.request.POST.get("tz_offset", "")
-        if tz_offset_str:
-            try:
-                tz_offset_minutes = int(tz_offset_str)
-                # Create timezone from offset (invert sign: JS gives minutes behind UTC)
-                browser_tz = dt_timezone(timedelta(minutes=-tz_offset_minutes))
-                # Replace the timezone info with browser's timezone
-                # First make naive, then attach browser timezone
-                naive_dt = work_date.replace(tzinfo=None)
-                work_date = naive_dt.replace(tzinfo=browser_tz)
-            except (ValueError, TypeError):
-                pass  # Keep original work_date if conversion fails
+        # Validate after timezone conversion (form validation runs before conversion)
+        if not validate_not_future(occurred_at, form):
+            return self.form_invalid(form)
+
+        machine = self.machine
 
         if not machine:
             slug = (form.cleaned_data.get("machine_slug") or "").strip()
@@ -184,30 +183,49 @@ class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
                 form.add_error("machine_slug", "Select a machine.")
                 return self.form_invalid(form)
 
+        # Get maintainer selections from chip input
+        usernames = self.request.POST.getlist("maintainer_usernames")
+        freetext_names = [
+            n.strip() for n in self.request.POST.getlist("maintainer_freetext") if n.strip()
+        ]
+
+        # Query for valid maintainers (shared accounts are filtered out)
+        maintainers = list(
+            Maintainer.objects.filter(
+                user__username__in=usernames,
+                is_shared_account=False,
+            )
+        )
+
+        # Handle empty maintainers based on account type
+        current_maintainer = get_object_or_404(Maintainer, user=self.request.user)
+        if not maintainers and not freetext_names:
+            if current_maintainer.is_shared_account:
+                # Shared terminal: require explicit maintainer selection
+                self.maintainer_errors = ["Please add at least one maintainer."]
+                return self.form_invalid(form)
+            else:
+                # Regular account: default to current user
+                maintainers = [current_maintainer]
+
         log_entry = LogEntry.objects.create(
             machine=machine,
             problem_report=self.problem_report,
             text=description,
-            work_date=work_date,
+            occurred_at=occurred_at,
             created_by=self.request.user,
         )
         self.machine = machine
 
-        # Use hidden username field from autocomplete for reliable maintainer lookup,
-        # fall back to name-based matching if not available
-        submitter_username = self.request.POST.get("submitter_name_username", "").strip()
-        maintainer = None
-        if submitter_username:
-            maintainer = Maintainer.objects.filter(
-                user__username__iexact=submitter_username,
-                is_shared_account=False,
-            ).first()
-        if not maintainer:
-            maintainer = Maintainer.match_by_name(submitter_name)
-        if maintainer:
+        # Add linked maintainers
+        for maintainer in maintainers:
             log_entry.maintainers.add(maintainer)
-        elif submitter_name:
-            log_entry.maintainer_names = submitter_name
+
+        # Add free-text names (not linked to accounts)
+        # freetext_names was extracted above for validation, now de-dup
+        freetext_names = list(dict.fromkeys(freetext_names))
+        if freetext_names:
+            log_entry.maintainer_names = ", ".join(freetext_names)
             log_entry.save(update_fields=["maintainer_names"])
 
         if media_files:
@@ -268,7 +286,7 @@ class MachineLogPartialView(CanAccessMaintainerPortalMixin, View):
             .search_for_machine(request.GET.get("q", ""))
             .select_related("machine", "problem_report")
             .prefetch_related("maintainers__user", "media")
-            .order_by("-work_date")
+            .order_by("-occurred_at")
         )
 
         paginator = Paginator(logs, 10)
@@ -303,7 +321,7 @@ class LogListView(CanAccessMaintainerPortalMixin, TemplateView):
 
         # Stats for sidebar
         week_ago = datetime.now(UTC) - timedelta(days=7)
-        this_week_count = LogEntry.objects.filter(work_date__gte=week_ago).count()
+        this_week_count = LogEntry.objects.filter(occurred_at__gte=week_ago).count()
         total_count = LogEntry.objects.count()
 
         context.update(
@@ -356,36 +374,26 @@ class LogEntryDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, Detai
             self.object.save(update_fields=["text", "updated_at"])
             return JsonResponse({"success": True})
 
-        elif action == "update_work_date":
-            work_date_str = request.POST.get("work_date", "")
-            if not work_date_str:
+        elif action == "update_occurred_at":
+            occurred_at_str = request.POST.get("occurred_at", "")
+            if not occurred_at_str:
                 return JsonResponse({"success": False, "error": "No date provided"}, status=400)
-            try:
-                # Parse datetime-local format: YYYY-MM-DDTHH:MM
-                naive_dt = datetime.strptime(work_date_str, "%Y-%m-%dT%H:%M")
 
-                # Get browser timezone offset (minutes behind UTC, negative = ahead)
-                tz_offset_str = request.POST.get("tz_offset", "")
-                if tz_offset_str:
-                    tz_offset_minutes = int(tz_offset_str)
-                    # Create timezone from offset (invert sign: JS gives minutes behind UTC)
-                    browser_tz = dt_timezone(timedelta(minutes=-tz_offset_minutes))
-                    work_date = naive_dt.replace(tzinfo=browser_tz)
-                else:
-                    # Fallback to server timezone if no offset provided
-                    work_date = timezone.make_aware(naive_dt)
-
-                # Validate not in the future (compare in browser's timezone)
-                now_in_browser_tz = timezone.now().astimezone(work_date.tzinfo)
-                if work_date.date() > now_in_browser_tz.date():
-                    return JsonResponse(
-                        {"success": False, "error": "Date cannot be in the future."}, status=400
-                    )
-                self.object.work_date = work_date
-                self.object.save(update_fields=["work_date", "updated_at"])
-                return JsonResponse({"success": True})
-            except ValueError:
+            occurred_at = parse_datetime_with_browser_timezone(occurred_at_str, request)
+            if not occurred_at:
                 return JsonResponse({"success": False, "error": "Invalid date format"}, status=400)
+
+            # Validate not in the future
+            # Make aware if naive (when browser_timezone not provided)
+            if timezone.is_naive(occurred_at):
+                occurred_at = timezone.make_aware(occurred_at)
+            if occurred_at > timezone.now():
+                return JsonResponse(
+                    {"success": False, "error": "Date cannot be in the future."}, status=400
+                )
+            self.object.occurred_at = occurred_at
+            self.object.save(update_fields=["occurred_at", "updated_at"])
+            return JsonResponse({"success": True})
 
         elif action == "upload_media":
             return self.handle_upload_media(request)
@@ -590,3 +598,75 @@ class LogEntryDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, Detai
             )
 
         return JsonResponse({"success": False, "error": "Invalid action"}, status=400)
+
+
+class LogEntryEditView(CanAccessMaintainerPortalMixin, UpdateView):
+    """Edit a log entry's metadata (maintainer, timestamp)."""
+
+    model = LogEntry
+    form_class = LogEntryEditForm
+    template_name = "maintenance/log_entry_edit.html"
+
+    def get_queryset(self):
+        return LogEntry.objects.select_related(
+            "machine",
+            "machine__model",
+            "problem_report",
+        ).prefetch_related("maintainers__user")
+
+    def get_initial(self):
+        initial = super().get_initial()
+        # Pre-fill maintainer_name with current maintainer(s)
+        if self.object.maintainers.exists():
+            initial["maintainer_name"] = ", ".join(str(m) for m in self.object.maintainers.all())
+        elif self.object.maintainer_names:
+            initial["maintainer_name"] = self.object.maintainer_names
+        return initial
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["entry"] = self.object
+        context["machine"] = self.object.machine
+        context["maintainer_errors"] = getattr(self, "maintainer_errors", [])
+        return context
+
+    def form_valid(self, form):
+        entry = form.save(commit=False)
+
+        # Apply browser timezone to occurred_at
+        occurred_at = apply_browser_timezone(form.cleaned_data.get("occurred_at"), self.request)
+
+        # Validate after timezone conversion (form validation runs before conversion)
+        if not validate_not_future(occurred_at, form):
+            return self.form_invalid(form)
+
+        entry.occurred_at = occurred_at
+
+        # Get linked maintainers (from chip input autocomplete selections)
+        # De-dup while preserving order
+        usernames = list(dict.fromkeys(self.request.POST.getlist("maintainer_usernames")))
+        maintainers = Maintainer.objects.filter(
+            user__username__in=usernames,
+            is_shared_account=False,
+        )
+
+        # Get free-text names (not linked to accounts)
+        # Normalize: strip whitespace, de-dup, filter empty
+        freetext_names = self.request.POST.getlist("maintainer_freetext")
+        freetext_names = list(dict.fromkeys(n.strip() for n in freetext_names if n.strip()))
+
+        # Validate at least one maintainer is specified (linked or freetext)
+        if not maintainers and not freetext_names:
+            self.maintainer_errors = ["Please add at least one maintainer."]
+            return self.form_invalid(form)
+
+        entry.maintainer_names = ", ".join(freetext_names)
+
+        # Save then set M2M (M2M requires saved object)
+        entry.save()
+        entry.maintainers.set(maintainers)
+
+        return redirect(self.get_success_url())
+
+    def get_success_url(self):
+        return reverse("log-detail", kwargs={"pk": self.object.pk})

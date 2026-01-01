@@ -17,10 +17,15 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from django.views import View
-from django.views.generic import FormView, ListView, TemplateView
+from django.views.generic import FormView, ListView, TemplateView, UpdateView
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import Location, MachineInstance
+from the_flip.apps.core.attribution import (
+    resolve_maintainer_for_create,
+    resolve_maintainer_for_edit,
+)
+from the_flip.apps.core.datetime import apply_browser_timezone, validate_not_future
 from the_flip.apps.core.ip import get_real_ip
 from the_flip.apps.core.media import is_video_file
 from the_flip.apps.core.mixins import (
@@ -31,6 +36,7 @@ from the_flip.apps.core.mixins import (
 from the_flip.apps.core.tasks import enqueue_transcode
 from the_flip.apps.maintenance.forms import (
     MaintainerProblemReportForm,
+    ProblemReportEditForm,
     ProblemReportForm,
     SearchForm,
 )
@@ -49,14 +55,14 @@ def get_problem_report_queryset(search_query: str = ""):
     """
     latest_log_prefetch = Prefetch(
         "log_entries",
-        queryset=LogEntry.objects.order_by("-created_at"),
+        queryset=LogEntry.objects.order_by("-occurred_at"),
         to_attr="prefetched_log_entries",
     )
     queryset = (
         ProblemReport.objects.select_related("machine", "machine__model")
         .prefetch_related(latest_log_prefetch, "media")
         .search(search_query)
-        .order_by("-status", "-created_at")
+        .order_by("-status", "-occurred_at")
     )
 
     return queryset
@@ -120,7 +126,7 @@ class ProblemReportLogEntriesPartialView(CanAccessMaintainerPortalMixin, View):
             .search_for_problem_report(request.GET.get("q", ""))
             .select_related("machine")
             .prefetch_related("maintainers__user", "media")
-            .order_by("-created_at")
+            .order_by("-occurred_at")
         )
 
         paginator = Paginator(log_entries, 10)
@@ -152,7 +158,7 @@ class MachineProblemReportListView(CanAccessMaintainerPortalMixin, ListView):
     def get_queryset(self):
         latest_log_prefetch = Prefetch(
             "log_entries",
-            queryset=LogEntry.objects.order_by("-created_at"),
+            queryset=LogEntry.objects.order_by("-occurred_at"),
             to_attr="prefetched_log_entries",
         )
         search_query = self.request.GET.get("q", "")
@@ -161,7 +167,7 @@ class MachineProblemReportListView(CanAccessMaintainerPortalMixin, ListView):
             .search_for_machine(search_query)
             .select_related("reported_by_user")
             .prefetch_related(latest_log_prefetch, "media")
-            .order_by("-status", "-created_at")
+            .order_by("-status", "-occurred_at")
         )
 
         return queryset
@@ -179,7 +185,7 @@ class MachineProblemReportListView(CanAccessMaintainerPortalMixin, ListView):
 class PublicProblemReportCreateView(FormView):
     """Public-facing problem report submission (minimal shell)."""
 
-    template_name = "maintenance/problem_report_form_public.html"
+    template_name = "maintenance/problem_report_new_public.html"
     form_class = ProblemReportForm
 
     def dispatch(self, request, *args, **kwargs):
@@ -234,6 +240,12 @@ class ProblemReportCreateView(CanAccessMaintainerPortalMixin, FormView):
         initial = super().get_initial()
         if self.machine:
             initial["machine_slug"] = self.machine.slug
+        # Pre-fill reporter_name with current user's display name (unless shared account)
+        if hasattr(self.request.user, "maintainer"):
+            if not self.request.user.maintainer.is_shared_account:
+                initial["reporter_name"] = (
+                    self.request.user.get_full_name() or self.request.user.username
+                )
         return initial
 
     def get_context_data(self, **kwargs):
@@ -263,16 +275,35 @@ class ProblemReportCreateView(CanAccessMaintainerPortalMixin, FormView):
                 form.add_error("machine_slug", "Select a machine.")
                 return self.form_invalid(form)
 
+        # Resolve reporter attribution
+        current_maintainer = get_object_or_404(Maintainer, user=self.request.user)
+        attribution = resolve_maintainer_for_create(
+            self.request,
+            current_maintainer,
+            form,
+            username_field="reporter_name_username",
+            text_field="reporter_name",
+        )
+        if not attribution:
+            return self.form_invalid(form)
+
         report = form.save(commit=False)
         report.machine = machine
         report.ip_address = get_real_ip(self.request)
         report.device_info = self.request.META.get("HTTP_USER_AGENT", "")[:200]
-        if self.request.user.is_authenticated:
-            report.reported_by_user = self.request.user
-        # Save reporter name for shared accounts
-        reporter_name = (form.cleaned_data.get("reporter_name") or "").strip()
-        if reporter_name:
-            report.reported_by_name = reporter_name
+
+        # Set reporter: user FK from maintainer, or freetext name
+        if attribution.maintainer:
+            report.reported_by_user = attribution.maintainer.user
+        report.reported_by_name = attribution.freetext_name
+
+        occurred_at = apply_browser_timezone(form.cleaned_data.get("occurred_at"), self.request)
+
+        # Validate after timezone conversion (form validation runs before conversion)
+        if not validate_not_future(occurred_at, form):
+            return self.form_invalid(form)
+
+        report.occurred_at = occurred_at
         report.save()
 
         # Handle media uploads
@@ -457,7 +488,7 @@ class ProblemReportDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, 
             .search_for_problem_report(search_query)
             .select_related("machine")
             .prefetch_related("maintainers__user", "media")
-            .order_by("-created_at")
+            .order_by("-occurred_at")
         )
         paginator = Paginator(log_entries, 10)
         page_obj = paginator.get_page(request.GET.get("page"))
@@ -470,3 +501,71 @@ class ProblemReportDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, 
             "search_form": SearchForm(initial={"q": search_query}),
         }
         return render(request, self.template_name, context)
+
+
+class ProblemReportEditView(CanAccessMaintainerPortalMixin, UpdateView):
+    """Edit a problem report's metadata (reporter, timestamp)."""
+
+    model = ProblemReport
+    form_class = ProblemReportEditForm
+    template_name = "maintenance/problem_report_edit.html"
+
+    def get_queryset(self):
+        return ProblemReport.objects.select_related(
+            "machine",
+            "machine__model",
+            "reported_by_user",
+        )
+
+    def get_initial(self):
+        initial = super().get_initial()
+        # Pre-fill reporter_name with current reporter's display name
+        if self.object.reported_by_user:
+            initial["reporter_name"] = self.object.reported_by_user.get_full_name() or str(
+                self.object.reported_by_user
+            )
+        elif self.object.reported_by_name:
+            initial["reporter_name"] = self.object.reported_by_name
+        return initial
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["report"] = self.object
+        context["machine"] = self.object.machine
+        return context
+
+    def form_valid(self, form):
+        # Resolve reporter attribution
+        attribution = resolve_maintainer_for_edit(
+            self.request,
+            form,
+            username_field="reporter_name_username",
+            text_field="reporter_name",
+            error_message="Please enter a reporter name.",
+        )
+        if not attribution:
+            return self.form_invalid(form)
+
+        report = form.save(commit=False)
+
+        # Set reporter: user FK from maintainer, or freetext name
+        if attribution.maintainer:
+            report.reported_by_user = attribution.maintainer.user
+            report.reported_by_name = ""
+        else:
+            report.reported_by_user = None
+            report.reported_by_name = attribution.freetext_name
+
+        occurred_at = apply_browser_timezone(form.cleaned_data.get("occurred_at"), self.request)
+
+        # Validate after timezone conversion (form validation runs before conversion)
+        if not validate_not_future(occurred_at, form):
+            return self.form_invalid(form)
+
+        report.occurred_at = occurred_at
+        report.save()
+
+        return redirect(self.get_success_url())
+
+    def get_success_url(self):
+        return reverse("problem-report-detail", kwargs={"pk": self.object.pk})

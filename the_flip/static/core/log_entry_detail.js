@@ -1,25 +1,13 @@
 /**
  * Log Entry Detail Page
  *
- * Handles auto-save for work date and maintainer fields on the log entry detail page.
+ * Handles auto-save for occurred_at and maintainer fields on the log entry detail page.
  * Auto-initializes on DOMContentLoaded by finding elements by ID.
  *
- * Requires: core.js (for getCsrfToken), dropdown_keyboard.js, maintainer_autocomplete.js
+ * Requires: core.js (for getCsrfToken, toDateTimeLocalValue), dropdown_keyboard.js, maintainer_autocomplete.js
  */
 
 (function () {
-  /**
-   * Format Date as datetime-local value (YYYY-MM-DDTHH:MM)
-   */
-  function toDateTimeLocalValue(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  }
-
   /**
    * Show status indicator with message and state
    */
@@ -42,30 +30,29 @@
   }
 
   /**
-   * Initialize work date auto-save
+   * Initialize occurred_at auto-save
    */
-  function initWorkDate() {
-    const workDateInput = document.getElementById('work-date');
-    const workDateStatus = document.getElementById('work-date-status');
+  function initOccurredAt() {
+    const occurredAtInput = document.getElementById('occurred-at');
+    const occurredAtStatus = document.getElementById('occurred-at-status');
 
-    if (!workDateInput) return;
+    if (!occurredAtInput) return;
 
     // On page load: convert UTC to browser local time
-    const utcDateStr = workDateInput.dataset.utc;
+    const utcDateStr = occurredAtInput.dataset.utc;
     if (utcDateStr) {
       const utcDate = new Date(utcDateStr);
-      workDateInput.value = toDateTimeLocalValue(utcDate);
+      occurredAtInput.value = toDateTimeLocalValue(utcDate);
     }
 
-    workDateInput.addEventListener('change', async () => {
-      showStatus(workDateStatus, 'Saving...', 'saving');
+    occurredAtInput.addEventListener('change', async () => {
+      showStatus(occurredAtStatus, 'Saving...', 'saving');
 
       try {
-        const tzOffsetMinutes = new Date().getTimezoneOffset();
         const formData = new FormData();
-        formData.append('action', 'update_work_date');
-        formData.append('work_date', workDateInput.value);
-        formData.append('tz_offset', tzOffsetMinutes);
+        formData.append('action', 'update_occurred_at');
+        formData.append('occurred_at', occurredAtInput.value);
+        formData.append('browser_timezone', Intl.DateTimeFormat().resolvedOptions().timeZone);
         formData.append('csrfmiddlewaretoken', getCsrfToken());
 
         const response = await fetch(window.location.href, {
@@ -75,14 +62,14 @@
 
         const data = await response.json();
         if (response.ok && data.success) {
-          showStatus(workDateStatus, 'Saved', 'saved');
-          clearStatusAfterDelay(workDateStatus);
+          showStatus(occurredAtStatus, 'Saved', 'saved');
+          clearStatusAfterDelay(occurredAtStatus);
         } else {
-          showStatus(workDateStatus, data.error || 'Error saving', 'error');
+          showStatus(occurredAtStatus, data.error || 'Error saving', 'error');
         }
       } catch (error) {
         console.error('Save error:', error);
-        showStatus(workDateStatus, 'Error saving', 'error');
+        showStatus(occurredAtStatus, 'Error saving', 'error');
       }
     });
   }
@@ -156,7 +143,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    initWorkDate();
+    initOccurredAt();
     initMaintainerSave();
   });
 })();

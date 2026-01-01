@@ -10,6 +10,8 @@ from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.core.test_utils import (
     DATETIME_DISPLAY_FORMAT,
     DATETIME_INPUT_FORMAT,
+    SharedAccountTestMixin,
+    SuppressRequestLogsMixin,
     TestDataMixin,
     create_maintainer_user,
     create_problem_report,
@@ -18,23 +20,23 @@ from the_flip.apps.maintenance.models import LogEntry, ProblemReport
 
 
 @tag("views")
-class MachineLogCreateViewWorkDateTests(TestDataMixin, TestCase):
-    """Tests for MachineLogCreateView work_date handling."""
+class MachineLogCreateViewOccurredAtTests(TestDataMixin, TestCase):
+    """Tests for MachineLogCreateView occurred_at handling."""
 
     def setUp(self):
         super().setUp()
         self.create_url = reverse("log-create-machine", kwargs={"slug": self.machine.slug})
 
-    def test_create_log_entry_with_work_date(self):
-        """Creating a log entry saves the specified work_date."""
+    def test_create_log_entry_with_occurred_at(self):
+        """Creating a log entry saves the specified occurred_at."""
         self.client.force_login(self.maintainer_user)
 
-        work_date = timezone.now() - timedelta(days=3)
+        occurred_at = timezone.now() - timedelta(days=3)
         response = self.client.post(
             self.create_url,
             {
-                "work_date": work_date.strftime(DATETIME_INPUT_FORMAT),
-                "submitter_name": "Test User",
+                "occurred_at": occurred_at.strftime(DATETIME_INPUT_FORMAT),
+                "maintainer_freetext": "Test User",
                 "text": "Work performed three days ago",
             },
         )
@@ -44,26 +46,59 @@ class MachineLogCreateViewWorkDateTests(TestDataMixin, TestCase):
 
         log_entry = LogEntry.objects.first()
         self.assertEqual(
-            log_entry.work_date.strftime(DATETIME_DISPLAY_FORMAT),
-            work_date.strftime(DATETIME_DISPLAY_FORMAT),
+            log_entry.occurred_at.strftime(DATETIME_DISPLAY_FORMAT),
+            occurred_at.strftime(DATETIME_DISPLAY_FORMAT),
         )
 
     def test_create_log_entry_rejects_future_date(self):
-        """View rejects log entries with future work dates."""
+        """View rejects log entries with future occurred_at dates."""
         self.client.force_login(self.maintainer_user)
 
         future_date = timezone.now() + timedelta(days=5)
         response = self.client.post(
             self.create_url,
             {
-                "work_date": future_date.strftime(DATETIME_INPUT_FORMAT),
-                "submitter_name": "Test User",
+                "occurred_at": future_date.strftime(DATETIME_INPUT_FORMAT),
+                "maintainer_freetext": "Test User",
                 "text": "Future work",
             },
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(LogEntry.objects.count(), 0)
+
+    def test_create_with_shared_account_username_only_defaults_to_current_user(self):
+        """Regular user submitting with only shared account username defaults to current user.
+
+        Shared accounts are filtered out of maintainer selections. If a regular user
+        somehow submits with only a shared account username, it's treated as "no
+        maintainer provided" and defaults to the current user.
+        """
+        from the_flip.apps.core.test_utils import create_shared_terminal
+
+        shared = create_shared_terminal(username="terminal1")
+        self.client.force_login(self.maintainer_user)
+
+        response = self.client.post(
+            self.create_url,
+            {
+                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
+                "maintainer_usernames": shared.user.username,  # Shared account, filtered out
+                # No maintainer_freetext
+                "text": "Work performed",
+            },
+        )
+
+        # Should succeed with current user as maintainer (shared account filtered out)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(LogEntry.objects.count(), 1)
+
+        log_entry = LogEntry.objects.first()
+        self.assertEqual(log_entry.maintainers.count(), 1)
+        self.assertIn(
+            Maintainer.objects.get(user=self.maintainer_user),
+            log_entry.maintainers.all(),
+        )
 
 
 @tag("views")
@@ -81,8 +116,8 @@ class LogEntryCreatedByTests(TestDataMixin, TestCase):
         response = self.client.post(
             self.create_url,
             {
-                "work_date": timezone.now().strftime(DATETIME_INPUT_FORMAT),
-                "submitter_name": "Some Other Person",
+                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
+                "maintainer_freetext": "Some Other Person",
                 "text": "Work performed",
             },
         )
@@ -102,8 +137,8 @@ class LogEntryCreatedByTests(TestDataMixin, TestCase):
         response = self.client.post(
             self.create_url,
             {
-                "work_date": timezone.now().strftime(DATETIME_INPUT_FORMAT),
-                "submitter_name": "Work Doer",
+                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
+                "maintainer_usernames": "workdoer",  # Use username from chip input
                 "text": "Work performed by someone else",
             },
         )
@@ -153,8 +188,8 @@ class LogEntryProblemReportTests(TestDataMixin, TestCase):
         response = self.client.post(
             self.create_url,
             {
-                "work_date": timezone.now().strftime(DATETIME_INPUT_FORMAT),
-                "submitter_name": "Test User",
+                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
+                "maintainer_freetext": "Test User",
                 "text": "Investigated the stuck ball issue",
             },
         )
@@ -172,8 +207,8 @@ class LogEntryProblemReportTests(TestDataMixin, TestCase):
         response = self.client.post(
             self.create_url,
             {
-                "work_date": timezone.now().strftime(DATETIME_INPUT_FORMAT),
-                "submitter_name": "Test User",
+                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
+                "maintainer_freetext": "Test User",
                 "text": "Fixed the stuck ball",
             },
         )
@@ -189,8 +224,8 @@ class LogEntryProblemReportTests(TestDataMixin, TestCase):
         response = self.client.post(
             self.create_url,
             {
-                "work_date": timezone.now().strftime(DATETIME_INPUT_FORMAT),
-                "submitter_name": "Test User",
+                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
+                "maintainer_freetext": "Test User",
                 "text": "Fixed the issue",
             },
         )
@@ -206,8 +241,8 @@ class LogEntryProblemReportTests(TestDataMixin, TestCase):
         response = self.client.post(
             regular_url,
             {
-                "work_date": timezone.now().strftime(DATETIME_INPUT_FORMAT),
-                "submitter_name": "Test User",
+                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
+                "maintainer_freetext": "Test User",
                 "text": "Regular maintenance",
             },
         )
@@ -224,8 +259,8 @@ class LogEntryProblemReportTests(TestDataMixin, TestCase):
         response = self.client.post(
             self.create_url,
             {
-                "work_date": timezone.now().strftime(DATETIME_INPUT_FORMAT),
-                "submitter_name": "Test User",
+                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
+                "maintainer_freetext": "Test User",
                 "text": "Fixed the stuck ball",
                 "close_problem": "on",
             },
@@ -243,8 +278,8 @@ class LogEntryProblemReportTests(TestDataMixin, TestCase):
         response = self.client.post(
             self.create_url,
             {
-                "work_date": timezone.now().strftime(DATETIME_INPUT_FORMAT),
-                "submitter_name": "Test User",
+                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
+                "maintainer_freetext": "Test User",
                 "text": "Investigated the issue",
             },
         )
@@ -252,3 +287,195 @@ class LogEntryProblemReportTests(TestDataMixin, TestCase):
         self.assertEqual(response.status_code, 302)
         self.problem_report.refresh_from_db()
         self.assertEqual(self.problem_report.status, ProblemReport.Status.OPEN)
+
+
+@tag("views")
+class LogEntryMultiMaintainerTests(TestDataMixin, TestCase):
+    """Tests for multi-maintainer chip input functionality."""
+
+    def setUp(self):
+        super().setUp()
+        self.create_url = reverse("log-create-machine", kwargs={"slug": self.machine.slug})
+        self.maintainer2 = create_maintainer_user(
+            username="maintainer2", first_name="Second", last_name="Maintainer"
+        )
+        self.maintainer3 = create_maintainer_user(
+            username="maintainer3", first_name="Third", last_name="Maintainer"
+        )
+
+    def test_create_with_multiple_maintainers(self):
+        """Can create log entry with multiple linked maintainers."""
+        self.client.force_login(self.maintainer_user)
+
+        response = self.client.post(
+            self.create_url,
+            {
+                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
+                "maintainer_usernames": [
+                    self.maintainer_user.username,
+                    self.maintainer2.username,
+                ],
+                "text": "Work done by two people",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        log_entry = LogEntry.objects.first()
+        self.assertEqual(log_entry.maintainers.count(), 2)
+        self.assertIn(
+            Maintainer.objects.get(user=self.maintainer_user), log_entry.maintainers.all()
+        )
+        self.assertIn(Maintainer.objects.get(user=self.maintainer2), log_entry.maintainers.all())
+
+    def test_create_with_freetext_name(self):
+        """Can create log entry with freetext maintainer name."""
+        self.client.force_login(self.maintainer_user)
+
+        response = self.client.post(
+            self.create_url,
+            {
+                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
+                "maintainer_freetext": "John Doe",
+                "text": "Work done by external person",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        log_entry = LogEntry.objects.first()
+        self.assertEqual(log_entry.maintainers.count(), 0)
+        self.assertEqual(log_entry.maintainer_names, "John Doe")
+
+    def test_create_with_mixed_maintainers_and_freetext(self):
+        """Can create log entry with both linked maintainers and freetext names."""
+        self.client.force_login(self.maintainer_user)
+
+        response = self.client.post(
+            self.create_url,
+            {
+                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
+                "maintainer_usernames": self.maintainer_user.username,
+                "maintainer_freetext": ["External Helper", "Another Person"],
+                "text": "Team effort",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        log_entry = LogEntry.objects.first()
+        self.assertEqual(log_entry.maintainers.count(), 1)
+        self.assertEqual(log_entry.maintainer_names, "External Helper, Another Person")
+
+    def test_create_deduplicates_freetext_names(self):
+        """Duplicate freetext names are deduplicated."""
+        self.client.force_login(self.maintainer_user)
+
+        response = self.client.post(
+            self.create_url,
+            {
+                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
+                "maintainer_freetext": ["John Doe", "John Doe", "Jane Doe"],
+                "text": "Work done",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        log_entry = LogEntry.objects.first()
+        # Duplicates should be removed
+        self.assertEqual(log_entry.maintainer_names, "John Doe, Jane Doe")
+
+    def test_create_with_no_maintainer_uses_current_user(self):
+        """Regular user with no maintainer selection defaults to current user."""
+        self.client.force_login(self.maintainer_user)
+
+        response = self.client.post(
+            self.create_url,
+            {
+                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
+                "text": "Work performed",
+                # No maintainer_usernames or maintainer_freetext
+            },
+        )
+
+        # Should succeed and default to current user
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(LogEntry.objects.count(), 1)
+
+        log_entry = LogEntry.objects.first()
+        self.assertEqual(log_entry.maintainers.count(), 1)
+        self.assertIn(
+            Maintainer.objects.get(user=self.maintainer_user),
+            log_entry.maintainers.all(),
+        )
+
+
+@tag("views")
+class LogEntrySharedAccountTests(
+    SharedAccountTestMixin, SuppressRequestLogsMixin, TestDataMixin, TestCase
+):
+    """Tests for log entry creation from shared/terminal accounts."""
+
+    def setUp(self):
+        super().setUp()
+        self.create_url = reverse("log-create-machine", kwargs={"slug": self.machine.slug})
+
+    def test_shared_account_with_valid_username_uses_maintainer(self):
+        """Shared account selecting from chip input saves to M2M."""
+        self.client.force_login(self.shared_user)
+        response = self.client.post(
+            self.create_url,
+            {
+                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
+                "maintainer_usernames": self.identifying_user.username,
+                "text": "Work done by identified user",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        log_entry = LogEntry.objects.first()
+        self.assertEqual(log_entry.maintainers.count(), 1)
+        self.assertIn(self.identifying_maintainer, log_entry.maintainers.all())
+
+    def test_shared_account_with_free_text_uses_text_field(self):
+        """Shared account typing free text saves to maintainer_names field."""
+        self.client.force_login(self.shared_user)
+        response = self.client.post(
+            self.create_url,
+            {
+                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
+                "maintainer_freetext": "Jane Visitor",
+                "text": "Work done by external person",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        log_entry = LogEntry.objects.first()
+        self.assertEqual(log_entry.maintainers.count(), 0)
+        self.assertEqual(log_entry.maintainer_names, "Jane Visitor")
+
+    def test_shared_account_with_empty_maintainer_shows_error(self):
+        """Shared account with no maintainer selection shows form error."""
+        self.client.force_login(self.shared_user)
+        response = self.client.post(
+            self.create_url,
+            {
+                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
+                "text": "Work done",
+                # No maintainer_usernames or maintainer_freetext
+            },
+        )
+        self.assertEqual(response.status_code, 200)  # Form re-rendered with errors
+        self.assertContains(response, "Please add at least one maintainer")
+        self.assertEqual(LogEntry.objects.count(), 0)
+
+    def test_regular_account_with_no_maintainer_uses_current_user(self):
+        """Regular account with no maintainer selection defaults to current user."""
+        self.client.force_login(self.identifying_user)
+        response = self.client.post(
+            self.create_url,
+            {
+                "occurred_at": timezone.now().strftime(DATETIME_INPUT_FORMAT),
+                "text": "Work done",
+                # No maintainer_usernames or maintainer_freetext
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        log_entry = LogEntry.objects.first()
+        self.assertEqual(log_entry.maintainers.count(), 1)
+        self.assertIn(self.identifying_maintainer, log_entry.maintainers.all())

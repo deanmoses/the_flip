@@ -59,7 +59,7 @@ class ProblemReportDetailViewTests(SuppressRequestLogsMixin, TestDataMixin, Test
         self.assertContains(response, self.machine.name)
         self.assertContains(response, "Stuck Ball")
         self.assertContains(response, "Ball is stuck in the upper playfield")
-        self.assertContains(response, "by John Doe")
+        self.assertContains(response, "John Doe")
         self.assertContains(response, "Open")
 
     def test_detail_view_with_reported_by_user_hides_device_information(self):
@@ -74,7 +74,7 @@ class ProblemReportDetailViewTests(SuppressRequestLogsMixin, TestDataMixin, Test
         self.client.force_login(self.maintainer_user)
         response = self.client.get(self.detail_url)
 
-        self.assertContains(response, "by Report Submitter")
+        self.assertContains(response, "Report Submitter")
         self.assertNotContains(response, "john@example.com")
         self.assertNotContains(response, "iPhone 12")
         self.assertNotContains(response, "192.168.1.1")
@@ -91,7 +91,7 @@ class ProblemReportDetailViewTests(SuppressRequestLogsMixin, TestDataMixin, Test
         self.client.force_login(self.maintainer_user)
         response = self.client.get(self.detail_url)
 
-        self.assertContains(response, "by Anonymous")
+        self.assertContains(response, "Anonymous")
 
     def test_detail_view_shows_close_button_for_open_report(self):
         """Detail page should show 'Close Problem' button for open reports."""
@@ -131,7 +131,7 @@ class ProblemReportDetailViewTests(SuppressRequestLogsMixin, TestDataMixin, Test
 
         self.report.refresh_from_db()
         self.assertEqual(self.report.status, ProblemReport.Status.CLOSED)
-        log_entry = LogEntry.objects.latest("created_at")
+        log_entry = LogEntry.objects.latest("occurred_at")
         self.assertEqual(log_entry.text, "Closed problem report")
         self.assertEqual(log_entry.problem_report, self.report)
         self.assertEqual(log_entry.machine, self.machine)
@@ -149,7 +149,7 @@ class ProblemReportDetailViewTests(SuppressRequestLogsMixin, TestDataMixin, Test
         self.assertEqual(response.status_code, 302)
         self.report.refresh_from_db()
         self.assertEqual(self.report.status, ProblemReport.Status.OPEN)
-        log_entry = LogEntry.objects.latest("created_at")
+        log_entry = LogEntry.objects.latest("occurred_at")
         self.assertEqual(log_entry.text, "Re-opened problem report")
         self.assertEqual(log_entry.problem_report, self.report)
         self.assertEqual(log_entry.machine, self.machine)
