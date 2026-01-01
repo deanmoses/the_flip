@@ -13,7 +13,7 @@
     <div class="mobile-meta__row">
       {% problem_report_status_pill report %}
       {% problem_report_type_pill report %}
-      <span class="text-muted text-sm">{{ machine.name }}</span>
+      <span class="text-muted text-sm">{{ machine.short_display_name }}</span>
     </div>
     {# Reporter and timestamp #}
     <div class="mobile-meta__row text-muted text-sm">{{ report|problem_report_meta }}</div>
@@ -36,7 +36,7 @@
     </form>
   {% endif %}
   <a href="{% url 'problem-report-edit' report.pk %}"
-     class="btn btn--secondary btn--full">{% icon "pen" class="meta" %}</a>
+     class="btn btn--secondary btn--full">{% icon "pen" class="meta" label="Edit Details" %}</a>
 {% endblock %}
 {% block sidebar %}
   {% include "components/history_link.html" with history_url=report.get_admin_history_url %}

@@ -10,7 +10,9 @@
     {# Part Request info #}
     <div class="mobile-meta__row">
       <span class="pill pill--neutral">{{ part_request.get_status_display }}</span>
-      {% if part_request.machine %}<span class="text-muted text-sm">{{ part_request.machine.name }}</span>{% endif %}
+      {% if part_request.machine %}
+        <span class="text-muted text-sm">{{ part_request.machine.short_display_name }}</span>
+      {% endif %}
     </div>
     {# Requester and timestamp #}
     <div class="mobile-meta__row text-muted text-sm">
@@ -18,7 +20,7 @@
     </div>
   </div>
   <a href="{% url 'part-request-edit' part_request.pk %}"
-     class="btn btn--secondary btn--full">{% icon "pen" class="meta" %}</a>
+     class="btn btn--secondary btn--full">{% icon "pen" class="meta" label="Edit Details" %}</a>
 {% endblock %}
 {% block sidebar %}
   {% sidebar_section label="Parts Request" %}

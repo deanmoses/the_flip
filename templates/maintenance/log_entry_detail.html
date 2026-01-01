@@ -16,7 +16,7 @@
     <div class="mobile-meta__row text-muted text-sm">{{ entry|log_entry_meta }}</div>
   </div>
   <a href="{% url 'log-entry-edit' entry.pk %}"
-     class="btn btn--secondary btn--full">{% icon "pen" class="meta" %}</a>
+     class="btn btn--secondary btn--full">{% icon "pen" class="meta" label="Edit Details" %}</a>
 {% endblock %}
 {% block sidebar %}
   {% include "components/history_link.html" with history_url=entry.get_admin_history_url %}
