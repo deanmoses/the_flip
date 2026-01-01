@@ -29,7 +29,7 @@
 {% endif %}
 {% if not is_shared_account %}
   {% sidebar_section label="Who" %}
-  {% maintainer_chip_input_field show_label=False form_id="log-entry-form" initial_maintainers=initial_maintainers %}
+  {% maintainer_chip_input_field show_label=False form_id="log-entry-form" initial_maintainers=initial_maintainers errors=maintainer_errors %}
 {% endsidebar_section %}
 {% endif %}
 {% sidebar_section label="When" %}
@@ -50,7 +50,7 @@
     {% form_non_field_errors form %}
     <input type="hidden" name="browser_timezone" id="browser-timezone">
     {% if is_shared_account %}
-      {% maintainer_chip_input_field label="Who did the work?" %}
+      {% maintainer_chip_input_field label="Who did the work?" errors=maintainer_errors %}
     {% endif %}
     {% if is_global %}
       <div class="form-field">

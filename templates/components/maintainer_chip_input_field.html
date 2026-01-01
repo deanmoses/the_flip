@@ -38,5 +38,6 @@
     </div>
     <div class="autocomplete__dropdown hidden"></div>
   </div>
+  {% for error in errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
   {% if show_label %}</div>{% endif %}
 {% if initial_maintainers_data %}{{ initial_maintainers_data|json_script:initial_maintainers_id }}{% endif %}

@@ -249,11 +249,16 @@
       }
     }
 
-    // Event listeners
-    searchInput.addEventListener('focus', () => {
+    function showDropdown() {
       const filtered = filterMaintainers(searchInput.value);
       renderDropdown(filtered);
-    });
+    }
+
+    // Show dropdown on focus (first click/tab into input)
+    searchInput.addEventListener('focus', showDropdown);
+
+    // Also show on click (handles case where input is already focused)
+    searchInput.addEventListener('click', showDropdown);
 
     searchInput.addEventListener('input', () => {
       const filtered = filterMaintainers(searchInput.value);

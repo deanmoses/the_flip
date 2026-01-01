@@ -116,10 +116,16 @@ function initMaintainerAutocomplete(container) {
     keyboardNav.reset();
   }
 
-  input.addEventListener('focus', () => {
+  function showDropdown() {
     const filtered = filterMaintainers(input.value);
     renderDropdown(filtered);
-  });
+  }
+
+  // Show dropdown on focus (first click/tab into input)
+  input.addEventListener('focus', showDropdown);
+
+  // Also show on click (handles case where input is already focused)
+  input.addEventListener('click', showDropdown);
 
   input.addEventListener('input', () => {
     // Clear hidden username if user manually edits the text to something different

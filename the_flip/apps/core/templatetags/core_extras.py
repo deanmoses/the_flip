@@ -614,6 +614,7 @@ def maintainer_chip_input_field(
     form_id: str = "",
     initial_maintainers: list | None = None,
     initial_freetext: str = "",
+    errors: list | None = None,
 ):
     """Render a chip-based maintainer input for multi-select.
 
@@ -624,6 +625,7 @@ def maintainer_chip_input_field(
         {% maintainer_chip_input_field label="Maintainers" %}
         {% maintainer_chip_input_field initial_maintainers=entry.maintainers.all %}
         {% maintainer_chip_input_field initial_freetext=entry.maintainer_names %}
+        {% maintainer_chip_input_field errors=maintainer_errors %}
 
     Args:
         label: Label text (default "Who did the work?")
@@ -632,6 +634,7 @@ def maintainer_chip_input_field(
         form_id: Associate inputs with a form by ID (for inputs outside the form element)
         initial_maintainers: Queryset or list of Maintainer objects to pre-populate
         initial_freetext: Comma-separated string of freetext names to pre-populate
+        errors: List of error messages to display below the input
     """
     # Generate unique ID for the JSON script tag
     script_id = f"maintainer-data-{secrets.token_hex(4)}"
@@ -658,6 +661,7 @@ def maintainer_chip_input_field(
         "initial_freetext": initial_freetext,
         "initial_freetext_list": freetext_list,
         "initial_maintainers_data": maintainer_data,
+        "errors": errors or [],
     }
 
 

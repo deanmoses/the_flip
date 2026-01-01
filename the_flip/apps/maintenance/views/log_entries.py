@@ -154,6 +154,7 @@ class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
             if not is_shared_account:
                 context["initial_maintainers"] = [maintainer]
         context["is_shared_account"] = is_shared_account
+        context["maintainer_errors"] = getattr(self, "maintainer_errors", [])
         selected_slug = (
             self.request.POST.get("machine_slug") if self.request.method == "POST" else ""
         )
@@ -201,7 +202,7 @@ class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
         if not maintainers and not freetext_names:
             if current_maintainer.is_shared_account:
                 # Shared terminal: require explicit maintainer selection
-                form.add_error(None, "Please add at least one maintainer.")
+                self.maintainer_errors = ["Please add at least one maintainer."]
                 return self.form_invalid(form)
             else:
                 # Regular account: default to current user
@@ -626,6 +627,7 @@ class LogEntryEditView(CanAccessMaintainerPortalMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         context["entry"] = self.object
         context["machine"] = self.object.machine
+        context["maintainer_errors"] = getattr(self, "maintainer_errors", [])
         return context
 
     def form_valid(self, form):
@@ -655,7 +657,7 @@ class LogEntryEditView(CanAccessMaintainerPortalMixin, UpdateView):
 
         # Validate at least one maintainer is specified (linked or freetext)
         if not maintainers and not freetext_names:
-            form.add_error(None, "Please add at least one maintainer.")
+            self.maintainer_errors = ["Please add at least one maintainer."]
             return self.form_invalid(form)
 
         entry.maintainer_names = ", ".join(freetext_names)

@@ -28,7 +28,7 @@
       <input type="hidden" name="browser_timezone" id="browser-timezone">
       {% form_non_field_errors form %}
       <div class="form-group">
-        {% maintainer_chip_input_field label="Who did the work?" initial_maintainers=entry.maintainers.all initial_freetext=entry.maintainer_names %}
+        {% maintainer_chip_input_field label="Who did the work?" initial_maintainers=entry.maintainers.all initial_freetext=entry.maintainer_names errors=maintainer_errors %}
       </div>
       <div class="form-group">
         <label for="{{ form.occurred_at.id_for_label }}" class="form-label">When</label>
