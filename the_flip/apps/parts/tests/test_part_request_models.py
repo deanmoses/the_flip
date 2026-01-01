@@ -304,3 +304,103 @@ class PartRequestUpdateOccurredAtTests(TestDataMixin, TestCase):
 
         updates = list(PartRequestUpdate.objects.all())
         self.assertEqual(updates, [newest, middle, oldest])
+
+
+@tag("models")
+class PartRequestHistoryTests(TestDataMixin, TestCase):
+    """Tests for HistoricalRecords tracking on PartRequest."""
+
+    def test_history_created_on_create(self):
+        """Creating a PartRequest creates an initial history entry."""
+        part_request = create_part_request(
+            requested_by=self.maintainer,
+            text="Need a flipper",
+        )
+        self.assertEqual(part_request.history.count(), 1)
+        self.assertEqual(part_request.history.first().history_type, "+")
+
+    def test_history_created_on_update(self):
+        """Updating a PartRequest creates a new history entry."""
+        part_request = create_part_request(
+            requested_by=self.maintainer,
+            text="Need a flipper",
+        )
+        self.assertEqual(part_request.history.count(), 1)
+
+        part_request.status = PartRequest.Status.ORDERED
+        part_request.save()
+
+        self.assertEqual(part_request.history.count(), 2)
+        self.assertEqual(part_request.history.first().history_type, "~")
+
+    def test_history_tracks_field_changes(self):
+        """History entries capture the changed field values."""
+        part_request = create_part_request(
+            requested_by=self.maintainer,
+            text="Need a flipper",
+            status=PartRequest.Status.REQUESTED,
+        )
+
+        part_request.status = PartRequest.Status.ORDERED
+        part_request.save()
+
+        # Most recent history entry should have the new status
+        latest = part_request.history.first()
+        self.assertEqual(latest.status, PartRequest.Status.ORDERED)
+
+        # Previous entry should have the old status
+        previous = part_request.history.all()[1]
+        self.assertEqual(previous.status, PartRequest.Status.REQUESTED)
+
+
+@tag("models")
+class PartRequestUpdateHistoryTests(TestDataMixin, TestCase):
+    """Tests for HistoricalRecords tracking on PartRequestUpdate."""
+
+    def setUp(self):
+        super().setUp()
+        self.part_request = create_part_request(requested_by=self.maintainer)
+
+    def test_history_created_on_create(self):
+        """Creating a PartRequestUpdate creates an initial history entry."""
+        update = create_part_request_update(
+            part_request=self.part_request,
+            posted_by=self.maintainer,
+            text="Ordered from Marco",
+        )
+        self.assertEqual(update.history.count(), 1)
+        self.assertEqual(update.history.first().history_type, "+")
+
+    def test_history_created_on_update(self):
+        """Updating a PartRequestUpdate creates a new history entry."""
+        update = create_part_request_update(
+            part_request=self.part_request,
+            posted_by=self.maintainer,
+            text="Ordered from Marco",
+        )
+        self.assertEqual(update.history.count(), 1)
+
+        update.text = "Ordered from Marco - expected next week"
+        update.save()
+
+        self.assertEqual(update.history.count(), 2)
+        self.assertEqual(update.history.first().history_type, "~")
+
+    def test_history_tracks_field_changes(self):
+        """History entries capture the changed field values."""
+        update = create_part_request_update(
+            part_request=self.part_request,
+            posted_by=self.maintainer,
+            text="Original text",
+        )
+
+        update.text = "Updated text"
+        update.save()
+
+        # Most recent history entry should have the new text
+        latest = update.history.first()
+        self.assertEqual(latest.text, "Updated text")
+
+        # Previous entry should have the old text
+        previous = update.history.all()[1]
+        self.assertEqual(previous.text, "Original text")

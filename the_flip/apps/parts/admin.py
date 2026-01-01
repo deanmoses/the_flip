@@ -1,6 +1,7 @@
 """Admin configuration for parts app."""
 
 from django.contrib import admin
+from simple_history.admin import SimpleHistoryAdmin
 
 from the_flip.apps.parts.models import (
     PartRequest,
@@ -29,7 +30,7 @@ class PartRequestUpdateInline(admin.TabularInline):
 
 
 @admin.register(PartRequest)
-class PartRequestAdmin(admin.ModelAdmin):
+class PartRequestAdmin(SimpleHistoryAdmin):
     """Admin for part requests."""
 
     list_display = [
@@ -54,7 +55,7 @@ class PartRequestAdmin(admin.ModelAdmin):
 
 
 @admin.register(PartRequestMedia)
-class PartRequestMediaAdmin(admin.ModelAdmin):
+class PartRequestMediaAdmin(SimpleHistoryAdmin):
     """Admin for part request media."""
 
     list_display = ["id", "part_request", "media_type", "transcode_status", "created_at"]
@@ -74,7 +75,7 @@ class PartRequestUpdateMediaInline(admin.TabularInline):
 
 
 @admin.register(PartRequestUpdate)
-class PartRequestUpdateAdmin(admin.ModelAdmin):
+class PartRequestUpdateAdmin(SimpleHistoryAdmin):
     """Admin for part request updates."""
 
     list_display = [
@@ -99,7 +100,7 @@ class PartRequestUpdateAdmin(admin.ModelAdmin):
 
 
 @admin.register(PartRequestUpdateMedia)
-class PartRequestUpdateMediaAdmin(admin.ModelAdmin):
+class PartRequestUpdateMediaAdmin(SimpleHistoryAdmin):
     """Admin for part request update media."""
 
     list_display = ["id", "update", "media_type", "transcode_status", "created_at"]
