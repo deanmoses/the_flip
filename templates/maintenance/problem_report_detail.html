@@ -1,10 +1,13 @@
 {% extends "layouts/two_column.html" %}
 {% load static core_extras %}
-{% block title %}Problem Report #{{ report.pk }} · {{ block.super }}{% endblock %}
+{% block title %}
+  {% if report.machine %}{{ report.machine.short_display_name }} ·{% endif %}
+  Problem Report #{{ report.pk }} · {{ block.super }}
+{% endblock %}
 {% block breadcrumbs %}
   <a href="{% url 'maintainer-machine-list' %}">Machines</a>
   <a href="{% url 'maintainer-machine-detail' machine.slug %}">{{ machine.short_display_name }}</a>
-  <a href="{% url 'machine-problem-reports' machine.slug %}">Problems</a>
+  <a href="{% url 'maintainer-machine-detail' machine.slug %}?f=problems">Problems</a>
   <span>{% icon "bug" label="Problem" %} #{{ report.pk }}</span>
 {% endblock %}
 {% block mobile_actions %}

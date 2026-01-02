@@ -30,11 +30,13 @@ class ProblemReportQuerySet(models.QuerySet):
         This is the core search pattern shared across all problem report search
         contexts. It matches:
         - Problem description
+        - Status (open/closed)
         - Reporter name (free-text field)
         - Reporter user's username, first name, last name (via FK)
         """
         return (
             Q(description__icontains=query)
+            | Q(status__icontains=query)
             | Q(reported_by_name__icontains=query)
             | Q(reported_by_user__username__icontains=query)
             | Q(reported_by_user__first_name__icontains=query)
@@ -215,6 +217,19 @@ class LogEntryQuerySet(models.QuerySet):
             | Q(problem_report__description__icontains=query)
         ).distinct()
 
+    def _build_problem_report_q(self, query: str) -> Q:
+        """Build Q object for searching linked problem report fields.
+
+        Matches problem report description and reporter name fields.
+        """
+        return (
+            Q(problem_report__description__icontains=query)
+            | Q(problem_report__reported_by_name__icontains=query)
+            | Q(problem_report__reported_by_user__username__icontains=query)
+            | Q(problem_report__reported_by_user__first_name__icontains=query)
+            | Q(problem_report__reported_by_user__last_name__icontains=query)
+        )
+
     def search_for_machine(self, query: str = ""):
         """
         Machine-scoped search: excludes machine name, includes problem report fields.
@@ -231,9 +246,7 @@ class LogEntryQuerySet(models.QuerySet):
             return self
 
         return self.filter(
-            self._build_text_and_maintainer_q(query)
-            | Q(problem_report__description__icontains=query)
-            | Q(problem_report__reported_by_name__icontains=query)
+            self._build_text_and_maintainer_q(query) | self._build_problem_report_q(query)
         ).distinct()
 
     def search_for_problem_report(self, query: str = ""):

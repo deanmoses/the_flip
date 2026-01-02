@@ -17,12 +17,12 @@ from the_flip.apps.accounts.views import (
     self_register,
 )
 from the_flip.apps.catalog.views import (
-    MachineActivityPartialView,
     MachineCreateLandingView,
     MachineCreateModelDoesNotExistView,
     MachineCreateModelExistsView,
-    MachineDetailViewForMaintainers,
     MachineDetailViewForPublic,
+    MachineFeedPartialView,
+    MachineFeedView,
     MachineListView,
     MachineListViewForPublic,
     MachineModelUpdateView,
@@ -42,12 +42,9 @@ from the_flip.apps.maintenance.views.log_entries import (
     LogListPartialView,
     LogListView,
     MachineLogCreateView,
-    MachineLogPartialView,
-    MachineLogView,
 )
 from the_flip.apps.maintenance.views.media_api import ReceiveMediaView
 from the_flip.apps.maintenance.views.problem_reports import (
-    MachineProblemReportListView,
     ProblemReportCreateView,
     ProblemReportDetailView,
     ProblemReportEditView,
@@ -183,11 +180,6 @@ urlpatterns = [
         ProblemReportLogEntriesPartialView.as_view(),
         name="problem-report-log-entries",
     ),  # AJAX: infinite scroll for log entries on problem report
-    path(
-        "problem-reports/<slug:slug>/",
-        MachineProblemReportListView.as_view(),
-        name="machine-problem-reports",
-    ),  # List problem reports for a machine
     #
     # Machines (maintainer)
     #
@@ -209,14 +201,14 @@ urlpatterns = [
     ),  # Add instance of existing model
     path(
         "machines/<slug:slug>/",
-        MachineDetailViewForMaintainers.as_view(),
+        MachineFeedView.as_view(),
         name="maintainer-machine-detail",
     ),  # Machine detail/feed page
     path(
-        "machines/<slug:slug>/activity/",
-        MachineActivityPartialView.as_view(),
-        name="machine-activity-entries",
-    ),  # AJAX: infinite scroll for machine activity feed
+        "machines/<slug:slug>/entries/",
+        MachineFeedPartialView.as_view(),
+        name="machine-feed-entries",
+    ),  # AJAX: infinite scroll for machine feed (supports ?f= filter)
     path(
         "machines/<slug:slug>/edit/", MachineUpdateView.as_view(), name="machine-edit"
     ),  # Edit machine
@@ -297,12 +289,6 @@ urlpatterns = [
         MachineLogCreateView.as_view(),
         name="log-create-problem-report",
     ),  # Create log entry linked to problem report
-    path(
-        "logs/<slug:slug>/entries/",
-        MachineLogPartialView.as_view(),
-        name="log-entries",
-    ),  # AJAX: infinite scroll for machine log page
-    path("logs/<slug:slug>/", MachineLogView.as_view(), name="log-machine"),  # Machine log page
     #
     # Parts requests
     #

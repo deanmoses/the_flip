@@ -99,58 +99,127 @@ The project uses this pattern in:
 - `MachineInstanceQuerySet` - `visible()`, `active_for_matching()`
 - `ProblemReportQuerySet` - `open()`, `search()`, `search_for_machine()`
 - `LogEntryQuerySet` - `search()`, `search_for_machine()`, `search_for_problem_report()`
-- `PartRequestQuerySet` - `active()`, `pending()`
+- `PartRequestQuerySet` - `active()`, `pending()`, `search()`, `search_for_machine()`
+- `PartRequestUpdateQuerySet` - `search()`, `search_for_machine()`
 
 ### Composable Search Methods
 
-For complex search logic with context-specific variants, use private `_build_*_q()` methods that return Q objects, then compose them in public methods:
+For complex search logic with context-specific variants, use private `_build_*_q()` methods that return Q objects, then compose them in public methods.
+
+#### Standard Field Patterns
+
+When building search Q objects, include these fields consistently:
+
+| Field Type | Always Search |
+|------------|---------------|
+| User FK | `username`, `first_name`, `last_name` |
+| Freetext name | The text field (e.g., `reported_by_name`) alongside any FK |
+| Status | Include if users would search for it (e.g., "open", "closed") |
+| Description/text | The main content field |
+
+#### Core Fields Helper
+
+Each QuerySet has a `_build_*_q()` method for its own fields:
 
 ```python
 class LogEntryQuerySet(models.QuerySet):
     def _build_text_and_maintainer_q(self, query: str) -> Q:
-        """Build Q object for core search fields."""
+        """Build Q object for this model's core searchable fields."""
         return (
             Q(text__icontains=query)
             | Q(maintainers__user__username__icontains=query)
             | Q(maintainers__user__first_name__icontains=query)
+            | Q(maintainers__user__last_name__icontains=query)
+            | Q(maintainer_names__icontains=query)
         )
+```
 
+#### Linked Record Helpers
+
+When a model has a FK to another model, create a separate helper to search that linked model's fields. This enables bidirectional search—users can find records from either side of the relationship:
+
+```python
+class LogEntryQuerySet(models.QuerySet):
+    def _build_problem_report_q(self, query: str) -> Q:
+        """Build Q object for searching linked problem report fields."""
+        return (
+            Q(problem_report__description__icontains=query)
+            | Q(problem_report__reported_by_name__icontains=query)
+            | Q(problem_report__reported_by_user__username__icontains=query)
+            | Q(problem_report__reported_by_user__first_name__icontains=query)
+            | Q(problem_report__reported_by_user__last_name__icontains=query)
+        )
+```
+
+The parent model should have a corresponding helper for its children:
+
+```python
+class ProblemReportQuerySet(models.QuerySet):
+    def _build_log_entry_q(self, query: str) -> Q:
+        """Build Q object for searching linked log entry fields."""
+        return (
+            Q(log_entries__text__icontains=query)
+            | Q(log_entries__maintainers__user__username__icontains=query)
+            | Q(log_entries__maintainers__user__first_name__icontains=query)
+            | Q(log_entries__maintainers__user__last_name__icontains=query)
+            | Q(log_entries__maintainer_names__icontains=query)
+        )
+```
+
+#### Composing Search Methods
+
+Compose the helpers into public search methods:
+
+```python
+class LogEntryQuerySet(models.QuerySet):
     def search(self, query: str = ""):
-        """Global search across all fields."""
+        """Global search: all fields including machine name."""
         query = (query or "").strip()
         if not query:
             return self
         return self.filter(
             self._build_text_and_maintainer_q(query)
             | Q(machine__model__name__icontains=query)
-            | Q(problem_report__description__icontains=query)
+            | Q(machine__name__icontains=query)
+            | self._build_problem_report_q(query)
         ).distinct()
 
     def search_for_machine(self, query: str = ""):
-        """Machine-scoped: excludes machine name (redundant in context)."""
+        """Machine-scoped: excludes machine name, includes linked records."""
         query = (query or "").strip()
         if not query:
             return self
         return self.filter(
             self._build_text_and_maintainer_q(query)
-            | Q(problem_report__description__icontains=query)
+            | self._build_problem_report_q(query)
         ).distinct()
+
+    def search_for_problem_report(self, query: str = ""):
+        """Problem-report-scoped: only this model's own fields."""
+        query = (query or "").strip()
+        if not query:
+            return self
+        return self.filter(self._build_text_and_maintainer_q(query)).distinct()
 ```
 
 **Key principles:**
 
 1. **Private builders return Q objects** - Extract shared filter logic into `_build_*_q()` methods
-2. **Scoped variants exclude redundant fields** - When viewing a specific machine, searching for machine name is pointless
-3. **Empty queries return `self`** - Let callers decide what to show when there's no search term
-4. **Search methods are pure filters** - They don't apply ordering; caller is responsible for `.order_by()`
-5. **Always call `.distinct()`** - Joins on related fields can duplicate rows
+2. **Separate helpers for core vs linked fields** - `_build_text_and_X_q()` for own fields, `_build_Y_q()` for each linked model
+3. **Scoped variants adjust what's searched**:
+   - Exclude redundant fields (machine name when on machine page)
+   - Include linked record fields when context makes them relevant
+4. **Bidirectional linked search** - If A links to B, searching A should find matches in B's fields, and vice versa
+5. **Empty queries return `self`** - Let callers decide what to show when there's no search term
+6. **Search methods are pure filters** - They don't apply ordering; caller is responsible for `.order_by()`
+7. **Always call `.distinct()`** - Joins on related fields can duplicate rows
 
 **When to create scoped variants:**
 
-Create `search_for_X()` methods when fields become redundant in certain view contexts:
-- `search()` - Global list: all fields
-- `search_for_machine()` - Machine detail: excludes machine name
-- `search_for_problem_report()` - Problem report detail: excludes machine and problem report fields
+Create `search_for_X()` methods when the search context changes what fields are relevant:
+- `search()` - Global list: all fields including machine name
+- `search_for_machine()` - Machine page: excludes machine name, includes linked record fields
+- `search_for_problem_report()` - Problem report page: only the model's own fields (linked record is redundant)
 
 ## Query Optimization
 

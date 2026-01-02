@@ -1,4 +1,7 @@
-"""Tests for problem report list views and search functionality."""
+"""Tests for the global problem report list view (/problems/).
+
+Machine-scoped problem report tests are in catalog/tests/test_machine_feed.py.
+"""
 
 from django.test import TestCase, tag
 from django.urls import reverse
@@ -7,8 +10,6 @@ from the_flip.apps.core.test_utils import (
     SuppressRequestLogsMixin,
     TestDataMixin,
     create_log_entry,
-    create_machine,
-    create_machine_model,
     create_maintainer_user,
     create_problem_report,
 )
@@ -207,51 +208,6 @@ class ProblemReportListPartialViewTests(SuppressRequestLogsMixin, TestDataMixin,
         self.client.force_login(self.regular_user)
         response = self.client.get(self.entries_url)
         self.assertEqual(response.status_code, 403)
-
-
-@tag("views")
-class MachineProblemReportListViewTests(TestDataMixin, TestCase):
-    """Tests for the machine-specific problem report list view."""
-
-    def setUp(self):
-        super().setUp()
-        self.report = create_problem_report(machine=self.machine, description="Test problem")
-        self.machine_list_url = reverse(
-            "machine-problem-reports", kwargs={"slug": self.machine.slug}
-        )
-
-    def test_machine_list_view_contains_link_to_detail(self):
-        """Machine-specific list view should contain links to detail pages."""
-        self.client.force_login(self.maintainer_user)
-        response = self.client.get(self.machine_list_url)
-
-        detail_url = reverse("problem-report-detail", kwargs={"pk": self.report.pk})
-        self.assertContains(response, detail_url)
-
-    def test_machine_list_search_does_not_match_machine_name(self):
-        """Machine-scoped problem report search should NOT match the machine name.
-
-        Since the user is already viewing a specific machine's problem reports,
-        searching for the machine name would be redundant and confusing - it would
-        match all reports on that machine rather than filtering by content.
-        """
-        # Create a machine with a distinctive name
-        unique_model = create_machine_model(name="Medieval Madness 1997")
-        unique_machine = create_machine(slug="medieval-madness", model=unique_model)
-
-        # Create problem reports on this machine
-        create_problem_report(machine=unique_machine, description="Flipper issue")
-        create_problem_report(machine=unique_machine, description="Display problem")
-
-        self.client.force_login(self.maintainer_user)
-        list_url = reverse("machine-problem-reports", kwargs={"slug": unique_machine.slug})
-
-        # Search for machine name should NOT return results
-        response = self.client.get(list_url, {"q": "Medieval Madness"})
-
-        # Neither report should appear because machine name is not a search field
-        self.assertNotContains(response, "Flipper issue")
-        self.assertNotContains(response, "Display problem")
 
 
 @tag("views")

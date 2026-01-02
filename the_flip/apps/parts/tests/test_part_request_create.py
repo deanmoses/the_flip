@@ -109,14 +109,14 @@ class PartRequestSharedAccountTests(
             reverse("part-request-create"),
             {
                 "text": "Need flipper rubbers",
-                "requester_name": "Jane Visitor",
+                "requester_name": "User Without Account",
                 "requester_name_username": "",
             },
         )
         self.assertEqual(response.status_code, 302)
         part_request = PartRequest.objects.first()
         self.assertIsNone(part_request.requested_by)
-        self.assertEqual(part_request.requested_by_name, "Jane Visitor")
+        self.assertEqual(part_request.requested_by_name, "User Without Account")
 
     def test_shared_account_with_empty_name_shows_error(self):
         """Shared account with empty name shows form error."""
@@ -145,6 +145,27 @@ class PartRequestSharedAccountTests(
         self.assertEqual(response.status_code, 302)
         part_request = PartRequest.objects.first()
         self.assertEqual(part_request.requested_by, self.identifying_maintainer)
+
+    def test_regular_account_with_freetext_name_saves_freetext(self):
+        """Regular account typing unrecognized name should save as freetext.
+
+        When a non-shared account types a name that doesn't match any user
+        (e.g., "User Without Account"), it should be saved as freetext rather than
+        silently falling back to the current user.
+        """
+        self.client.force_login(self.identifying_user)
+        response = self.client.post(
+            reverse("part-request-create"),
+            {
+                "text": "Need flipper rubbers",
+                "requester_name": "User Without Account",
+                "requester_name_username": "",  # No matching user
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        part_request = PartRequest.objects.first()
+        self.assertIsNone(part_request.requested_by)
+        self.assertEqual(part_request.requested_by_name, "User Without Account")
 
 
 @tag("views")

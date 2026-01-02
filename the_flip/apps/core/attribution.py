@@ -63,13 +63,14 @@ def resolve_maintainer_for_create(
         form.add_error(text_field, error_message)
         return None
     else:
-        # Non-shared accounts: default to current user, allow override
-        maintainer = current_maintainer
+        # Non-shared accounts: username lookup → freetext fallback → current user
         if username:
             matched = _lookup_maintainer(username)
             if matched:
-                maintainer = matched
-        return AttributionResult(maintainer, "")
+                return AttributionResult(matched, "")
+        if text:
+            return AttributionResult(None, text)
+        return AttributionResult(current_maintainer, "")
 
 
 def resolve_maintainer_for_edit(

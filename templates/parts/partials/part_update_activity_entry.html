@@ -1,27 +1,25 @@
 {% load core_extras %}
 {% timeline_entry icon="box-open" variant="log" %}
 <div class="card card--log timeline__card">
-  <a href="{% url 'part-request-detail' entry.part_request.pk %}"
+  <a href="{% url 'part-request-update-detail' entry.pk %}"
      class="timeline__card-link">
     <div class="timeline__header">
       <div class="flex items-center stack-tight flex-wrap">
-        <span class="timeline__title timeline__title--log">
-          Parts Request {% icon "box-open" %} #{{ entry.part_request.pk }}
-          {% if entry.new_status %}
-            status changed to
-          {% else %}
-            updated
-          {% endif %}
-        </span>
+        <span class="timeline__title timeline__title--log">Update to Parts Request #{{ entry.part_request.pk }}</span>
         {% if entry.new_status %}<span class="pill pill--neutral">{{ entry.get_new_status_display }}</span>{% endif %}
       </div>
-      <span class="timeline__meta">{{ entry.occurred_at|smart_date }} · {{ entry.poster_display }}</span>
+      <span class="timeline__meta">{{ entry.poster_display }} · {{ entry.occurred_at|smart_date }}</span>
     </div>
-    {% if entry.text %}
-      <div class="timeline__body markdown-content markdown-content--compact">
-        {{ entry.text|truncatechars:200|render_markdown }}
-      </div>
-    {% endif %}
+  </a>
+  <div class="timeline__body {% if entry.text or entry.media.all %}space-below-sm{% endif %} markdown-content markdown-content--compact">
+    {% if entry.text %}{{ entry.text|truncatechars:200|render_markdown }}{% endif %}
+  </div>
+  {% url 'part-request-update-detail' entry.pk as entry_url %}
+  {% include "core/partials/media_grid_readonly.html" with media_items=entry.media.all detail_url=entry_url model_name="PartRequestUpdateMedia" %}
+  <a href="{% url 'part-request-detail' entry.part_request.pk %}"
+     class="timeline__snippet-link">
+    <span class="snippet-label text-log">{% icon "box-open" %}Part Request:</span>
+    <span class="snippet-text">{{ entry.part_request.text|truncatewords:15 }}</span>
   </a>
 </div>
 {% endtimeline_entry %}
