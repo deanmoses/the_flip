@@ -4,6 +4,11 @@ from constance.test import override_config
 from django.test import TestCase, tag
 from django.urls import reverse
 
+from the_flip.apps.catalog.feed import (
+    ENTRY_TYPE_PART_REQUEST,
+    ENTRY_TYPE_PART_REQUEST_UPDATE,
+    get_machine_feed_page,
+)
 from the_flip.apps.core.test_utils import (
     TestDataMixin,
     create_part_request,
@@ -34,8 +39,6 @@ class PartsFeatureFlagTests(TestDataMixin, TestCase):
 
     def test_activity_feed_excludes_parts_when_disabled(self):
         """Machine activity feed excludes parts when PARTS_ENABLED is False."""
-        from the_flip.apps.catalog.views import get_activity_entries
-
         # Create a part request for this machine
         create_part_request(
             text="Test part",
@@ -44,15 +47,17 @@ class PartsFeatureFlagTests(TestDataMixin, TestCase):
         )
 
         with override_config(PARTS_ENABLED=False):
-            logs, reports, part_requests, part_updates = get_activity_entries(self.machine)
-            # Parts querysets should be empty
-            self.assertEqual(list(part_requests), [])
-            self.assertEqual(list(part_updates), [])
+            # Get feed with parts entry types
+            entries, _ = get_machine_feed_page(
+                self.machine,
+                entry_types=(ENTRY_TYPE_PART_REQUEST, ENTRY_TYPE_PART_REQUEST_UPDATE),
+                page_num=1,
+            )
+            # No parts should be returned when feature is disabled
+            self.assertEqual(entries, [])
 
     def test_activity_feed_includes_parts_when_enabled(self):
         """Machine activity feed includes parts when PARTS_ENABLED is True."""
-        from the_flip.apps.catalog.views import get_activity_entries
-
         # Create a part request for this machine
         part = create_part_request(
             text="Test part",
@@ -61,6 +66,12 @@ class PartsFeatureFlagTests(TestDataMixin, TestCase):
         )
 
         with override_config(PARTS_ENABLED=True):
-            logs, reports, part_requests, part_updates = get_activity_entries(self.machine)
+            # Get feed with parts entry types
+            entries, _ = get_machine_feed_page(
+                self.machine,
+                entry_types=(ENTRY_TYPE_PART_REQUEST, ENTRY_TYPE_PART_REQUEST_UPDATE),
+                page_num=1,
+            )
             # Parts should be included
-            self.assertEqual(list(part_requests), [part])
+            self.assertEqual(len(entries), 1)
+            self.assertEqual(entries[0].pk, part.pk)

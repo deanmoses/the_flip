@@ -32,6 +32,7 @@ class MachineInlineUpdateView(CanAccessMaintainerPortalMixin, View):
                         "operational_status": status,
                         "operational_status_display": machine.get_operational_status_display(),
                         "log_entry_html": log_entry_html,
+                        "entry_type": "log",  # For live injection filtering
                     }
                 )
             return JsonResponse({"error": "Invalid status"}, status=400)
@@ -51,6 +52,7 @@ class MachineInlineUpdateView(CanAccessMaintainerPortalMixin, View):
                         "location": "",
                         "location_display": "",
                         "log_entry_html": log_entry_html,
+                        "entry_type": "log",  # For live injection filtering
                     }
                 )
             try:
@@ -69,6 +71,7 @@ class MachineInlineUpdateView(CanAccessMaintainerPortalMixin, View):
                         "location_display": location.name,
                         "celebration": celebration,
                         "log_entry_html": log_entry_html,
+                        "entry_type": "log",  # For live injection filtering
                     }
                 )
             except Location.DoesNotExist:
@@ -78,7 +81,13 @@ class MachineInlineUpdateView(CanAccessMaintainerPortalMixin, View):
 
     def _render_latest_log_entry(self, machine):
         """Render the most recent log entry as HTML for injection into the feed."""
-        log_entry = LogEntry.objects.filter(machine=machine).order_by("-occurred_at").first()
+        log_entry = (
+            LogEntry.objects.filter(machine=machine)
+            .select_related("problem_report")
+            .prefetch_related("maintainers__user", "media")
+            .order_by("-occurred_at")
+            .first()
+        )
         if not log_entry:
             return ""
         return render_to_string(

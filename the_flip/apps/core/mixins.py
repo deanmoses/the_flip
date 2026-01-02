@@ -6,6 +6,7 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import Paginator
 from django.db import transaction
@@ -192,12 +193,12 @@ class InfiniteScrollMixin:
 
     Subclasses may override:
         - get_item_context(item): Return context dict for each item (default: {"entry": item})
-        - page_size: Items per page (default: 10)
+        - page_size: Items per page (default: settings.LIST_PAGE_SIZE)
         - page_param: Query param for page number (default: "page")
     """
 
     item_template: str
-    page_size: int = 10
+    page_size: int = settings.LIST_PAGE_SIZE
     page_param: str = "page"
     request: HttpRequest  # Provided by View
 

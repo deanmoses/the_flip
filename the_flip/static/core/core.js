@@ -226,6 +226,28 @@ function updateMachineField(button) {
 
   dropdownMenu.classList.add('hidden');
 
+  /**
+   * Inject a new entry into the feed timeline if the timeline accepts this entry type.
+   * Looks for a timeline with data-entry-types attribute that includes the entry_type from the response.
+   */
+  function injectFeedEntry(data) {
+    if (!data.log_entry_html || !data.entry_type) return;
+
+    // Find a timeline that accepts this entry type
+    const timelines = document.querySelectorAll('.timeline[data-entry-types]');
+    for (const timeline of timelines) {
+      const acceptedTypes = timeline.dataset.entryTypes.split(',').map((t) => t.trim());
+      if (acceptedTypes.includes(data.entry_type)) {
+        const timelineLine = timeline.querySelector('.timeline__line');
+        if (timelineLine) {
+          timelineLine.insertAdjacentHTML('afterend', data.log_entry_html);
+          applySmartDates(timelineLine.nextElementSibling);
+        }
+        break;
+      }
+    }
+  }
+
   const formData = new FormData();
   formData.append('action', field === 'operational_status' ? 'update_status' : 'update_location');
   formData.append(field, value);
@@ -280,17 +302,8 @@ function updateMachineField(button) {
             document.querySelector('.sidebar__title')?.textContent?.trim() || 'Machine';
           const pillHtml = `<span class="pill ${statusClassMap[value]?.pill || 'pill--neutral'}"><i class="fa-solid ${iconClassMap[value] || 'fa-circle-question'} meta"></i> ${label}</span>`;
           showMessage('success', `Status of ${machineName} set to ${pillHtml}`);
-          // Inject the new log entry into the feed (only on timelines that accept them)
-          if (data.log_entry_html) {
-            const timeline = document.querySelector('.timeline[data-inject-log-entries="true"]');
-            if (timeline) {
-              const timelineLine = timeline.querySelector('.timeline__line');
-              if (timelineLine) {
-                timelineLine.insertAdjacentHTML('afterend', data.log_entry_html);
-                applySmartDates(timelineLine.nextElementSibling);
-              }
-            }
-          }
+          // Inject the new log entry into the feed (only on timelines that accept this entry type)
+          injectFeedEntry(data);
         } else {
           const pill = document.getElementById('location-pill');
           if (pill) {
@@ -306,17 +319,8 @@ function updateMachineField(button) {
           } else {
             showMessage('success', `Location of ${machineName} set to ${pillHtml}`);
           }
-          // Inject the new log entry into the feed (only on timelines that accept them)
-          if (data.log_entry_html) {
-            const timeline = document.querySelector('.timeline[data-inject-log-entries="true"]');
-            if (timeline) {
-              const timelineLine = timeline.querySelector('.timeline__line');
-              if (timelineLine) {
-                timelineLine.insertAdjacentHTML('afterend', data.log_entry_html);
-                applySmartDates(timelineLine.nextElementSibling);
-              }
-            }
-          }
+          // Inject the new log entry into the feed (only on timelines that accept this entry type)
+          injectFeedEntry(data);
         }
       } else {
         showMessage('error', 'Error saving change');

@@ -7,7 +7,7 @@
     {% if machine %}
       <a href="{% url 'maintainer-machine-list' %}">Machines</a>
       <a href="{% url 'maintainer-machine-detail' machine.slug %}">{{ machine.short_display_name }}</a>
-      <a href="{% url 'machine-problem-reports' machine.slug %}">Problems</a>
+      <a href="{% url 'maintainer-machine-detail' machine.slug %}?f=problems">Problems</a>
     {% else %}
       <a href="{% url 'problem-report-list' %}">Problem Reports</a>
     {% endif %}
@@ -78,7 +78,7 @@
       </div>
       <!-- FORM ACTIONS -->
       <div class="form-actions">
-        <a href="{% if machine %}{% url 'machine-problem-reports' machine.slug %}{% else %}{% url 'problem-report-list' %}{% endif %}"
+        <a href="{% if machine %}{% url 'maintainer-machine-detail' machine.slug %}?f=problems{% else %}{% url 'problem-report-list' %}{% endif %}"
            class="btn btn--secondary">Cancel</a>
         <button type="submit" class="btn btn--report">
           {% icon "bug" class="meta" %}

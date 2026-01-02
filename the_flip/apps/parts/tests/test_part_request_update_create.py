@@ -151,3 +151,25 @@ class PartRequestUpdateSharedAccountTests(
         self.assertEqual(response.status_code, 302)
         update = PartRequestUpdate.objects.first()
         self.assertEqual(update.posted_by, self.identifying_maintainer)
+
+    def test_regular_account_with_freetext_name_saves_freetext(self):
+        """Regular account typing unrecognized name should save as freetext.
+
+        When a non-shared account types a name that doesn't match any user
+        (e.g., "Jane Visitor"), it should be saved as freetext rather than
+        silently falling back to the current user.
+        """
+        self.client.force_login(self.identifying_user)
+        response = self.client.post(
+            reverse("part-request-update-create", kwargs={"pk": self.part_request.pk}),
+            {
+                "text": "Ordered from Marco",
+                "new_status": "",
+                "poster_name": "Jane Visitor",
+                "poster_name_username": "",  # No matching user
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        update = PartRequestUpdate.objects.first()
+        self.assertIsNone(update.posted_by)
+        self.assertEqual(update.posted_by_name, "Jane Visitor")

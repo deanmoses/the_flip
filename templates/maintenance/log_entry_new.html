@@ -108,7 +108,7 @@
           <span>Close the problem report</span>
         </label>
       {% endif %}
-      <a href="{% if is_global %}{% url 'log-list' %}{% elif problem_report %}{% url 'problem-report-detail' problem_report.pk %}{% else %}{% url 'log-machine' machine.slug %}{% endif %}"
+      <a href="{% if is_global %}{% url 'log-list' %}{% elif problem_report %}{% url 'problem-report-detail' problem_report.pk %}{% else %}{% url 'maintainer-machine-detail' machine.slug %}?f=logs{% endif %}"
          class="btn btn--secondary">Cancel</a>
       <button type="submit" class="btn btn--log">
         {% icon "check" class="meta" %}

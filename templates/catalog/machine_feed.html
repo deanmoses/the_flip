@@ -1,15 +1,16 @@
 {% extends "base.html" %}
 {% load static core_extras %}
-{% block title %}
-  {{ machine.name }}
-  {% block feed_title %}{% endblock %}
-  · {{ block.super }}
-{% endblock %}
+{% block title %}{{ machine.short_display_name }}{{ title_suffix }} · {{ block.super }}{% endblock %}
 {% block content %}
   <!-- BREADCRUMBS -->
   <nav class="breadcrumbs breadcrumbs--responsive">
     <a href="{% url 'maintainer-machine-list' %}">Machines</a>
-    <span>{{ machine.name }}</span>
+    {% if breadcrumb_label %}
+      <a href="{% url 'maintainer-machine-detail' machine.slug %}">{{ machine.short_display_name }}</a>
+      <span>{{ breadcrumb_label }}</span>
+    {% else %}
+      <span>{{ machine.short_display_name }}</span>
+    {% endif %}
   </nav>
   <!-- TWO COLUMN LAYOUT: Main Content + Sidebar -->
   <div class="two-column">
@@ -53,7 +54,7 @@
           {% if locations %}
             {% for loc in locations %}
               <button type="button"
-                      class="dropdown__item{% if machine.location.slug == loc.slug %} dropdown__item--selected{% endif %}"
+                      class="dropdown__item{% if machine.location and machine.location.slug == loc.slug %} dropdown__item--selected{% endif %}"
                       data-field="location"
                       data-value="{{ loc.slug }}"
                       data-label="{{ loc.name }}"
@@ -138,7 +139,7 @@
                 {% if locations %}
                   {% for loc in locations %}
                     <button type="button"
-                            class="dropdown__item{% if machine.location.slug == loc.slug %} dropdown__item--selected{% endif %}"
+                            class="dropdown__item{% if machine.location and machine.location.slug == loc.slug %} dropdown__item--selected{% endif %}"
                             data-field="location"
                             data-value="{{ loc.slug }}"
                             data-label="{{ loc.name }}"
@@ -154,7 +155,6 @@
               </div>
             </div>
           </div>
-          {% block sidebar_extras %}{% endblock %}
         </div>
         <!-- ACTIONS -->
         <div class="sidebar__section">
@@ -189,24 +189,41 @@
     <div class="two-column__main">
       <!-- FILTER BAR -->
       <div class="filter-bar">
-        <!-- Filter Buttons -->
+        <!-- Filter Buttons (use query params instead of separate URLs) -->
         <div class="filter-bar__filters">
           <a href="{% url 'maintainer-machine-detail' machine.slug %}"
              class="pill pill--filter {% if active_filter == 'all' %}pill--filter-active{% else %}pill--neutral{% endif %}">
             {% icon "list" %} All Activity
           </a>
-          <a href="{% url 'log-machine' machine.slug %}"
+          <a href="{% url 'maintainer-machine-detail' machine.slug %}?f=logs"
              class="pill pill--filter {% if active_filter == 'logs' %}pill--filter-active{% else %}pill--neutral{% endif %}">
-            {% icon "screwdriver-wrench" %} Logs Only
+            {% icon "screwdriver-wrench" %}
+            {% if config.PARTS_ENABLED %}
+              Logs
+            {% else %}
+              Logs Only
+            {% endif %}
           </a>
-          <a href="{% url 'machine-problem-reports' machine.slug %}"
+          <a href="{% url 'maintainer-machine-detail' machine.slug %}?f=problems"
              class="pill pill--filter {% if active_filter == 'problems' %}pill--filter-active{% else %}pill--neutral{% endif %}">
-            {% icon "bug" %} Problems Only
+            {% icon "bug" %}
+            {% if config.PARTS_ENABLED %}
+              Problems
+            {% else %}
+              Problems Only
+            {% endif %}
           </a>
+          {% if config.PARTS_ENABLED %}
+            <a href="{% url 'maintainer-machine-detail' machine.slug %}?f=parts"
+               class="pill pill--filter {% if active_filter == 'parts' %}pill--filter-active{% else %}pill--neutral{% endif %}">
+              {% icon "box-open" %} Parts
+            </a>
+          {% endif %}
         </div>
         <!-- Search Box -->
         <div class="filter-bar__search">
           <form method="get" action="">
+            {% if active_filter != 'all' %}<input type="hidden" name="f" value="{{ active_filter }}">{% endif %}
             <input type="search"
                    name="q"
                    placeholder="Search..."
@@ -218,18 +235,25 @@
       </div>
       <!-- FEED CONTENT (Timeline) -->
       <div id="log-container"
-           data-fetch-url="{% block infinite_scroll_url %}{% endblock %}">
-        {% block feed_content %}{% endblock %}
-        <div id="log-pagination"
-             data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}0{% endif %}"></div>
-      </div>
-      <div id="log-loading" class="hidden">Loading…</div>
-      <div id="log-sentinel"></div>
+           data-fetch-url="{% url 'machine-feed-entries' machine.slug %}">
+        {% if entries %}
+          {% timeline id="log-list" entry_types=entry_types %}
+          {% for entry in entries %}
+            {% include "maintenance/partials/activity_entry.html" with entry=entry %}
+          {% endfor %}
+        {% endtimeline %}
+      {% else %}
+      {% empty_state empty_message=empty_message search_message=search_empty_message is_search=search_form.q.value %}
+      {% endif %}
+      <div id="log-pagination"
+           data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}0{% endif %}"></div>
     </div>
+    <div id="log-loading" class="hidden">Loading...</div>
+    <div id="log-sentinel"></div>
   </div>
+</div>
 {% endblock %}
 {% block extra_scripts %}
   <script src="{% static 'core/infinite_scroll.js' %}" defer></script>
   <script src="{% static 'core/video_transcode_poll.js' %}" defer></script>
-  {% block feed_scripts %}{% endblock %}
 {% endblock extra_scripts %}

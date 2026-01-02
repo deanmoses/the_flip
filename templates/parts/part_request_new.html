@@ -9,11 +9,23 @@
   Parts Request · {{ block.super }}
 {% endblock %}
 {% block breadcrumbs %}
-  <a href="{% url 'part-request-list' %}">Parts</a>
-  {% if is_edit %}
+  {% if is_edit and part_request.machine %}
+    <a href="{% url 'maintainer-machine-list' %}">Machines</a>
+    <a href="{% url 'maintainer-machine-detail' part_request.machine.slug %}">{{ part_request.machine.short_display_name }}</a>
+    <a href="{% url 'maintainer-machine-detail' part_request.machine.slug %}?f=parts">Parts</a>
     <a href="{% url 'part-request-detail' part_request.pk %}">#{{ part_request.pk }}</a>
     <span>Edit</span>
+  {% elif is_edit %}
+    <a href="{% url 'part-request-list' %}">Parts Requests</a>
+    <a href="{% url 'part-request-detail' part_request.pk %}">#{{ part_request.pk }}</a>
+    <span>Edit</span>
+  {% elif machine %}
+    <a href="{% url 'maintainer-machine-list' %}">Machines</a>
+    <a href="{% url 'maintainer-machine-detail' machine.slug %}">{{ machine.short_display_name }}</a>
+    <a href="{% url 'maintainer-machine-detail' machine.slug %}?f=parts">Parts</a>
+    <span>New Request</span>
   {% else %}
+    <a href="{% url 'part-request-list' %}">Parts Requests</a>
     <span>New Request</span>
   {% endif %}
 {% endblock %}

@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from functools import partial
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
@@ -12,7 +13,6 @@ from django.core.paginator import Paginator
 from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
-from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
@@ -20,7 +20,7 @@ from django.views import View
 from django.views.generic import DetailView, FormView, TemplateView, UpdateView
 
 from the_flip.apps.accounts.models import Maintainer
-from the_flip.apps.catalog.models import Location, MachineInstance
+from the_flip.apps.catalog.models import MachineInstance
 from the_flip.apps.core.datetime import (
     apply_browser_timezone,
     parse_datetime_with_browser_timezone,
@@ -57,41 +57,6 @@ def get_log_entry_queryset(search_query: str = ""):
     )
 
     return queryset
-
-
-class MachineLogView(CanAccessMaintainerPortalMixin, TemplateView):
-    """View all log entries for a specific machine."""
-
-    template_name = "maintenance/machine_log.html"
-
-    def dispatch(self, request, *args, **kwargs):
-        self.machine = get_object_or_404(MachineInstance, slug=kwargs["slug"])
-        return super().dispatch(request, *args, **kwargs)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        search_query = self.request.GET.get("q", "").strip()
-        logs = (
-            LogEntry.objects.filter(machine=self.machine)
-            .search_for_machine(search_query)
-            .select_related("machine", "problem_report")
-            .prefetch_related("maintainers__user", "media")
-            .order_by("-occurred_at")
-        )
-
-        paginator = Paginator(logs, 10)
-        page_obj = paginator.get_page(self.request.GET.get("page"))
-        context.update(
-            {
-                "machine": self.machine,
-                "active_filter": "logs",
-                "page_obj": page_obj,
-                "log_entries": page_obj.object_list,
-                "search_form": SearchForm(initial={"q": search_query}),
-                "locations": Location.objects.all(),
-            }
-        )
-        return context
 
 
 class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
@@ -268,42 +233,10 @@ class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
                 ),
             )
 
-        # Redirect back to problem report if created from there, otherwise to machine log
+        # Redirect back to problem report if created from there, otherwise to machine feed
         if self.problem_report:
             return redirect("problem-report-detail", pk=self.problem_report.pk)
-        return redirect("log-machine", slug=self.machine.slug)
-
-
-class MachineLogPartialView(CanAccessMaintainerPortalMixin, View):
-    """AJAX endpoint for infinite scrolling in machine log view."""
-
-    template_name = "maintenance/partials/log_entry.html"
-
-    def get(self, request, *args, **kwargs):
-        machine = get_object_or_404(MachineInstance, slug=kwargs["slug"])
-        logs = (
-            LogEntry.objects.filter(machine=machine)
-            .search_for_machine(request.GET.get("q", ""))
-            .select_related("machine", "problem_report")
-            .prefetch_related("maintainers__user", "media")
-            .order_by("-occurred_at")
-        )
-
-        paginator = Paginator(logs, 10)
-        page_obj = paginator.get_page(request.GET.get("page"))
-        items_html = "".join(
-            render_to_string(
-                self.template_name, {"entry": entry, "machine": machine}, request=request
-            )
-            for entry in page_obj.object_list
-        )
-        return JsonResponse(
-            {
-                "items": items_html,
-                "has_next": page_obj.has_next(),
-                "next_page": page_obj.next_page_number() if page_obj.has_next() else None,
-            }
-        )
+        return redirect("maintainer-machine-detail", slug=self.machine.slug)
 
 
 class LogListView(CanAccessMaintainerPortalMixin, TemplateView):
@@ -316,7 +249,7 @@ class LogListView(CanAccessMaintainerPortalMixin, TemplateView):
         search_query = self.request.GET.get("q", "").strip()
         logs = get_log_entry_queryset(search_query)
 
-        paginator = Paginator(logs, 10)
+        paginator = Paginator(logs, settings.LIST_PAGE_SIZE)
         page_obj = paginator.get_page(self.request.GET.get("page"))
 
         # Stats for sidebar

@@ -2,9 +2,17 @@
 {% load static core_extras %}
 {% block title %}Add Update · Parts Request #{{ part_request.pk }} · {{ block.super }}{% endblock %}
 {% block breadcrumbs %}
-  <a href="{% url 'part-request-list' %}">Parts</a>
-  <a href="{% url 'part-request-detail' part_request.pk %}">#{{ part_request.pk }}</a>
-  <span>Add Update</span>
+  {% if part_request.machine %}
+    <a href="{% url 'maintainer-machine-list' %}">Machines</a>
+    <a href="{% url 'maintainer-machine-detail' part_request.machine.slug %}">{{ part_request.machine.short_display_name }}</a>
+    <a href="{% url 'maintainer-machine-detail' part_request.machine.slug %}?f=parts">Parts</a>
+    <a href="{% url 'part-request-detail' part_request.pk %}">#{{ part_request.pk }}</a>
+    <span>Add Update</span>
+  {% else %}
+    <a href="{% url 'part-request-list' %}">Parts Requests</a>
+    <a href="{% url 'part-request-detail' part_request.pk %}">#{{ part_request.pk }}</a>
+    <span>Add Update</span>
+  {% endif %}
 {% endblock %}
 {% block sidebar %}
   {% sidebar_section label="Parts Request" %}

@@ -1,13 +1,16 @@
 {% extends "layouts/two_column.html" %}
 {% load static core_extras %}
-{% block title %}Log Entry · {{ block.super }}{% endblock %}
+{% block title %}
+  {% if entry.machine %}{{ entry.machine.short_display_name }} ·{% endif %}
+  Log #{{ entry.pk }} · {{ block.super }}
+{% endblock %}
 {% block breadcrumbs %}
   <a href="{% url 'maintainer-machine-list' %}">Machines</a>
   <a href="{% url 'maintainer-machine-detail' entry.machine.slug %}">{{ entry.machine.short_display_name }}</a>
   {% if entry.problem_report %}
     <a href="{% url 'problem-report-detail' entry.problem_report.pk %}">{% icon "bug" label="Problem" %} #{{ entry.problem_report.pk }}</a>
   {% else %}
-    <a href="{% url 'log-machine' entry.machine.slug %}">Logs</a>
+    <a href="{% url 'maintainer-machine-detail' entry.machine.slug %}?f=logs">Logs</a>
   {% endif %}
   <span>Log Entry {% icon "screwdriver-wrench" %}</span>
 {% endblock %}

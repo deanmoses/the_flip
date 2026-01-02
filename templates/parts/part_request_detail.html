@@ -1,9 +1,19 @@
 {% extends "layouts/two_column.html" %}
 {% load static core_extras %}
-{% block title %}Parts Request #{{ part_request.pk }} · {{ block.super }}{% endblock %}
+{% block title %}
+  {% if part_request.machine %}{{ part_request.machine.short_display_name }} ·{% endif %}
+  Parts Request #{{ part_request.pk }} · {{ block.super }}
+{% endblock %}
 {% block breadcrumbs %}
-  <a href="{% url 'part-request-list' %}">Parts</a>
-  <span>{% icon "box-open" %} #{{ part_request.pk }}</span>
+  {% if part_request.machine %}
+    <a href="{% url 'maintainer-machine-list' %}">Machines</a>
+    <a href="{% url 'maintainer-machine-detail' part_request.machine.slug %}">{{ part_request.machine.short_display_name }}</a>
+    <a href="{% url 'maintainer-machine-detail' part_request.machine.slug %}?f=parts">Parts</a>
+    <span>{% icon "box-open" %} #{{ part_request.pk }}</span>
+  {% else %}
+    <a href="{% url 'part-request-list' %}">Parts Requests</a>
+    <span>{% icon "box-open" %} #{{ part_request.pk }}</span>
+  {% endif %}
 {% endblock %}
 {% block mobile_actions %}
   <div class="mobile-meta">

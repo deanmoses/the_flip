@@ -25,6 +25,67 @@ class PartRequestQuerySet(models.QuerySet):
         """Return part requests that are requested or ordered (not yet received)."""
         return self.filter(status__in=[PartRequest.Status.REQUESTED, PartRequest.Status.ORDERED])
 
+    def _build_text_and_requester_q(self, query: str):
+        """Build Q object for text and requester name search."""
+        return (
+            models.Q(text__icontains=query)
+            | models.Q(status__icontains=query)
+            | models.Q(requested_by__user__username__icontains=query)
+            | models.Q(requested_by__user__first_name__icontains=query)
+            | models.Q(requested_by__user__last_name__icontains=query)
+            | models.Q(requested_by_name__icontains=query)
+        )
+
+    def _build_update_q(self, query: str):
+        """Build Q object for searching linked updates."""
+        return (
+            models.Q(updates__text__icontains=query)
+            | models.Q(updates__posted_by__user__username__icontains=query)
+            | models.Q(updates__posted_by__user__first_name__icontains=query)
+            | models.Q(updates__posted_by__user__last_name__icontains=query)
+            | models.Q(updates__posted_by_name__icontains=query)
+        )
+
+    def search(self, query: str = ""):
+        """
+        Global search across multiple fields.
+
+        Searches: text, status, machine name, requester name/username,
+        and linked update text/poster names.
+
+        Returns unfiltered queryset if query is empty/whitespace.
+        Caller is responsible for ordering.
+        """
+        query = (query or "").strip()
+        if not query:
+            return self
+
+        return self.filter(
+            self._build_text_and_requester_q(query)
+            | models.Q(machine__model__name__icontains=query)
+            | models.Q(machine__name__icontains=query)
+            | self._build_update_q(query)
+        ).distinct()
+
+    def search_for_machine(self, query: str = ""):
+        """
+        Machine-scoped search: excludes machine name, includes linked updates.
+
+        When viewing a specific machine's part requests, machine name is
+        redundant to search. But we do want to find part requests by their
+        linked updates' text or poster names.
+
+        Returns unfiltered queryset if query is empty/whitespace.
+        Caller is responsible for ordering.
+        """
+        query = (query or "").strip()
+        if not query:
+            return self
+
+        return self.filter(
+            self._build_text_and_requester_q(query) | self._build_update_q(query)
+        ).distinct()
+
 
 class PartRequest(TimeStampedMixin):
     """A request for a part needed for maintenance."""
@@ -145,6 +206,68 @@ class PartRequestMedia(AbstractMedia):
         return reverse("admin:parts_partrequestmedia_history", args=[self.pk])
 
 
+class PartRequestUpdateQuerySet(models.QuerySet):
+    """Custom queryset for PartRequestUpdate model."""
+
+    def _build_text_and_poster_q(self, query: str):
+        """Build Q object for text and poster name search."""
+        return (
+            models.Q(text__icontains=query)
+            | models.Q(posted_by__user__username__icontains=query)
+            | models.Q(posted_by__user__first_name__icontains=query)
+            | models.Q(posted_by__user__last_name__icontains=query)
+            | models.Q(posted_by_name__icontains=query)
+        )
+
+    def _build_part_request_q(self, query: str):
+        """Build Q object for searching linked part request fields.
+
+        Matches part request text and requester name fields.
+        """
+        return (
+            models.Q(part_request__text__icontains=query)
+            | models.Q(part_request__requested_by__user__username__icontains=query)
+            | models.Q(part_request__requested_by__user__first_name__icontains=query)
+            | models.Q(part_request__requested_by__user__last_name__icontains=query)
+            | models.Q(part_request__requested_by_name__icontains=query)
+        )
+
+    def search_for_machine(self, query: str = ""):
+        """
+        Machine-scoped search: text, poster name, and linked part request fields.
+
+        When viewing a specific machine's part request updates, searches
+        update text and poster names, plus linked part request text and
+        requester names.
+
+        Returns unfiltered queryset if query is empty/whitespace.
+        Caller is responsible for ordering.
+        """
+        query = (query or "").strip()
+        if not query:
+            return self
+
+        return self.filter(
+            self._build_text_and_poster_q(query) | self._build_part_request_q(query)
+        ).distinct()
+
+    def search_for_part_request(self, query: str = ""):
+        """
+        Part-request-scoped search: only text and poster name.
+
+        When viewing a specific part request's updates, the part request's
+        own fields are redundant to search.
+
+        Returns unfiltered queryset if query is empty/whitespace.
+        Caller is responsible for ordering.
+        """
+        query = (query or "").strip()
+        if not query:
+            return self
+
+        return self.filter(self._build_text_and_poster_q(query)).distinct()
+
+
 class PartRequestUpdate(TimeStampedMixin):
     """An update or comment on a part request."""
 
@@ -180,6 +303,7 @@ class PartRequestUpdate(TimeStampedMixin):
         help_text="When the update was posted. Defaults to now if not specified.",
     )
 
+    objects = PartRequestUpdateQuerySet.as_manager()
     history = HistoricalRecords()
 
     class Meta:

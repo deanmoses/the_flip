@@ -2,9 +2,17 @@
 {% load static core_extras %}
 {% block title %}Edit Parts Request #{{ part_request.pk }} · {{ block.super }}{% endblock %}
 {% block breadcrumbs %}
-  <a href="{% url 'part-request-list' %}">Parts</a>
-  <a href="{% url 'part-request-detail' part_request.pk %}">#{{ part_request.pk }}</a>
-  <span>Edit Metadata</span>
+  {% if part_request.machine %}
+    <a href="{% url 'maintainer-machine-list' %}">Machines</a>
+    <a href="{% url 'maintainer-machine-detail' part_request.machine.slug %}">{{ part_request.machine.short_display_name }}</a>
+    <a href="{% url 'maintainer-machine-detail' part_request.machine.slug %}?f=parts">Parts</a>
+    <a href="{% url 'part-request-detail' part_request.pk %}">#{{ part_request.pk }}</a>
+    <span>Edit Metadata</span>
+  {% else %}
+    <a href="{% url 'part-request-list' %}">Parts Requests</a>
+    <a href="{% url 'part-request-detail' part_request.pk %}">#{{ part_request.pk }}</a>
+    <span>Edit Metadata</span>
+  {% endif %}
 {% endblock %}
 {% block sidebar %}
   {% sidebar_section label="Parts Request" %}
@@ -53,7 +61,6 @@
   </div>
 {% endblock %}
 {% block extra_scripts %}
-  <script src="{% static 'core/core.js' %}" defer></script>
   <script src="{% static 'core/dropdown_keyboard.js' %}" defer></script>
   <script src="{% static 'core/maintainer_autocomplete.js' %}" defer></script>
   <script>

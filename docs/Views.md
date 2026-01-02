@@ -111,6 +111,28 @@ List views use infinite scroll instead of traditional pagination:
 - `infinite_scroll.js` handles loading more items on scroll
 - See `LogListPartialView` for example implementation
 
+## Multi-Model Feeds
+
+When displaying activity from multiple models (logs, problems, parts) on a single timeline, use the merge-sort feed pattern in `catalog/feed.py`:
+
+1. **Fetch limit+1 from each table** - Detects pagination without COUNT query ("countless pagination")
+2. **Combine and sort in memory** - All models have `occurred_at`, sort descending
+3. **Slice to page size** - Return just the requested page
+4. **Return (items, has_next) tuple** - `has_next` derived from whether we fetched more than page_size
+
+```python
+from the_flip.apps.catalog.feed import get_machine_feed_page, FEED_CONFIGS
+
+entries, has_next = get_machine_feed_page(
+    machine=self.machine,
+    entry_types=feed_config.entry_types,
+    page_num=page_num,
+    search_query=search_query,
+)
+```
+
+Use `PageCursor` when templates expect `page_obj` interface but Django's `Paginator` can't be used (multiple querysets).
+
 ## Query Optimization
 
 Use `select_related` for ForeignKey/OneToOne (single JOIN) and `prefetch_related` for reverse/ManyToMany (separate query):

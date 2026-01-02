@@ -17,10 +17,10 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from django.views import View
-from django.views.generic import FormView, ListView, TemplateView, UpdateView
+from django.views.generic import FormView, TemplateView, UpdateView
 
 from the_flip.apps.accounts.models import Maintainer
-from the_flip.apps.catalog.models import Location, MachineInstance
+from the_flip.apps.catalog.models import MachineInstance
 from the_flip.apps.core.attribution import (
     resolve_maintainer_for_create,
     resolve_maintainer_for_edit,
@@ -78,7 +78,7 @@ class ProblemReportListView(CanAccessMaintainerPortalMixin, TemplateView):
         search_query = self.request.GET.get("q", "").strip()
         reports = get_problem_report_queryset(search_query)
 
-        paginator = Paginator(reports, 10)
+        paginator = Paginator(reports, settings.LIST_PAGE_SIZE)
         page_obj = paginator.get_page(self.request.GET.get("page"))
 
         # Stats for sidebar
@@ -129,7 +129,7 @@ class ProblemReportLogEntriesPartialView(CanAccessMaintainerPortalMixin, View):
             .order_by("-occurred_at")
         )
 
-        paginator = Paginator(log_entries, 10)
+        paginator = Paginator(log_entries, settings.LIST_PAGE_SIZE)
         page_obj = paginator.get_page(request.GET.get("page"))
         items_html = "".join(
             render_to_string(self.template_name, {"entry": entry}, request=request)
@@ -142,44 +142,6 @@ class ProblemReportLogEntriesPartialView(CanAccessMaintainerPortalMixin, View):
                 "next_page": page_obj.next_page_number() if page_obj.has_next() else None,
             }
         )
-
-
-class MachineProblemReportListView(CanAccessMaintainerPortalMixin, ListView):
-    """Paginated list of all problem reports for a specific machine."""
-
-    template_name = "maintenance/machine_problem_report_list.html"
-    context_object_name = "reports"
-    paginate_by = 10
-
-    def dispatch(self, request, *args, **kwargs):
-        self.machine = get_object_or_404(MachineInstance, slug=kwargs["slug"])
-        return super().dispatch(request, *args, **kwargs)
-
-    def get_queryset(self):
-        latest_log_prefetch = Prefetch(
-            "log_entries",
-            queryset=LogEntry.objects.order_by("-occurred_at"),
-            to_attr="prefetched_log_entries",
-        )
-        search_query = self.request.GET.get("q", "")
-        queryset = (
-            ProblemReport.objects.filter(machine=self.machine)
-            .search_for_machine(search_query)
-            .select_related("reported_by_user")
-            .prefetch_related(latest_log_prefetch, "media")
-            .order_by("-status", "-occurred_at")
-        )
-
-        return queryset
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["machine"] = self.machine
-        context["active_filter"] = "problems"
-        search_query = self.request.GET.get("q", "")
-        context["search_form"] = SearchForm(initial={"q": search_query})
-        context["locations"] = Location.objects.all()
-        return context
 
 
 class PublicProblemReportCreateView(FormView):
@@ -490,7 +452,7 @@ class ProblemReportDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, 
             .prefetch_related("maintainers__user", "media")
             .order_by("-occurred_at")
         )
-        paginator = Paginator(log_entries, 10)
+        paginator = Paginator(log_entries, settings.LIST_PAGE_SIZE)
         page_obj = paginator.get_page(request.GET.get("page"))
 
         context = {

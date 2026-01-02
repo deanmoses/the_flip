@@ -122,6 +122,9 @@ LOGOUT_REDIRECT_URL = "home"
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
+# Pagination size, used by infinite scrolling
+LIST_PAGE_SIZE = 10
+
 # Rate limiting for public problem reports
 RATE_LIMIT_REPORTS_PER_IP = config("RATE_LIMIT_REPORTS_PER_IP", default=5, cast=int)
 RATE_LIMIT_WINDOW_MINUTES = config("RATE_LIMIT_WINDOW_MINUTES", default=10, cast=int)
@@ -130,10 +133,14 @@ RATE_LIMIT_WINDOW_MINUTES = config("RATE_LIMIT_WINDOW_MINUTES", default=10, cast
 TRANSCODING_UPLOAD_TOKEN = config("TRANSCODING_UPLOAD_TOKEN", default=None)
 
 # Logging levels (env-overridable)
-LOG_LEVEL = config("LOG_LEVEL", default="WARNING").upper()
+# Log level of this application's code: the_flip.* loggers
 APP_LOG_LEVEL = config("APP_LOG_LEVEL", default="INFO").upper()
-DJANGO_LOG_LEVEL = config("DJANGO_LOG_LEVEL", default="WARNING").upper()
+# Log level of the Discord bot
 DISCORD_BOT_LOG_LEVEL = config("DISCORD_BOT_LOG_LEVEL", default=None)
+# Log level of Django framework internals: django.* and django_q loggers
+DJANGO_LOG_LEVEL = config("DJANGO_LOG_LEVEL", default="WARNING").upper()
+# Root logger (third-party libraries, unconfigured loggers)
+LOG_LEVEL = config("LOG_LEVEL", default="WARNING").upper()
 
 # django-constance configuration (admin-editable settings)
 CONSTANCE_BACKEND = "constance.backends.database.DatabaseBackend"

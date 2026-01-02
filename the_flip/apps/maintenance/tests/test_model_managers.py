@@ -525,3 +525,142 @@ class LogEntryScopedSearchTests(TestDataMixin, TestCase):
         self.assertEqual(len(results), 2)
         self.assertIn(entry1, results)
         self.assertIn(entry2, results)
+
+
+@tag("models")
+class ProblemReportSearchStatusTests(TestDataMixin, TestCase):
+    """Tests for status search in ProblemReport.
+
+    Verifies that ProblemReport search methods search the status field,
+    allowing users to search for "open" or "closed" problem reports.
+    """
+
+    def test_search_matches_status_open(self):
+        """Search should match 'open' status."""
+        open_report = create_problem_report(
+            machine=self.machine,
+            description="Flipper issue",
+            status=ProblemReport.Status.OPEN,
+        )
+        create_problem_report(
+            machine=self.machine,
+            description="Ball stuck",
+            status=ProblemReport.Status.CLOSED,
+        )
+
+        results = list(ProblemReport.objects.search("open"))
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0], open_report)
+
+    def test_search_matches_status_closed(self):
+        """Search should match 'closed' status."""
+        create_problem_report(
+            machine=self.machine,
+            description="Flipper issue",
+            status=ProblemReport.Status.OPEN,
+        )
+        closed_report = create_problem_report(
+            machine=self.machine,
+            description="Ball stuck",
+            status=ProblemReport.Status.CLOSED,
+        )
+
+        results = list(ProblemReport.objects.search("closed"))
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0], closed_report)
+
+    def test_search_for_machine_matches_status(self):
+        """Machine-scoped search should also match status."""
+        open_report = create_problem_report(
+            machine=self.machine,
+            description="Issue",
+            status=ProblemReport.Status.OPEN,
+        )
+        create_problem_report(
+            machine=self.machine,
+            description="Other issue",
+            status=ProblemReport.Status.CLOSED,
+        )
+
+        results = list(
+            ProblemReport.objects.filter(machine=self.machine).search_for_machine("open")
+        )
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0], open_report)
+
+
+@tag("models")
+class LogEntryLinkedReporterSearchTests(TestDataMixin, TestCase):
+    """Tests for searching linked problem report's reporter user fields.
+
+    Verifies that LogEntry.search_for_machine() searches all reporter fields
+    on linked problem reports (username, first_name, last_name, freetext name),
+    matching how ProblemReport searches linked log entry maintainer fields.
+    """
+
+    def test_search_for_machine_matches_reporter_username(self):
+        """Machine-scoped search should match linked problem report's reporter username."""
+        reporter = create_maintainer_user(
+            username="bugreporter",
+            first_name="",
+            last_name="",
+        )
+        report = create_problem_report(
+            machine=self.machine,
+            description="Issue",
+            reported_by_user=reporter,
+        )
+        entry = create_log_entry(machine=self.machine, text="Fixed it", problem_report=report)
+        create_log_entry(machine=self.machine, text="Unrelated work")
+
+        results = list(
+            LogEntry.objects.filter(machine=self.machine).search_for_machine("bugreporter")
+        )
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0], entry)
+
+    def test_search_for_machine_matches_reporter_first_name(self):
+        """Machine-scoped search should match linked problem report's reporter first name."""
+        reporter = create_maintainer_user(
+            username="user1",
+            first_name="Wanda",
+            last_name="",
+        )
+        report = create_problem_report(
+            machine=self.machine,
+            description="Issue",
+            reported_by_user=reporter,
+        )
+        entry = create_log_entry(machine=self.machine, text="Fixed it", problem_report=report)
+        create_log_entry(machine=self.machine, text="Unrelated work")
+
+        results = list(LogEntry.objects.filter(machine=self.machine).search_for_machine("Wanda"))
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0], entry)
+
+    def test_search_for_machine_matches_reporter_last_name(self):
+        """Machine-scoped search should match linked problem report's reporter last name."""
+        reporter = create_maintainer_user(
+            username="user1",
+            first_name="",
+            last_name="Techworthy",
+        )
+        report = create_problem_report(
+            machine=self.machine,
+            description="Issue",
+            reported_by_user=reporter,
+        )
+        entry = create_log_entry(machine=self.machine, text="Fixed it", problem_report=report)
+        create_log_entry(machine=self.machine, text="Unrelated work")
+
+        results = list(
+            LogEntry.objects.filter(machine=self.machine).search_for_machine("Techworthy")
+        )
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0], entry)

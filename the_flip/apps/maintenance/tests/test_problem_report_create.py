@@ -273,3 +273,24 @@ class ProblemReportSharedAccountTests(
         self.assertEqual(response.status_code, 302)
         report = ProblemReport.objects.first()
         self.assertEqual(report.reported_by_user, self.identifying_user)
+
+    def test_regular_account_with_freetext_name_saves_freetext(self):
+        """Regular account typing unrecognized name should save as freetext.
+
+        When a non-shared account types a name that doesn't match any user
+        (e.g., "Jane Visitor"), it should be saved as freetext rather than
+        silently falling back to the current user.
+        """
+        self.client.force_login(self.identifying_user)
+        response = self.client.post(
+            self.url,
+            {
+                "description": "Machine is broken",
+                "reporter_name": "Jane Visitor",
+                "reporter_name_username": "",  # No matching user
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        report = ProblemReport.objects.first()
+        self.assertIsNone(report.reported_by_user)
+        self.assertEqual(report.reported_by_name, "Jane Visitor")

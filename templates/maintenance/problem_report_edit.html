@@ -4,7 +4,7 @@
 {% block breadcrumbs %}
   <a href="{% url 'maintainer-machine-list' %}">Machines</a>
   <a href="{% url 'maintainer-machine-detail' machine.slug %}">{{ machine.short_display_name }}</a>
-  <a href="{% url 'machine-problem-reports' machine.slug %}">Problems</a>
+  <a href="{% url 'maintainer-machine-detail' machine.slug %}?f=problems">Problems</a>
   <a href="{% url 'problem-report-detail' report.pk %}">#{{ report.pk }}</a>
   <span>Edit Metadata</span>
 {% endblock %}
@@ -54,7 +54,6 @@
   </div>
 {% endblock %}
 {% block extra_scripts %}
-  <script src="{% static 'core/core.js' %}" defer></script>
   <script src="{% static 'core/dropdown_keyboard.js' %}" defer></script>
   <script src="{% static 'core/maintainer_autocomplete.js' %}" defer></script>
   <script>
