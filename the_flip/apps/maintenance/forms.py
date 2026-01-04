@@ -220,7 +220,6 @@ class LogEntryQuickForm(StyledFormMixin, forms.Form):
     text = forms.CharField(
         label="Description",
         widget=forms.Textarea(attrs={"rows": 4, "placeholder": "What work was done?"}),
-        max_length=1000,
     )
     media_file = MultiFileField(
         label="Photo",
