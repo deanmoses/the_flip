@@ -9,10 +9,39 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import connection
 from django.utils import timezone
 
-from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import MachineInstance
 from the_flip.apps.maintenance.models import LogEntry, ProblemReport
 from the_flip.apps.parts.models import PartRequest, PartRequestUpdate
+
+# NATO phonetic alphabet for fake reporter names (searchable in free-text fields)
+NATO_ALPHABET = [
+    "Alpha",
+    "Bravo",
+    "Charlie",
+    "Delta",
+    "Echo",
+    "Foxtrot",
+    "Golf",
+    "Hotel",
+    "India",
+    "Juliet",
+    "Kilo",
+    "Lima",
+    "Mike",
+    "November",
+    "Oscar",
+    "Papa",
+    "Quebec",
+    "Romeo",
+    "Sierra",
+    "Tango",
+    "Uniform",
+    "Victor",
+    "Whiskey",
+    "X-ray",
+    "Yankee",
+    "Zulu",
+]
 
 
 class Command(BaseCommand):
@@ -41,12 +70,6 @@ class Command(BaseCommand):
                 "Run create_sample_machines first."
             )
 
-        # Get existing maintainers for cycling
-        maintainers = list(Maintainer.objects.select_related("user").all())
-        maintainer_count = len(maintainers)
-        if maintainer_count == 0:
-            raise CommandError("No maintainers found. Run create_sample_accounts first.")
-
         # Base time: 200 minutes ago (ensures no future dates)
         base_time = timezone.now() - timedelta(minutes=200)
 
@@ -54,15 +77,15 @@ class Command(BaseCommand):
         first_problem = None
         for i in range(self.RECORDS_PER_TYPE):
             occurred_at = base_time + timedelta(minutes=i * 8)  # T+0, T+8, T+16...
-            random_word = secrets.token_hex(2)[:5]
-            maintainer_name = self._get_maintainer_name(i, maintainers, maintainer_count)
+            random_word = secrets.token_hex(3)[:5]
+            fake_name = NATO_ALPHABET[i % len(NATO_ALPHABET)]
 
             problem = ProblemReport.objects.create(
                 machine=machine,
                 description=f"Test problem #{i + 1} [{random_word}]",
                 status=ProblemReport.Status.OPEN,
                 problem_type=ProblemReport.ProblemType.OTHER,
-                reported_by_name=maintainer_name,
+                reported_by_name=fake_name,
                 occurred_at=occurred_at,
             )
             if i == 0:
@@ -72,14 +95,14 @@ class Command(BaseCommand):
         first_part_request = None
         for i in range(self.RECORDS_PER_TYPE):
             occurred_at = base_time + timedelta(minutes=i * 8 + 2)  # T+2, T+10, T+18...
-            random_word = secrets.token_hex(2)[:5]
-            maintainer_name = self._get_maintainer_name(i, maintainers, maintainer_count)
+            random_word = secrets.token_hex(3)[:5]
+            fake_name = NATO_ALPHABET[i % len(NATO_ALPHABET)]
 
             part_request = PartRequest.objects.create(
                 machine=machine,
                 text=f"Test part request #{i + 1} [{random_word}]",
                 status=PartRequest.Status.REQUESTED,
-                requested_by_name=maintainer_name,
+                requested_by_name=fake_name,
                 occurred_at=occurred_at,
             )
             if i == 0:
@@ -89,14 +112,14 @@ class Command(BaseCommand):
         if first_problem:
             for i in range(self.RECORDS_PER_TYPE):
                 occurred_at = base_time + timedelta(minutes=i * 8 + 4)  # T+4, T+12, T+20...
-                random_word = secrets.token_hex(2)[:5]
-                maintainer_name = self._get_maintainer_name(i, maintainers, maintainer_count)
+                random_word = secrets.token_hex(3)[:5]
+                fake_name = NATO_ALPHABET[i % len(NATO_ALPHABET)]
 
                 LogEntry.objects.create(
                     machine=machine,
                     problem_report=first_problem,
                     text=f"Test log entry #{i + 1} [{random_word}]",
-                    maintainer_names=maintainer_name,
+                    maintainer_names=fake_name,
                     occurred_at=occurred_at,
                 )
 
@@ -104,13 +127,13 @@ class Command(BaseCommand):
         if first_part_request:
             for i in range(self.RECORDS_PER_TYPE):
                 occurred_at = base_time + timedelta(minutes=i * 8 + 6)  # T+6, T+14, T+22...
-                random_word = secrets.token_hex(2)[:5]
-                maintainer_name = self._get_maintainer_name(i, maintainers, maintainer_count)
+                random_word = secrets.token_hex(3)[:5]
+                fake_name = NATO_ALPHABET[i % len(NATO_ALPHABET)]
 
                 PartRequestUpdate.objects.create(
                     part_request=first_part_request,
                     text=f"Test update #{i + 1} [{random_word}]",
-                    posted_by_name=maintainer_name,
+                    posted_by_name=fake_name,
                     occurred_at=occurred_at,
                 )
 
@@ -122,10 +145,3 @@ class Command(BaseCommand):
                 f"{n} part requests and {n} part request updates for {display_name}"
             )
         )
-
-    def _get_maintainer_name(
-        self, index: int, maintainers: list[Maintainer], maintainer_count: int
-    ) -> str:
-        """Get a maintainer name for the given index by cycling through existing maintainers."""
-        maintainer = maintainers[index % maintainer_count]
-        return maintainer.user.username
