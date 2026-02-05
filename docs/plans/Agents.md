@@ -1,5 +1,7 @@
 # Agent Instructions Build System
 
+Status: IMPLEMENTED.
+
 ## Goal
 
 Create a build system that generates AI agent instruction files like [`CLAUDE.md`](../../CLAUDE.md) and [`AGENTS.md`](../../AGENTS.md) from a single source of truth, with a pre-commit hook to keep them in sync.

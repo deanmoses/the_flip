@@ -2,6 +2,8 @@
 
 This document describes the UI feedback system for video uploads and transcoding.
 
+Status: IMPLEMENTED.
+
 ## Features
 
 - **Real-time video status**: Auto-updates UI when transcoding completes (ready/failed)

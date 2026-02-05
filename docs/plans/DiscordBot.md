@@ -1,5 +1,7 @@
 # Discord Bot
 
+Status: IMPLEMENTED.
+
 ## Overview
 
 A Discord Bot that syncs messages from The Flip's workshop channel to Flipfix.
