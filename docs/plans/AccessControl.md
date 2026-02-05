@@ -2,6 +2,8 @@
 
 This is a plan to make this project's access control follow Django best practices.
 
+Status: IMPLEMENTED.
+
 ## Current State
 
 - Pinball machine maintainers need access to the end user site but NOT Django admin; however, they _DO_ have access to Django admin.

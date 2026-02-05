@@ -2,6 +2,8 @@
 
 This documents the file/object storage requirements for video transcoding and the options considered.
 
+Status: IMPLEMENTED.
+
 ## Context
 
 This application requires file storage for uploaded photos and videos. There are two services that need to interact:

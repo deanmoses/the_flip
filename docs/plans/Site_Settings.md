@@ -1,6 +1,6 @@
 # Site Settings
 
-**Status: Under Consideration**
+Status: IMPLEMENTED.
 
 ## Problem Description
 

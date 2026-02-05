@@ -1,5 +1,7 @@
 # Interactive Markdown Checkboxes
 
+Status: IMPLEMENTED.
+
 ## Problem Statement
 
 You know how Github Issues allow markdown, and that markdown can contain a list of checkboxes? When the markdown is in display mode, you get checkboxes, and checking a box saves the markdown with that item checked.

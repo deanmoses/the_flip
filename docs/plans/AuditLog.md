@@ -2,6 +2,8 @@
 
 This document describes the requirements for audit logging and compares implementation options.
 
+Status: IMPLEMENTED.
+
 ## Background
 
 The museum director wants to track what volunteer maintainers are doing in the system. From [GitHub Issue #33](https://github.com/deanmoses/the_flip/issues/33):

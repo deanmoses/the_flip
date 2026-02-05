@@ -2,6 +2,8 @@
 
 This is the hosting and devops requirements of this project and alternatives considered.
 
+Status: IMPLEMENTED.
+
 ## ✅ Decision: Railway
 
 **Railway was selected as the hosting platform.** The production system is deployed at https://the-flip-production.up.railway.app/

@@ -1,5 +1,7 @@
 # Plan: Add `short_name` Field to MachineInstance
 
+Status: IMPLEMENTED.
+
 ## Overview
 
 Add an optional `short_name` field to `MachineInstance` for human-curated abbreviations like:
