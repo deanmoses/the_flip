@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
 from the_flip.apps.core.image_processing import (
@@ -138,3 +140,40 @@ def get_media_model(model_name: str):
 
     module = import_module(module_path)
     return getattr(module, class_name)
+
+
+# ---------------------------------------------------------------------------
+# Generic link tracking
+# ---------------------------------------------------------------------------
+
+
+class RecordReference(models.Model):
+    """Tracks links between records for 'what links here' queries.
+
+    Uses Django's contenttypes framework for polymorphic source/target.
+    GenericForeignKey doesn't support on_delete, so all target deletions
+    are allowed. Broken links render as 'broken link' text. For wiki
+    pages, the delete confirmation warns which pages will have broken links.
+    """
+
+    # Source (the record containing the link)
+    source_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, related_name="+")
+    source_id = models.PositiveBigIntegerField()
+    source = GenericForeignKey("source_type", "source_id")
+
+    # Target (the record being linked to)
+    target_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, related_name="+")
+    target_id = models.PositiveBigIntegerField()
+    target = GenericForeignKey("target_type", "target_id")
+
+    class Meta:
+        unique_together = [["source_type", "source_id", "target_type", "target_id"]]
+        indexes = [
+            models.Index(fields=["target_type", "target_id"]),  # "What links here"
+            models.Index(fields=["source_type", "source_id"]),  # Cleanup on delete
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.source_type.model}:{self.source_id} → {self.target_type.model}:{self.target_id}"
+        )

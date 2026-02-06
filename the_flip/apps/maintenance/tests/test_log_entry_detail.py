@@ -2,10 +2,12 @@
 
 from datetime import timedelta
 
+from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase, tag
 from django.urls import reverse
 from django.utils import timezone
 
+from the_flip.apps.core.models import RecordReference
 from the_flip.apps.core.test_utils import (
     DATETIME_DISPLAY_FORMAT,
     DATETIME_INPUT_FORMAT,
@@ -15,6 +17,7 @@ from the_flip.apps.core.test_utils import (
     create_machine,
     create_problem_report,
 )
+from the_flip.apps.maintenance.models import LogEntry
 
 
 @tag("views")
@@ -148,6 +151,49 @@ class LogEntryDetailViewTextUpdateTests(SuppressRequestLogsMixin, TestDataMixin,
         )
 
         self.assertEqual(response.status_code, 403)
+
+    def test_update_text_converts_authoring_links_to_storage(self):
+        """AJAX text update converts [[machine:slug]] to [[machine:id:N]]."""
+        self.client.force_login(self.maintainer_user)
+
+        response = self.client.post(
+            self.detail_url,
+            {"action": "update_text", "text": f"See [[machine:{self.machine.slug}]]"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.log_entry.refresh_from_db()
+        self.assertEqual(self.log_entry.text, f"See [[machine:id:{self.machine.pk}]]")
+
+    def test_update_text_syncs_references(self):
+        """AJAX text update creates RecordReference rows for links."""
+        self.client.force_login(self.maintainer_user)
+
+        self.client.post(
+            self.detail_url,
+            {"action": "update_text", "text": f"See [[machine:{self.machine.slug}]]"},
+        )
+
+        source_ct = ContentType.objects.get_for_model(LogEntry)
+        self.assertTrue(
+            RecordReference.objects.filter(
+                source_type=source_ct,
+                source_id=self.log_entry.pk,
+            ).exists()
+        )
+
+    def test_update_text_broken_link_returns_error(self):
+        """AJAX text update with broken link returns 400."""
+        self.client.force_login(self.maintainer_user)
+
+        response = self.client.post(
+            self.detail_url,
+            {"action": "update_text", "text": "See [[machine:nonexistent]]"},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.log_entry.refresh_from_db()
+        self.assertEqual(self.log_entry.text, "Original text")
 
 
 @tag("views")

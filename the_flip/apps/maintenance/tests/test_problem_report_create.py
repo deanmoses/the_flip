@@ -3,10 +3,12 @@
 from datetime import timedelta
 
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase, tag
 from django.urls import reverse
 from django.utils import timezone
 
+from the_flip.apps.core.models import RecordReference
 from the_flip.apps.core.test_utils import (
     DATETIME_INPUT_FORMAT,
     SharedAccountTestMixin,
@@ -150,6 +152,48 @@ class ProblemReportCreateViewTests(TestDataMixin, TestCase):
         response = self.client.post(self.url, data, REMOTE_ADDR="192.168.1.100")
         self.assertEqual(response.status_code, 302)
         self.assertEqual(ProblemReport.objects.count(), settings.RATE_LIMIT_REPORTS_PER_IP + 1)
+
+    def test_public_form_does_not_convert_links(self):
+        """Public form stores description verbatim without link conversion."""
+        data = {
+            "problem_type": ProblemReport.ProblemType.OTHER,
+            "description": f"See [[machine:{self.machine.slug}]]",
+        }
+        self.client.post(self.url, data, REMOTE_ADDR="192.168.1.100")
+
+        report = ProblemReport.objects.first()
+        # Public form should store text as-is, not convert to storage format
+        self.assertEqual(report.description, f"See [[machine:{self.machine.slug}]]")
+
+    def test_public_form_does_not_reject_broken_links(self):
+        """Public form accepts text with unresolvable link syntax."""
+        data = {
+            "problem_type": ProblemReport.ProblemType.OTHER,
+            "description": "See [[machine:nonexistent]]",
+        }
+        response = self.client.post(self.url, data, REMOTE_ADDR="192.168.1.100")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(ProblemReport.objects.count(), 1)
+        report = ProblemReport.objects.first()
+        self.assertEqual(report.description, "See [[machine:nonexistent]]")
+
+    def test_public_form_does_not_create_references(self):
+        """Public form does not create RecordReference rows."""
+        data = {
+            "problem_type": ProblemReport.ProblemType.OTHER,
+            "description": f"See [[machine:{self.machine.slug}]]",
+        }
+        self.client.post(self.url, data, REMOTE_ADDR="192.168.1.100")
+
+        source_ct = ContentType.objects.get_for_model(ProblemReport)
+        report = ProblemReport.objects.first()
+        self.assertFalse(
+            RecordReference.objects.filter(
+                source_type=source_ct,
+                source_id=report.pk,
+            ).exists()
+        )
 
 
 @tag("views")

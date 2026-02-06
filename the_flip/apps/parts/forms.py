@@ -9,6 +9,7 @@ from the_flip.apps.core.forms import (
     normalize_uploaded_files,
     validate_media_files,
 )
+from the_flip.apps.core.markdown_links import convert_authoring_to_storage
 from the_flip.apps.maintenance.forms import MultiFileField, MultiFileInput
 from the_flip.apps.parts.models import PartRequest, PartRequestUpdate
 
@@ -48,12 +49,25 @@ class PartRequestForm(StyledFormMixin, forms.ModelForm):
         fields = ["text", "occurred_at"]
         widgets = {
             "text": forms.Textarea(
-                attrs={"rows": 4, "placeholder": "Describe what part is needed and why..."}
+                attrs={
+                    "rows": 4,
+                    "placeholder": "Describe what part is needed and why...",
+                    "data-text-textarea": "",
+                    "data-link-autocomplete": "",
+                    "data-link-api-url": "/api/link-targets/",
+                }
             ),
         }
         labels = {
             "text": "Description",
         }
+
+    def clean_text(self):
+        """Convert authoring format links to storage format."""
+        text = self.cleaned_data.get("text", "")
+        if text:
+            text = convert_authoring_to_storage(text)
+        return text
 
     def clean_machine_slug(self):
         """Validate machine_slug if provided."""
@@ -114,12 +128,25 @@ class PartRequestUpdateForm(StyledFormMixin, forms.ModelForm):
         fields = ["text", "new_status", "occurred_at"]
         widgets = {
             "text": forms.Textarea(
-                attrs={"rows": 3, "placeholder": "Add a comment or status update..."}
+                attrs={
+                    "rows": 3,
+                    "placeholder": "Add a comment or status update...",
+                    "data-text-textarea": "",
+                    "data-link-autocomplete": "",
+                    "data-link-api-url": "/api/link-targets/",
+                }
             ),
         }
         labels = {
             "text": "Comment",
         }
+
+    def clean_text(self):
+        """Convert authoring format links to storage format."""
+        text = self.cleaned_data.get("text", "")
+        if text:
+            text = convert_authoring_to_storage(text)
+        return text
 
     def clean_media_file(self):
         """Validate uploaded media files."""

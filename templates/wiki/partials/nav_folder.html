@@ -1,0 +1,23 @@
+{% load core_extras %}
+{# Recursive folder for nested tags #}
+<li>
+  <div class="wiki-nav__folder-label">
+    {% icon "hashtag" %}
+    <span>{{ tag_name|title }}</span>
+  </div>
+  <ul class="wiki-nav__list wiki-nav__list--nested">
+    {# Pages in this tag #}
+    {% for item in node.pages %}
+      <li>
+        <a href="{% url 'wiki-page-detail' item.path %}"
+           class="wiki-nav__link text-muted{% if page and current_tag == node.tag_path and page.slug == item.page.slug %} wiki-nav__link--active{% endif %}">
+          {{ item.page.title }}
+        </a>
+      </li>
+    {% endfor %}
+    {# Nested tag folders (recursive) #}
+    {% for child_name, child_node in node.children.items %}
+      {% include "wiki/partials/nav_folder.html" with tag_name=child_name node=child_node %}
+    {% endfor %}
+  </ul>
+</li>

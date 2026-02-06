@@ -1,14 +1,17 @@
 """Tests for part request detail view and AJAX endpoints."""
 
+from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase, tag
 from django.urls import reverse
 
+from the_flip.apps.core.models import RecordReference
 from the_flip.apps.core.test_utils import (
     SuppressRequestLogsMixin,
     TestDataMixin,
     create_part_request,
     create_part_request_update,
 )
+from the_flip.apps.parts.models import PartRequest, PartRequestUpdate
 
 
 @tag("views")
@@ -110,6 +113,49 @@ class PartRequestDetailViewTextUpdateTests(SuppressRequestLogsMixin, TestDataMix
 
         self.assertEqual(response.status_code, 403)
 
+    def test_update_text_converts_authoring_links_to_storage(self):
+        """AJAX text update converts [[machine:slug]] to [[machine:id:N]]."""
+        self.client.force_login(self.maintainer_user)
+
+        response = self.client.post(
+            self.detail_url,
+            {"action": "update_text", "text": f"See [[machine:{self.machine.slug}]]"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.part_request.refresh_from_db()
+        self.assertEqual(self.part_request.text, f"See [[machine:id:{self.machine.pk}]]")
+
+    def test_update_text_syncs_references(self):
+        """AJAX text update creates RecordReference rows for links."""
+        self.client.force_login(self.maintainer_user)
+
+        self.client.post(
+            self.detail_url,
+            {"action": "update_text", "text": f"See [[machine:{self.machine.slug}]]"},
+        )
+
+        source_ct = ContentType.objects.get_for_model(PartRequest)
+        self.assertTrue(
+            RecordReference.objects.filter(
+                source_type=source_ct,
+                source_id=self.part_request.pk,
+            ).exists()
+        )
+
+    def test_update_text_broken_link_returns_error(self):
+        """AJAX text update with broken link returns 400."""
+        self.client.force_login(self.maintainer_user)
+
+        response = self.client.post(
+            self.detail_url,
+            {"action": "update_text", "text": "See [[machine:nonexistent]]"},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.part_request.refresh_from_db()
+        self.assertEqual(self.part_request.text, "Original text")
+
 
 @tag("views")
 class PartRequestUpdateDetailViewTextUpdateTests(SuppressRequestLogsMixin, TestDataMixin, TestCase):
@@ -173,3 +219,46 @@ class PartRequestUpdateDetailViewTextUpdateTests(SuppressRequestLogsMixin, TestD
         )
 
         self.assertEqual(response.status_code, 403)
+
+    def test_update_text_converts_authoring_links_to_storage(self):
+        """AJAX text update converts [[machine:slug]] to [[machine:id:N]]."""
+        self.client.force_login(self.maintainer_user)
+
+        response = self.client.post(
+            self.detail_url,
+            {"action": "update_text", "text": f"See [[machine:{self.machine.slug}]]"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.update.refresh_from_db()
+        self.assertEqual(self.update.text, f"See [[machine:id:{self.machine.pk}]]")
+
+    def test_update_text_syncs_references(self):
+        """AJAX text update creates RecordReference rows for links."""
+        self.client.force_login(self.maintainer_user)
+
+        self.client.post(
+            self.detail_url,
+            {"action": "update_text", "text": f"See [[machine:{self.machine.slug}]]"},
+        )
+
+        source_ct = ContentType.objects.get_for_model(PartRequestUpdate)
+        self.assertTrue(
+            RecordReference.objects.filter(
+                source_type=source_ct,
+                source_id=self.update.pk,
+            ).exists()
+        )
+
+    def test_update_text_broken_link_returns_error(self):
+        """AJAX text update with broken link returns 400."""
+        self.client.force_login(self.maintainer_user)
+
+        response = self.client.post(
+            self.detail_url,
+            {"action": "update_text", "text": "See [[machine:nonexistent]]"},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.update.refresh_from_db()
+        self.assertEqual(self.update.text, "Original update text")

@@ -89,6 +89,26 @@ class MyProtectedView(CanAccessMaintainerPortalMixin, View):
     ...
 ```
 
+## Form Pre-filling via Session
+
+`FormPrefillMixin` provides a generic mechanism for pre-filling a form field from session data. Any feature can seed a create form by storing data in the session, then redirecting to the create view.
+
+```python
+from the_flip.apps.core.mixins import FormPrefillMixin
+
+class MyCreateView(FormPrefillMixin, CanAccessMaintainerPortalMixin, CreateView):
+    ...
+```
+
+To pre-fill, store a dict in `request.session["form_prefill"]` with `field` (form field name) and `content` (value), then redirect to the create view. The mixin pops the session key in `get_initial()` so it's consumed once.
+
+```python
+request.session["form_prefill"] = {"field": "description", "content": "..."}
+return redirect("my-create-view")
+```
+
+Used by wiki action buttons to pre-fill problem report, log entry, and part request forms.
+
 ## Safe Object Lookups
 
 Use `get_object_or_404()` when fetching objects from URL parameters:

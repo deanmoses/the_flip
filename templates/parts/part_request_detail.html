@@ -144,6 +144,8 @@
 </div>
 {% endblock %}
 {% block extra_scripts %}
+  <script src="{% static 'core/dropdown_keyboard.js' %}" defer></script>
+  <script src="{% static 'core/link_autocomplete.js' %}" defer></script>
   <script src="{% static 'core/infinite_scroll.js' %}" defer></script>
   <script>
     const CSRF_TOKEN = '{{ csrf_token }}';

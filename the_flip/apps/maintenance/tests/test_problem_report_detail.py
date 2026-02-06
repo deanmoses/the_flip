@@ -1,9 +1,11 @@
 """Tests for problem report detail views and actions."""
 
+from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase, tag
 from django.urls import reverse
 
 from the_flip.apps.accounts.models import Maintainer
+from the_flip.apps.core.models import RecordReference
 from the_flip.apps.core.test_utils import (
     SuppressRequestLogsMixin,
     TestDataMixin,
@@ -336,6 +338,50 @@ class ProblemReportDetailViewTextUpdateTests(SuppressRequestLogsMixin, TestDataM
         )
 
         self.assertEqual(response.status_code, 403)
+
+    def test_update_text_converts_authoring_links_to_storage(self):
+        """AJAX text update converts [[machine:slug]] to [[machine:id:N]]."""
+        self.client.force_login(self.maintainer_user)
+
+        response = self.client.post(
+            self.detail_url,
+            {"action": "update_text", "text": f"See [[machine:{self.machine.slug}]]"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.report.refresh_from_db()
+        self.assertEqual(self.report.description, f"See [[machine:id:{self.machine.pk}]]")
+
+    def test_update_text_syncs_references(self):
+        """AJAX text update creates RecordReference rows for links."""
+        self.client.force_login(self.maintainer_user)
+
+        self.client.post(
+            self.detail_url,
+            {"action": "update_text", "text": f"See [[machine:{self.machine.slug}]]"},
+        )
+
+        source_ct = ContentType.objects.get_for_model(ProblemReport)
+        self.assertTrue(
+            RecordReference.objects.filter(
+                source_type=source_ct,
+                source_id=self.report.pk,
+            ).exists()
+        )
+
+    def test_update_text_broken_link_returns_error(self):
+        """AJAX text update with broken link returns 400."""
+        self.client.force_login(self.maintainer_user)
+
+        response = self.client.post(
+            self.detail_url,
+            {"action": "update_text", "text": "See [[machine:nonexistent]]"},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        # Description should not have changed
+        self.report.refresh_from_db()
+        self.assertEqual(self.report.description, "Original description")
 
 
 @tag("views")

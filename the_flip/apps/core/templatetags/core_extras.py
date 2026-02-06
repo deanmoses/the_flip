@@ -1,142 +1,39 @@
-import re
 import secrets
 
-import markdown
-import nh3
 from django import template
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
-from linkify_it import LinkifyIt
 
 register = template.Library()
 
-# Linkifier instance for URL detection (handles URLs, emails, www links)
-_linkify = LinkifyIt()
 
-# Allowed HTML tags for markdown rendering
-ALLOWED_TAGS = {
-    "p",
-    "br",
-    "strong",
-    "em",
-    "ul",
-    "ol",
-    "li",
-    "code",
-    "pre",
-    "blockquote",
-    "a",
-    "h1",
-    "h2",
-    "h3",
-    "h4",
-    "h5",
-    "h6",
-    "img",
-    "hr",
-    "table",
-    "thead",
-    "tbody",
-    "tr",
-    "th",
-    "td",
-    "figure",
-    "figcaption",
-}
+@register.filter
+def storage_to_authoring(text):
+    """Convert storage-format links to authoring format for editing.
 
-# Allowed attributes per tag
-ALLOWED_ATTRIBUTES = {
-    "a": {"href", "title"},
-    "img": {"src", "alt", "title"},
-    "code": {"class"},
-    "pre": {"class"},
-    "th": {"align"},
-    "td": {"align"},
-}
+    Storage format uses PKs (e.g., ``[[machine:id:42]]``).
+    Authoring format uses slugs (e.g., ``[[machine:blackout]]``).
+    ID-based types (e.g., ``[[log:7]]``) pass through unchanged.
 
-# Regex for task list items: matches <li> followed by optional <p>, then [ ], [  ], [], [x], or [X]
-# Group 1: optional whitespace+<p> (for blank-line-separated list items)
-# Group 2: the check character to determine checked state (spaces or empty = unchecked)
-_TASK_LIST_RE = re.compile(r"<li>(\s*<p>)?\s*\[( *|[xX])\]")
+    Usage in templates::
 
-
-def _linkify_urls(html: str) -> str:
-    """Convert bare URLs to anchor tags using linkify-it-py.
-
-    Handles URLs, www links, and email addresses. Properly handles edge cases
-    like parentheses in URLs (e.g., Wikipedia links) and avoids double-linking
-    URLs already in anchor tags.
+        <textarea>{{ content|storage_to_authoring }}</textarea>
     """
-    matches = _linkify.match(html)
-    if not matches:
-        return html
+    if not text:
+        return text
+    from the_flip.apps.core.markdown_links import convert_storage_to_authoring
 
-    # Process matches in reverse order to preserve string indices
-    result = html
-    for match in reversed(matches):
-        start = match.index
-        end = match.last_index
-
-        # Skip if this URL is already inside an href attribute
-        prefix = html[:start]
-        if prefix.endswith('href="') or prefix.endswith("href='"):
-            continue
-
-        # Replace with anchor tag
-        anchor = f'<a href="{match.url}">{match.text}</a>'
-        result = result[:start] + anchor + result[end:]
-
-    return result
-
-
-def _convert_task_list_items(html: str) -> str:
-    """Convert task list markers in <li> tags to checkbox HTML.
-
-    After markdown and nh3 processing, literal [ ] and [x] text inside <li> tags
-    is converted to checkbox inputs. Each checkbox gets a sequential
-    data-checkbox-index attribute for JavaScript targeting.
-
-    This runs AFTER nh3 sanitization, so the injected <input> elements are
-    trusted server code, not user-supplied HTML.
-
-    Args:
-        html: Sanitized HTML containing <li>[ ] or <li>[x] patterns
-
-    Returns:
-        HTML with task list markers replaced by checkbox inputs
-    """
-    counter = 0
-
-    def _replace(match: re.Match) -> str:
-        nonlocal counter
-        idx = counter
-        counter += 1
-        p_tag = match.group(1) or ""  # Preserve <p> if present (blank-line-separated items)
-        check_char = match.group(2)
-        checked_attr = " checked" if check_char in ("x", "X") else ""
-        return (
-            f'<li class="task-list-item">{p_tag}'
-            f'<input type="checkbox"{checked_attr} data-checkbox-index="{idx}" disabled>'
-        )
-
-    return _TASK_LIST_RE.sub(_replace, html)
+    return convert_storage_to_authoring(text)
 
 
 @register.filter
 def render_markdown(text):
     """Convert markdown text to sanitized HTML."""
-    if not text:
-        return ""
-    # Convert markdown to HTML
-    html = markdown.markdown(text, extensions=["fenced_code", "nl2br", "smarty"])
-    # Convert bare URLs to links
-    html = _linkify_urls(html)
-    # Sanitize to prevent XSS
-    safe_html = nh3.clean(html, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRIBUTES)
-    # Convert task list markers to checkboxes (after sanitization for security)
-    safe_html = _convert_task_list_items(safe_html)
-    return mark_safe(safe_html)  # noqa: S308 - HTML sanitized by nh3
+    from the_flip.apps.core.markdown import render_markdown_html
+
+    return mark_safe(render_markdown_html(text))  # noqa: S308 - HTML sanitized by nh3
 
 
 @register.filter
@@ -706,6 +603,49 @@ def maintainer_chip_input_field(
     }
 
 
+@register.inclusion_tag("components/tag_chip_input_field.html")
+def tag_chip_input_field(
+    label: str = "Tags",
+    placeholder: str = "Add tag...",
+    help_text: str = "",
+    show_label: bool = True,
+    required: bool = False,
+    initial_tags: str = "",
+    errors: list | None = None,
+):
+    """Render a chip-based tag input for wiki pages.
+
+    Usage:
+        {% tag_chip_input_field %}
+        {% tag_chip_input_field label="Categories" %}
+        {% tag_chip_input_field initial_tags="machines, guides" %}
+
+    Args:
+        label: Label text (default "Tags")
+        placeholder: Input placeholder text
+        help_text: Help text shown below input
+        show_label: Whether to show the label (default True)
+        required: Whether the field is required (affects label display)
+        initial_tags: Comma-separated string of tags to pre-populate
+        errors: List of error messages to display below the input
+    """
+    # Split tags into list for hidden input fallback
+    tags_list = []
+    if initial_tags:
+        tags_list = [tag.strip() for tag in initial_tags.split(",") if tag.strip()]
+
+    return {
+        "label": label,
+        "placeholder": placeholder,
+        "help_text": help_text,
+        "show_label": show_label,
+        "required": required,
+        "initial_tags": initial_tags,
+        "initial_tags_list": tags_list,
+        "errors": errors or [],
+    }
+
+
 # -----------------------------------------------------------------------------
 # Sidebar template tags
 # -----------------------------------------------------------------------------
@@ -765,8 +705,6 @@ def editable_sidebar_card(
         label: Aria label/title for edit button (defaults based on edit_type)
         placeholder: Search input placeholder (defaults based on edit_type)
     """
-    from django.urls import reverse
-
     if not editable:
         return content
 

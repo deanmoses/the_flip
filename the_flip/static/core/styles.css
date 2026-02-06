@@ -1978,6 +1978,7 @@ body {
   position: relative;
   top: -0.1em;
   accent-color: var(--color-accent);
+  color-scheme: light dark;
 }
 
 .markdown-content .task-list-item input[type='checkbox']:not(:disabled) {
@@ -1987,6 +1988,13 @@ body {
 .markdown-content .task-list-item input[type='checkbox']:disabled {
   opacity: 0.7;
   cursor: default;
+}
+
+/* --- Wiki Action Buttons --- */
+.wiki-action {
+  margin-block: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-gray-200);
 }
 
 /* --- Stats Grid --- */
@@ -2321,4 +2329,142 @@ body {
   .history-link {
     display: none;
   }
+}
+
+/* ========================================
+   WIKI NAVIGATION
+   ======================================== */
+
+.wiki-nav__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.wiki-nav__list--nested {
+  margin-left: var(--space-4);
+}
+
+.wiki-nav__link:hover {
+  color: var(--color-text-primary);
+}
+
+.wiki-nav__link--active {
+  display: block;
+  color: var(--color-text-primary);
+  background-color: var(--color-gray-100);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  margin-left: calc(-1 * var(--space-2));
+  cursor: default;
+}
+
+.wiki-nav__folder-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* ========================================
+   WIKI HOME
+   mobile shows nav, desktop shows recent pages
+   ======================================== */
+
+.wiki-home__desktop {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .wiki-home__mobile-nav {
+    display: none;
+  }
+
+  .wiki-home__desktop {
+    display: block;
+  }
+}
+
+/* ========================================
+   LINK AUTOCOMPLETE DROPDOWN
+   ======================================== */
+
+.link-autocomplete-wrapper {
+  position: relative;
+}
+
+.link-dropdown {
+  position: absolute;
+  z-index: 1000;
+  background: var(--color-surface);
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  min-width: 200px;
+  max-width: 400px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.link-dropdown__search {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-bottom: 1px solid var(--color-gray-200);
+  font-size: var(--text-sm);
+  outline: none;
+}
+
+.link-dropdown__search:focus {
+  background-color: var(--color-gray-50);
+}
+
+.link-dropdown__results {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.link-dropdown__item {
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.link-dropdown__item:hover,
+.link-dropdown__item.dropdown-active {
+  background-color: var(--color-gray-100);
+}
+
+.link-dropdown.keyboard-navigating .link-dropdown__item:hover:not(.dropdown-active) {
+  background-color: transparent;
+}
+
+.link-dropdown__item-label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+}
+
+.link-dropdown__item-desc,
+.link-dropdown__item-path {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.link-dropdown__empty {
+  padding: var(--space-3);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* Mirror div for cursor position calculation (hidden) */
+.link-mirror {
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }

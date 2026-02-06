@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "the_flip.apps.maintenance",
     "the_flip.apps.parts",
     "the_flip.apps.discord",
+    "the_flip.apps.wiki",
 ]
 
 MIDDLEWARE = [

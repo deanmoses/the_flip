@@ -9,6 +9,7 @@ from the_flip.apps.core.forms import (
     normalize_uploaded_files,
     validate_media_files,
 )
+from the_flip.apps.core.markdown_links import convert_authoring_to_storage, sync_references
 from the_flip.apps.maintenance.models import LogEntry, ProblemReport
 
 
@@ -90,6 +91,18 @@ class MaintainerProblemReportForm(ProblemReportForm):
 
     class Meta(ProblemReportForm.Meta):
         fields = ["description", "occurred_at"]
+        widgets = {
+            **ProblemReportForm.Meta.widgets,
+            "description": forms.Textarea(
+                attrs={
+                    "rows": 4,
+                    "placeholder": "Describe the problem...",
+                    "data-text-textarea": "",
+                    "data-link-autocomplete": "",
+                    "data-link-api-url": "/api/link-targets/",
+                }
+            ),
+        }
 
     reporter_name = forms.CharField(
         label="Reporter name",
@@ -119,6 +132,13 @@ class MaintainerProblemReportForm(ProblemReportForm):
         ),
     )
 
+    def clean_description(self):
+        """Convert authoring format links to storage format."""
+        description = self.cleaned_data.get("description", "")
+        if description:
+            description = convert_authoring_to_storage(description)
+        return description
+
     def clean_media_file(self):
         """Validate uploaded media (photo or video). Supports multiple files."""
         files = normalize_uploaded_files(self.files, "media_file", self.cleaned_data)
@@ -132,6 +152,12 @@ class MaintainerProblemReportForm(ProblemReportForm):
         the empty string becomes None and fails the model's NOT NULL constraint.
         """
         return self.cleaned_data.get("occurred_at") or timezone.now()
+
+    def save(self, commit=True):
+        instance = super().save(commit=commit)
+        if commit:
+            sync_references(instance, instance.description)
+        return instance
 
 
 class ProblemReportEditForm(StyledFormMixin, forms.ModelForm):
@@ -219,7 +245,15 @@ class LogEntryQuickForm(StyledFormMixin, forms.Form):
     )
     text = forms.CharField(
         label="Description",
-        widget=forms.Textarea(attrs={"rows": 4, "placeholder": "What work was done?"}),
+        widget=forms.Textarea(
+            attrs={
+                "rows": 4,
+                "placeholder": "What work was done?",
+                "data-text-textarea": "",
+                "data-link-autocomplete": "",
+                "data-link-api-url": "/api/link-targets/",
+            }
+        ),
     )
     media_file = MultiFileField(
         label="Photo",
@@ -231,6 +265,13 @@ class LogEntryQuickForm(StyledFormMixin, forms.Form):
             }
         ),
     )
+
+    def clean_text(self):
+        """Convert authoring format links to storage format."""
+        text = self.cleaned_data.get("text", "")
+        if text:
+            text = convert_authoring_to_storage(text)
+        return text
 
     def clean_occurred_at(self):
         """Validate that occurred_at is not in the future."""

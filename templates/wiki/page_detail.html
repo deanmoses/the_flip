@@ -1,0 +1,46 @@
+{% extends "wiki/base.html" %}
+{% load core_extras %}
+{% load wiki_extras %}
+{% block title %}{{ page.title }} · Docs · {{ block.super }}{% endblock %}
+{% block breadcrumbs %}<span>{{ page.title }}</span>{% endblock %}
+{% block main %}
+  <article>
+    <div class="card card--padded">
+      <div class="markdown-content">
+        {% if page.content %}
+          {% render_wiki_content page %}
+        {% else %}
+          <p class="text-muted">This page has no content yet.</p>
+        {% endif %}
+      </div>
+    </div>
+    <footer class="space-above-md">
+      <div class="text-muted text-sm">
+        Last updated {{ page.modified_at|smart_date }}
+        {% if page.modified_by %}by {{ page.modified_by|display_name_with_username }}{% endif %}
+      </div>
+      {% if other_tags %}
+        <div class="text-sm text-muted">
+          {% icon "tags" class="space-right-sm" %}
+          This page also appears in:
+          {% for tag in other_tags %}
+            <a href="{% url 'wiki-page-detail' tag %}" class="link">{{ tag }}</a>
+            {% if not forloop.last %},{% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+      <div class="form-actions space-above-sm">
+        <a href="{% url 'wiki-page-delete' detail_path %}"
+           class="btn btn--secondary">
+          {% icon "trash" class="meta" %}
+          Delete
+        </a>
+        <a href="{% url 'wiki-page-edit' detail_path %}"
+           class="btn btn--primary">
+          {% icon "pen" class="meta" %}
+          Edit
+        </a>
+      </div>
+    </footer>
+  </article>
+{% endblock %}

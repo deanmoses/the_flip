@@ -56,6 +56,26 @@ Comment or status update on a part request. Can optionally change the part reque
 
 Photos/videos attached to part request updates.
 
+## Wiki app
+
+### Wiki Page ([`WikiPage`](../the_flip/apps/wiki/models.py))
+
+A wiki page with markdown content. Pages are identified by slug derived from title.
+
+### Wiki Page Tag ([`WikiPageTag`](../the_flip/apps/wiki/models.py))
+
+Places a wiki page in the navigation tree. A page can have multiple tags, appearing in multiple locations. The empty string tag is a sentinel for untagged pages.
+
+### Wiki Tag Order ([`WikiTagOrder`](../the_flip/apps/wiki/models.py))
+
+Optional explicit ordering for tags in navigation. Tags without entries sort alphabetically.
+
+## Core app
+
+### Record Reference ([`RecordReference`](../the_flip/apps/core/models.py))
+
+Tracks cross-record links (e.g., `[[machine:slug]]`) between any two records for "what links here" queries. Uses Django's contenttypes framework for polymorphic source/target.
+
 ## Discord app
 
 ### Discord User Link ([`DiscordUserLink`](../the_flip/apps/discord/models.py))
