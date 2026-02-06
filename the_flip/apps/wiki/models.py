@@ -70,11 +70,16 @@ class WikiPage(models.Model):
                 self.tags.update(slug=self.slug)
 
 
+# Sentinel value for untagged pages in WikiPageTag.tag
+UNTAGGED_SENTINEL = ""
+
+
 class WikiPageTag(models.Model):
     """Tags that place a wiki page in the navigation tree.
 
     A page can have multiple tags, appearing in multiple locations.
-    The empty string tag ("") is used as a sentinel for untagged pages.
+    Pages without explicit tags get an ``UNTAGGED_SENTINEL`` tag so they
+    still appear in navigation and have a valid URL path.
     """
 
     page = models.ForeignKey(WikiPage, on_delete=models.CASCADE, related_name="tags")
@@ -136,13 +141,12 @@ def ensure_page_has_tag(sender, instance, created, **kwargs):
     """Ensure every WikiPage has at least one WikiPageTag.
 
     If a page has no tags after being saved, create an untagged
-    sentinel (tag="") so the page appears in navigation and has
-    a valid URL path.
+    sentinel so the page appears in navigation and has a valid URL path.
     """
     if not instance.tags.exists():
         WikiPageTag.objects.create(
             page=instance,
-            tag="",
+            tag=UNTAGGED_SENTINEL,
             slug=instance.slug,
         )
 
@@ -157,4 +161,4 @@ def remove_sentinel_when_tagged(sender, instance, created, **kwargs):
     """
     if created and instance.tag:
         # A non-empty tag was added; delete the sentinel if it exists
-        WikiPageTag.objects.filter(page=instance.page, tag="").delete()
+        WikiPageTag.objects.filter(page=instance.page, tag=UNTAGGED_SENTINEL).delete()

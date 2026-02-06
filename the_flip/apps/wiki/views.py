@@ -17,9 +17,9 @@ from django.views.generic import (
 
 from the_flip.apps.core.mixins import CanAccessMaintainerPortalMixin
 
-from .actions import _TYPE_TO_FIELD, build_create_url, extract_action_content
+from .actions import build_create_url, extract_action_content, get_prefill_field
 from .forms import WikiPageForm
-from .models import WikiPage, WikiPageTag
+from .models import UNTAGGED_SENTINEL, WikiPage, WikiPageTag
 
 
 def parse_wiki_path(path: str) -> tuple[str, str]:
@@ -46,32 +46,39 @@ def parse_wiki_path(path: str) -> tuple[str, str]:
     return tag, slug
 
 
-class WikiPageDetailView(CanAccessMaintainerPortalMixin, DetailView):
+class WikiPagePathMixin:
+    """Look up a WikiPage by tag/slug path from the URL.
+
+    Sets ``self.current_tag`` for use in context.
+    Subclasses can set ``prefetch_page_tags = True`` to prefetch tags.
+    """
+
+    prefetch_page_tags = False
+
+    def get_object(self, queryset=None):
+        path = self.kwargs.get("path", "")
+        tag, slug = parse_wiki_path(path)
+
+        qs = WikiPageTag.objects.select_related("page")
+        if self.prefetch_page_tags:
+            qs = qs.prefetch_related("page__tags")
+
+        try:
+            page_tag = qs.get(tag=tag, slug=slug)
+        except WikiPageTag.DoesNotExist:
+            raise Http404(f"No wiki page found at '{path}'") from None
+
+        self.current_tag = tag
+        return page_tag.page
+
+
+class WikiPageDetailView(WikiPagePathMixin, CanAccessMaintainerPortalMixin, DetailView):
     """Display a single wiki page."""
 
     model = WikiPage
     template_name = "wiki/page_detail.html"
     context_object_name = "page"
-
-    def get_object(self, queryset=None):
-        """Look up page by tag and slug from URL path."""
-        path = self.kwargs.get("path", "")
-        tag, slug = parse_wiki_path(path)
-
-        # Find the WikiPageTag matching this tag+slug combination
-        try:
-            page_tag = (
-                WikiPageTag.objects.select_related("page")
-                .prefetch_related("page__tags")
-                .get(tag=tag, slug=slug)
-            )
-        except WikiPageTag.DoesNotExist:
-            raise Http404(f"No wiki page found at '{path}'") from None
-
-        # Store the tag for context (which location this page was accessed from)
-        self.current_tag = tag
-
-        return page_tag.page
+    prefetch_page_tags = True
 
     def get_context_data(self, **kwargs):
         """Add wiki-specific context."""
@@ -211,33 +218,32 @@ def build_nav_tree() -> dict:
                 }
             )
 
-    # Sort pages within each node (ordered first, then alphabetically by title)
-    def sort_pages(pages: list) -> list:
-        # Key: ordered items first (False < True), then by order value, then alphabetically
-        return sorted(
-            pages,
-            key=lambda p: (p["order"] is None, p["order"] or 0, p["page"].title.lower()),
-        )
-
-    def sort_tree(node: dict) -> None:
-        node["pages"] = sort_pages(node["pages"])
-        # Sort children: ordered tags first, then alphabetically by segment name
-        node["children"] = dict(
-            sorted(
-                node["children"].items(),
-                key=lambda item: (
-                    item[1]["order"] is None,
-                    item[1]["order"] or 0,
-                    item[0].lower(),
-                ),
-            )
-        )
-        for child in node["children"].values():
-            sort_tree(child)
-
-    sort_tree(tree)
+    _sort_nav_tree(tree)
 
     return tree
+
+
+def _sort_nav_tree(node: dict) -> None:
+    """Sort pages and children within each nav tree node recursively.
+
+    Ordered items sort first (by order value), then alphabetically.
+    """
+    node["pages"] = sorted(
+        node["pages"],
+        key=lambda p: (p["order"] is None, p["order"] or 0, p["page"].title.lower()),
+    )
+    node["children"] = dict(
+        sorted(
+            node["children"].items(),
+            key=lambda item: (
+                item[1]["order"] is None,
+                item[1]["order"] or 0,
+                item[0].lower(),
+            ),
+        )
+    )
+    for child in node["children"].values():
+        _sort_nav_tree(child)
 
 
 class WikiPageCreateView(CanAccessMaintainerPortalMixin, CreateView):
@@ -280,26 +286,13 @@ class WikiPageCreateView(CanAccessMaintainerPortalMixin, CreateView):
         return context
 
 
-class WikiPageEditView(CanAccessMaintainerPortalMixin, UpdateView):
+class WikiPageEditView(WikiPagePathMixin, CanAccessMaintainerPortalMixin, UpdateView):
     """Edit an existing wiki page."""
 
     model = WikiPage
     form_class = WikiPageForm
     template_name = "wiki/page_form.html"
     context_object_name = "page"
-
-    def get_object(self, queryset=None):
-        """Look up page by tag and slug from URL path."""
-        path = self.kwargs.get("path", "")
-        tag, slug = parse_wiki_path(path)
-
-        try:
-            page_tag = WikiPageTag.objects.select_related("page").get(tag=tag, slug=slug)
-        except WikiPageTag.DoesNotExist:
-            raise Http404(f"No wiki page found at '{path}'") from None
-
-        self.current_tag = tag
-        return page_tag.page
 
     def get_form_kwargs(self):
         """Pass tags from POST data to form."""
@@ -338,25 +331,12 @@ class WikiPageEditView(CanAccessMaintainerPortalMixin, UpdateView):
         return context
 
 
-class WikiPageDeleteView(CanAccessMaintainerPortalMixin, DeleteView):
+class WikiPageDeleteView(WikiPagePathMixin, CanAccessMaintainerPortalMixin, DeleteView):
     """Delete a wiki page."""
 
     model = WikiPage
     template_name = "wiki/page_confirm_delete.html"
     context_object_name = "page"
-
-    def get_object(self, queryset=None):
-        """Look up page by tag and slug from URL path."""
-        path = self.kwargs.get("path", "")
-        tag, slug = parse_wiki_path(path)
-
-        try:
-            page_tag = WikiPageTag.objects.select_related("page").get(tag=tag, slug=slug)
-        except WikiPageTag.DoesNotExist:
-            raise Http404(f"No wiki page found at '{path}'") from None
-
-        self.current_tag = tag
-        return page_tag.page
 
     def get_success_url(self):
         """Redirect to wiki home after deletion."""
@@ -389,7 +369,7 @@ class WikiTagAutocompleteView(CanAccessMaintainerPortalMixin, View):
         """Return list of unique tags from WikiPageTag."""
         # Get all unique non-empty tags
         tags = (
-            WikiPageTag.objects.exclude(tag="")
+            WikiPageTag.objects.exclude(tag=UNTAGGED_SENTINEL)
             .values_list("tag", flat=True)
             .distinct()
             .order_by("tag")
@@ -412,7 +392,7 @@ class WikiActionPrefillView(CanAccessMaintainerPortalMixin, View):
         content = convert_storage_to_authoring(action.content)
 
         request.session["form_prefill"] = {
-            "field": _TYPE_TO_FIELD[action.record_type],
+            "field": get_prefill_field(action.record_type),
             "content": content,
         }
         return redirect(build_create_url(action))

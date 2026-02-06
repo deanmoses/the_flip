@@ -11,6 +11,8 @@ from the_flip.apps.core.markdown_links import (
 )
 from the_flip.apps.core.mixins import CanAccessMaintainerPortalMixin
 
+AUTOCOMPLETE_RESULT_LIMIT = 50
+
 
 class LinkTypesView(CanAccessMaintainerPortalMixin, View):
     """JSON endpoint returning available link types for the type picker."""
@@ -61,5 +63,5 @@ class LinkTargetsView(CanAccessMaintainerPortalMixin, View):
                 q_filter |= Q(**{f"{field}__icontains": query})
             qs = qs.filter(q_filter)
 
-        results = [lt.autocomplete_serialize(obj) for obj in qs[:50]]
+        results = [lt.autocomplete_serialize(obj) for obj in qs[:AUTOCOMPLETE_RESULT_LIMIT]]
         return JsonResponse({"results": results})

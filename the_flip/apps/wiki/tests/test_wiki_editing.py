@@ -7,7 +7,7 @@ from the_flip.apps.core.test_utils import (
     SuppressRequestLogsMixin,
     TestDataMixin,
 )
-from the_flip.apps.wiki.models import WikiPage, WikiPageTag
+from the_flip.apps.wiki.models import UNTAGGED_SENTINEL, WikiPage, WikiPageTag
 
 
 @tag("views")
@@ -105,7 +105,7 @@ class WikiPageCreateViewTests(SuppressRequestLogsMixin, TestDataMixin, TestCase)
 
         self.assertEqual(response.status_code, 302)
         page = WikiPage.objects.get(slug="untagged")
-        self.assertTrue(page.tags.filter(tag="").exists())
+        self.assertTrue(page.tags.filter(tag=UNTAGGED_SENTINEL).exists())
 
 
 @tag("views")
@@ -369,7 +369,7 @@ class WikiTagAutocompleteViewTests(SuppressRequestLogsMixin, TestDataMixin, Test
         # Create untagged page (sentinel is created automatically via post_save signal)
         page1 = WikiPage.objects.create(title="Untagged Page", slug="untagged-page")
         # Verify sentinel was created
-        self.assertTrue(page1.tags.filter(tag="").exists())
+        self.assertTrue(page1.tags.filter(tag=UNTAGGED_SENTINEL).exists())
         # Create tagged page
         page2 = WikiPage.objects.create(title="Tagged Page", slug="tagged-page")
         WikiPageTag.objects.create(page=page2, tag="machines", slug="tagged-page")

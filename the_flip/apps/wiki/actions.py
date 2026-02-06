@@ -39,24 +39,40 @@ _ACTION_END_RE = re.compile(r'<!--\s*action:end\s+name="(?P<name>[^"]+)"\s*-->')
 _ACTION_BUTTON_RE = re.compile(r"<!--\s*action:button\s+(?P<attrs>[^>]*?)\s*-->")
 _ATTR_RE = re.compile(r'(?P<key>\w+)="(?P<value>[^"]*)"')
 
-# Valid record types for action blocks
-_VALID_TYPES = {"problem", "log", "partrequest"}
-
 # Required attributes on action:button markers
 _BUTTON_REQUIRED_ATTRS = {"name", "type", "label"}
 
-# Maps record type → (machine-scoped URL name, global URL name)
-_TYPE_TO_URL_NAMES: dict[str, tuple[str, str]] = {
-    "problem": ("problem-report-create-machine", "problem-report-create"),
-    "log": ("log-create-machine", "log-create-global"),
-    "partrequest": ("part-request-create-machine", "part-request-create"),
-}
 
-# Maps record type → the form field name to pre-fill
-_TYPE_TO_FIELD: dict[str, str] = {
-    "problem": "description",
-    "log": "text",
-    "partrequest": "text",
+# ---------------------------------------------------------------------------
+# Record type configuration
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class RecordTypeConfig:
+    """Configuration for a record type that can be created from action blocks."""
+
+    machine_url_name: str
+    global_url_name: str
+    prefill_field: str
+
+
+_RECORD_TYPES: dict[str, RecordTypeConfig] = {
+    "problem": RecordTypeConfig(
+        machine_url_name="problem-report-create-machine",
+        global_url_name="problem-report-create",
+        prefill_field="description",
+    ),
+    "log": RecordTypeConfig(
+        machine_url_name="log-create-machine",
+        global_url_name="log-create-global",
+        prefill_field="text",
+    ),
+    "partrequest": RecordTypeConfig(
+        machine_url_name="part-request-create-machine",
+        global_url_name="part-request-create",
+        prefill_field="text",
+    ),
 }
 
 
@@ -99,8 +115,8 @@ def _validate_button_attrs(attrs: dict[str, str]) -> str | None:
     missing = _BUTTON_REQUIRED_ATTRS - set(attrs.keys())
     if missing:
         return f"missing required attributes: {', '.join(sorted(missing))}"
-    if attrs["type"] not in _VALID_TYPES:
-        return f"invalid type '{attrs['type']}' (must be one of {', '.join(sorted(_VALID_TYPES))})"
+    if attrs["type"] not in _RECORD_TYPES:
+        return f"invalid type '{attrs['type']}' (must be one of {', '.join(sorted(_RECORD_TYPES))})"
     return None
 
 
@@ -177,18 +193,20 @@ def _validate_markers(content: str) -> list[ContentBlock] | None:
         logger.error("Action block '%s': missing action:end", open_block)
         return None
 
-    # Build ContentBlock list
-    result: list[ContentBlock] = []
-    for _name, (start_match, end_match) in blocks.items():
-        block_content = content[start_match.end() : end_match.start()]
-        result.append(
-            ContentBlock(
-                name=start_match.group("name"),
-                content=block_content,
-            )
-        )
+    return _build_content_blocks(content, blocks)
 
-    return result
+
+def _build_content_blocks(
+    content: str, blocks: dict[str, tuple[re.Match, re.Match]]
+) -> list[ContentBlock]:
+    """Build ContentBlock objects from validated start/end match pairs."""
+    return [
+        ContentBlock(
+            name=start_match.group("name"),
+            content=content[start_match.end() : end_match.start()],
+        )
+        for start_match, end_match in blocks.values()
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -289,15 +307,20 @@ def build_action_url(action: ActionBlock, page_pk: int) -> str:
     return reverse("wiki-action-prefill", kwargs={"page_pk": page_pk, "action_name": action.name})
 
 
+def get_prefill_field(record_type: str) -> str:
+    """Return the form field name to pre-fill for a record type."""
+    return _RECORD_TYPES[record_type].prefill_field
+
+
 def build_create_url(action: ActionBlock) -> str:
     """Build the URL for the target create form.
 
     Returns a machine-scoped URL if ``machine_slug`` is set, otherwise global.
     """
-    machine_url_name, global_url_name = _TYPE_TO_URL_NAMES[action.record_type]
+    config = _RECORD_TYPES[action.record_type]
     if action.machine_slug:
-        return reverse(machine_url_name, kwargs={"slug": action.machine_slug})
-    return reverse(global_url_name)
+        return reverse(config.machine_url_name, kwargs={"slug": action.machine_slug})
+    return reverse(config.global_url_name)
 
 
 # ---------------------------------------------------------------------------

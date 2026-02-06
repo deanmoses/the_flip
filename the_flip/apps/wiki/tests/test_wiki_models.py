@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.test import TestCase, tag
 
-from the_flip.apps.wiki.models import WikiPage, WikiPageTag, WikiTagOrder
+from the_flip.apps.wiki.models import UNTAGGED_SENTINEL, WikiPage, WikiPageTag, WikiTagOrder
 
 
 @tag("models")
@@ -41,7 +41,7 @@ class WikiPageSlugSyncTests(TestCase):
         # Signal should have created one tag with empty string
         self.assertEqual(page.tags.count(), 1)
         tag = page.tags.first()
-        self.assertEqual(tag.tag, "")
+        self.assertEqual(tag.tag, UNTAGGED_SENTINEL)
         self.assertEqual(tag.slug, "new-page")
 
     def test_adding_tag_removes_untagged_sentinel(self):
@@ -50,7 +50,7 @@ class WikiPageSlugSyncTests(TestCase):
 
         # Initially has the untagged sentinel
         self.assertEqual(page.tags.count(), 1)
-        self.assertEqual(page.tags.first().tag, "")
+        self.assertEqual(page.tags.first().tag, UNTAGGED_SENTINEL)
 
         # Add a real tag
         WikiPageTag.objects.create(page=page, tag="docs", slug="page")
@@ -178,7 +178,7 @@ class WikiPageTagNormalizationTests(TestCase):
         # Signal creates untagged sentinel
         tag_record = page.tags.first()
 
-        self.assertEqual(tag_record.tag, "")
+        self.assertEqual(tag_record.tag, UNTAGGED_SENTINEL)
 
 
 @tag("models")

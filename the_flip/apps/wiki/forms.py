@@ -10,7 +10,7 @@ from the_flip.apps.core.markdown_links import (
     sync_references,
 )
 
-from .models import WikiPage, WikiPageTag
+from .models import UNTAGGED_SENTINEL, WikiPage, WikiPageTag
 
 
 class WikiPageForm(StyledFormMixin, forms.ModelForm):
@@ -46,7 +46,7 @@ class WikiPageForm(StyledFormMixin, forms.ModelForm):
     def get_initial_tags(self) -> str:
         """Get comma-separated initial tags for the template component."""
         if self.instance.pk:
-            tags = self.instance.tags.exclude(tag="").values_list("tag", flat=True)
+            tags = self.instance.tags.exclude(tag=UNTAGGED_SENTINEL).values_list("tag", flat=True)
             return ", ".join(tags)
         return ""
 
@@ -73,7 +73,7 @@ class WikiPageForm(StyledFormMixin, forms.ModelForm):
             current_tags = set(self.instance.tags.values_list("tag", flat=True))
         else:
             # New page will get the untagged sentinel at minimum
-            current_tags = {""}
+            current_tags = {UNTAGGED_SENTINEL}
 
         # Also include tags being submitted with the form
         for tag in self._tags:
@@ -131,7 +131,7 @@ class WikiPageForm(StyledFormMixin, forms.ModelForm):
         existing_tags = set(page.tags.values_list("tag", flat=True))
 
         # Remove the empty sentinel from comparison - it's auto-managed
-        existing_tags.discard("")
+        existing_tags.discard(UNTAGGED_SENTINEL)
 
         # Tags to add
         for tag in new_tags - existing_tags:
@@ -145,4 +145,4 @@ class WikiPageForm(StyledFormMixin, forms.ModelForm):
         # If page now has no tags, ensure it has the untagged sentinel
         # (The post_save signal handles this, but we check just in case)
         if not page.tags.exists():
-            WikiPageTag.objects.create(page=page, tag="", slug=page.slug)
+            WikiPageTag.objects.create(page=page, tag=UNTAGGED_SENTINEL, slug=page.slug)
