@@ -27,6 +27,10 @@ Owns Problem Reports and Log Entries. Encapsulates workflows such as auto-closin
 
 Owns requests for replacement parts and their lifecycle tracking (requested → ordered → received).
 
+### `wiki`
+
+Internal wiki for maintainer documentation. Pages live in a tag-based hierarchy (e.g., `machines/blackout/system-6`). Supports markdown with `[[type:ref]]` cross-links to other records and action buttons that pre-fill create forms for problems, logs, and part requests.
+
 ### `discord`
 
 Discord integration with two main features:
@@ -38,11 +42,12 @@ Discord integration with two main features:
 
 | App             | Depends On                                  |
 | --------------- | ------------------------------------------- |
-| **core**        | nothing                                     |
+| **core**        | -                                           |
 | **accounts**    | core                                        |
 | **catalog**     | core                                        |
 | **maintenance** | core, accounts, catalog                     |
 | **parts**       | core, accounts, catalog, maintenance        |
+| **wiki**        | core                                        |
 | **discord**     | core, accounts, catalog, maintenance, parts |
 
 ## Services
