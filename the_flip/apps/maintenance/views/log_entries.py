@@ -8,7 +8,7 @@ from functools import partial
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.http import JsonResponse
@@ -25,6 +25,10 @@ from the_flip.apps.core.datetime import (
     apply_browser_timezone,
     parse_datetime_with_browser_timezone,
     validate_not_future,
+)
+from the_flip.apps.core.markdown_links import (
+    save_inline_markdown_field,
+    sync_references,
 )
 from the_flip.apps.core.media import is_video_file
 from the_flip.apps.core.mixins import (
@@ -180,6 +184,7 @@ class MachineLogCreateView(CanAccessMaintainerPortalMixin, FormView):
             occurred_at=occurred_at,
             created_by=self.request.user,
         )
+        sync_references(log_entry, log_entry.text)
         self.machine = machine
 
         # Add linked maintainers
@@ -303,8 +308,11 @@ class LogEntryDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, Detai
         action = request.POST.get("action")
 
         if action == "update_text":
-            self.object.text = request.POST.get("text", "")
-            self.object.save(update_fields=["text", "updated_at"])
+            text = request.POST.get("text", "")
+            try:
+                save_inline_markdown_field(self.object, "text", text)
+            except ValidationError as e:
+                return JsonResponse({"success": False, "errors": e.messages}, status=400)
             return JsonResponse({"success": True})
 
         elif action == "update_occurred_at":

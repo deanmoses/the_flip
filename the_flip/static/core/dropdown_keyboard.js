@@ -14,6 +14,7 @@
  *   });
  *
  *   // Call nav.reset() when re-rendering the list to reset activeIndex
+ *   // Call nav.destroy() to remove the keydown listener (prevents stacking)
  */
 
 function attachDropdownKeyboard(config) {
@@ -71,5 +72,10 @@ function attachDropdownKeyboard(config) {
 
   searchInput.addEventListener('keydown', handleKeydown);
 
-  return { reset };
+  return {
+    reset,
+    destroy: function () {
+      searchInput.removeEventListener('keydown', handleKeydown);
+    },
+  };
 }

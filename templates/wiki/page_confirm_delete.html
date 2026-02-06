@@ -1,0 +1,49 @@
+{% extends "wiki/base.html" %}
+{% load core_extras %}
+{% block title %}Delete: {{ page.title }} · Docs · {{ block.super }}{% endblock %}
+{% block breadcrumbs %}
+  <a href="{% url 'wiki-page-detail' detail_path %}">{{ page.title }}</a>
+  <span>Delete</span>
+{% endblock %}
+{% block main %}
+  <div class="card card--padded">
+    {% if linking_pages %}
+      <h2>Warning: This will create broken links</h2>
+      <p>
+        {{ linking_pages|length }} other page{{ linking_pages|pluralize }} link{{ linking_pages|pluralize:"s," }} to this page.
+        Deleting it will leave broken links in:
+      </p>
+      <ul>
+        {% for ref_page in linking_pages %}
+          <li>
+            {% with first_tag=ref_page.tags.first %}
+              {% if first_tag.tag %}
+                <a href="{% url 'wiki-page-detail' first_tag.tag|add:'/'|add:ref_page.slug %}">{{ ref_page.title }}</a>
+              {% else %}
+                <a href="{% url 'wiki-page-detail' ref_page.slug %}">{{ ref_page.title }}</a>
+              {% endif %}
+            {% endwith %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    <p>
+      Are you sure you want to delete <strong>{{ page.title }}</strong>?
+    </p>
+    <p class="text-muted">This action cannot be undone.</p>
+    <form method="post" class="form-main">
+      {% csrf_token %}
+      <div class="form-actions">
+        <a href="{% url 'wiki-page-detail' detail_path %}"
+           class="btn btn--secondary">
+          {% icon "circle-xmark" class="meta" %}
+          Cancel
+        </a>
+        <button type="submit" class="btn btn--danger">
+          {% icon "trash" class="meta" %}
+          Delete Doc
+        </button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

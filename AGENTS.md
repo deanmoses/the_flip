@@ -73,6 +73,7 @@ STOP and read the relevant doc before writing code. Code that doesn't follow doc
 | Writing tests                    | [`docs/Testing.md`](docs/Testing.md)                     |
 | System architecture              | [`docs/Architecture.md`](docs/Architecture.md)           |
 | Directory layout                 | [`docs/Project_Structure.md`](docs/Project_Structure.md) |
+| `[[type:ref]]` markdown links    | [`docs/MarkdownLinks.md`](docs/MarkdownLinks.md)         |
 
 Follow the patterns in these docs exactly. Do not introduce new conventions without asking. Update docs when changing behavior.
 
@@ -235,17 +236,18 @@ Load with `{% load core_extras %}`, then use:
 
 ### Template Filters
 
-| Filter                       | Description                                              | Usage                                                        |
-| ---------------------------- | -------------------------------------------------------- | ------------------------------------------------------------ |
-| `getfield`                   | Get form field by name                                   | `{{ form\|getfield:"name" }}`                                |
-| `render_markdown`            | Convert markdown to sanitized HTML with auto-linked URLs | `{{ text\|render_markdown }}`                                |
-| `smart_date`                 | Render timestamp as `<time>` element for JS formatting   | `{{ timestamp\|smart_date }}`                                |
-| `month_name`                 | Convert month number (1-12) to name                      | `{{ month_num\|month_name }}`                                |
-| `display_name_with_username` | Returns "First Last (username)" or just "username"       | `{{ user\|display_name_with_username }}`                     |
-| `machine_status_btn_class`   | Button CSS class for machine status                      | `{{ machine.operational_status\|machine_status_btn_class }}` |
-| `machine_status_css_class`   | Pill CSS class for machine status                        | `{{ machine.operational_status\|machine_status_css_class }}` |
-| `machine_status_icon`        | Font Awesome icon for machine status                     | `{{ machine.operational_status\|machine_status_icon }}`      |
-| `manufacturer_year`          | Returns "Manufacturer · Year" string                     | `{{ machine.model\|manufacturer_year }}`                     |
-| `log_entry_meta`             | Maintainer names + timestamp                             | `{{ entry\|log_entry_meta }}`                                |
-| `problem_report_meta`        | Reporter name + timestamp                                | `{{ report\|problem_report_meta }}`                          |
-| `problem_report_summary`     | Concise summary: type + description                      | `{{ report\|problem_report_summary }}`                       |
+| Filter                       | Description                                                                              | Usage                                                        |
+| ---------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `getfield`                   | Get form field by name                                                                   | `{{ form\|getfield:"name" }}`                                |
+| `render_markdown`            | Convert markdown to sanitized HTML with auto-linked URLs and wiki links (`[[type:ref]]`) | `{{ text\|render_markdown }}`                                |
+| `storage_to_authoring`       | Convert storage-format links to authoring format for editing                             | `{{ content\|storage_to_authoring }}`                        |
+| `smart_date`                 | Render timestamp as `<time>` element for JS formatting                                   | `{{ timestamp\|smart_date }}`                                |
+| `month_name`                 | Convert month number (1-12) to name                                                      | `{{ month_num\|month_name }}`                                |
+| `display_name_with_username` | Returns "First Last (username)" or just "username"                                       | `{{ user\|display_name_with_username }}`                     |
+| `machine_status_btn_class`   | Button CSS class for machine status                                                      | `{{ machine.operational_status\|machine_status_btn_class }}` |
+| `machine_status_css_class`   | Pill CSS class for machine status                                                        | `{{ machine.operational_status\|machine_status_css_class }}` |
+| `machine_status_icon`        | Font Awesome icon for machine status                                                     | `{{ machine.operational_status\|machine_status_icon }}`      |
+| `manufacturer_year`          | Returns "Manufacturer · Year" string                                                     | `{{ machine.model\|manufacturer_year }}`                     |
+| `log_entry_meta`             | Maintainer names + timestamp                                                             | `{{ entry\|log_entry_meta }}`                                |
+| `problem_report_meta`        | Reporter name + timestamp                                                                | `{{ report\|problem_report_meta }}`                          |
+| `problem_report_summary`     | Concise summary: type + description                                                      | `{{ report\|problem_report_summary }}`                       |

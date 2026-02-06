@@ -1,0 +1,51 @@
+{% extends "wiki/base.html" %}
+{% load static core_extras %}
+{% block title %}{{ page_title }} · Docs · {{ block.super }}{% endblock %}
+{% block breadcrumbs %}
+  {% if is_create %}
+    <span>Create Doc</span>
+  {% else %}
+    <a href="{% url 'wiki-page-detail' detail_path %}">{{ page.title }}</a>
+    <span>Edit</span>
+  {% endif %}
+{% endblock %}
+{% block main %}
+  <div class="card card--padded" data-text-card>
+    <form method="post" class="form-main">
+      {% csrf_token %}
+      {% form_non_field_errors form %}
+      {% form_field form.title %}
+      {% tag_chip_input_field initial_tags=form.get_initial_tags help_text="Tag paths like 'machines/blackout' or 'guides'. Leave empty for untagged." %}
+      {% form_field form.content %}
+      <div class="form-actions">
+        {% if is_create %}
+          <a href="{% url 'wiki-home' %}" class="btn btn--secondary">
+            {% icon "circle-xmark" class="meta" %}
+            Cancel
+          </a>
+        {% else %}
+          <a href="{% url 'wiki-page-detail' detail_path %}"
+             class="btn btn--secondary">
+            {% icon "circle-xmark" class="meta" %}
+            Cancel
+          </a>
+        {% endif %}
+        <button type="submit" class="btn btn--primary">
+          {% if is_create %}
+            {% icon "plus" class="meta" %}
+            Create Doc
+          {% else %}
+            {% icon "check" class="meta" %}
+            Save Changes
+          {% endif %}
+        </button>
+      </div>
+    </form>
+  </div>
+{% endblock %}
+{% block extra_scripts %}
+  <script src="{% static 'core/dropdown_keyboard.js' %}" defer></script>
+  <script src="{% static 'core/link_autocomplete.js' %}" defer></script>
+  <script src="{% static 'core/tag_chip_input.js' %}" defer></script>
+  <script src="{% static 'core/checkbox_toggle.js' %}" defer></script>
+{% endblock %}

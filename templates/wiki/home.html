@@ -1,0 +1,56 @@
+{% extends "wiki/base.html" %}
+{% load core_extras %}
+{% block title %}Docs · {{ block.super }}{% endblock %}
+{% block main %}
+  <!-- Mobile only: sidebar content inline -->
+  <div class="wiki-home__mobile-nav card card--padded">
+    <div class="sidebar__section">
+      <form action="{% url 'wiki-search' %}" method="get">
+        <input type="text"
+               name="q"
+               placeholder="Search docs..."
+               class="form-input form-input--sm">
+      </form>
+    </div>
+    {% if nav_tree %}
+      <div class="sidebar__section">{% include "wiki/partials/nav_tree.html" with tree=nav_tree %}</div>
+    {% endif %}
+    <div class="sidebar__section">
+      <a href="{% url 'wiki-page-create' %}"
+         class="btn btn--secondary btn--full">
+        {% icon "plus" class="meta" %}
+        Create Doc
+      </a>
+    </div>
+  </div>
+  <!-- Desktop only: recently updated -->
+  <div class="wiki-home__desktop">
+    {% if recent_pages %}
+      <section>
+        <h2>Recently Updated</h2>
+        {% for page in recent_pages %}
+          <div class="card card--padded space-above-sm">
+            <div>
+              {% with first_tag=page.tags.first %}
+                <a href="{% url 'wiki-page-detail' first_tag %}" class="link">{{ page.title }}</a>
+              {% endwith %}
+            </div>
+            <div class="text-sm text-muted">
+              Updated {{ page.modified_at|smart_date }}
+              {% if page.modified_by %}by {{ page.modified_by|display_name_with_username }}{% endif %}
+              {% if page.tags.count > 0 %}
+                · {% icon "hashtag" class="meta" %}
+                {% for tag in page.tags.all %}
+                  {{ tag.tag|default:"(root)" }}
+                  {% if not forloop.last %},{% endif %}
+                {% endfor %}
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </section>
+    {% else %}
+    {% empty_state empty_message="No docs yet." search_message="" is_search=False %}
+    {% endif %}
+  </div>
+{% endblock %}

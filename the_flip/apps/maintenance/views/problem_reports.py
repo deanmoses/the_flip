@@ -7,6 +7,7 @@ from functools import partial
 
 from django.conf import settings
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Prefetch
@@ -27,6 +28,10 @@ from the_flip.apps.core.attribution import (
 )
 from the_flip.apps.core.datetime import apply_browser_timezone, validate_not_future
 from the_flip.apps.core.ip import get_real_ip
+from the_flip.apps.core.markdown_links import (
+    save_inline_markdown_field,
+    sync_references,
+)
 from the_flip.apps.core.media import is_video_file
 from the_flip.apps.core.mixins import (
     CanAccessMaintainerPortalMixin,
@@ -267,6 +272,7 @@ class ProblemReportCreateView(CanAccessMaintainerPortalMixin, FormView):
 
         report.occurred_at = occurred_at
         report.save()
+        sync_references(report, report.description)
 
         # Handle media uploads
         media_files = form.cleaned_data.get("media_file", [])
@@ -326,8 +332,11 @@ class ProblemReportDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, 
 
         # Handle AJAX description update
         if action == "update_text":
-            self.report.description = request.POST.get("text", "")
-            self.report.save(update_fields=["description", "updated_at"])
+            text = request.POST.get("text", "")
+            try:
+                save_inline_markdown_field(self.report, "description", text)
+            except ValidationError as e:
+                return JsonResponse({"success": False, "errors": e.messages}, status=400)
             return JsonResponse({"success": True})
 
         # Handle AJAX machine update (move report to different machine)

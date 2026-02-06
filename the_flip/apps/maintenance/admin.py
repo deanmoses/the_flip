@@ -65,7 +65,7 @@ class ProblemReportAdmin(SimpleHistoryAdmin):
         "machine__model__name",
     )
     autocomplete_fields = ("machine", "reported_by_user")
-    readonly_fields = ("created_at", "updated_at")
+    readonly_fields = ("created_at", "updated_at", "description")
     inlines = (ProblemReportMediaInline,)
 
     def get_queryset(self, request):
@@ -88,7 +88,7 @@ class LogEntryAdmin(SimpleHistoryAdmin):
         "problem_report__description",
     )
     autocomplete_fields = ("machine", "problem_report", "maintainers", "created_by")
-    readonly_fields = ("created_at", "updated_at")
+    readonly_fields = ("created_at", "updated_at", "text")
     inlines = (LogEntryMediaInline,)
     form = LogEntryAdminForm
 

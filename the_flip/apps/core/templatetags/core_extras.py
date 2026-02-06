@@ -4,6 +4,7 @@ import secrets
 import markdown
 import nh3
 from django import template
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -124,10 +125,33 @@ def _convert_task_list_items(html: str) -> str:
 
 
 @register.filter
+def storage_to_authoring(text):
+    """Convert storage-format links to authoring format for editing.
+
+    Storage format uses PKs (e.g., ``[[machine:id:42]]``).
+    Authoring format uses slugs (e.g., ``[[machine:blackout]]``).
+    ID-based types (e.g., ``[[log:7]]``) pass through unchanged.
+
+    Usage in templates::
+
+        <textarea>{{ content|storage_to_authoring }}</textarea>
+    """
+    if not text:
+        return text
+    from the_flip.apps.core.markdown_links import convert_storage_to_authoring
+
+    return convert_storage_to_authoring(text)
+
+
+@register.filter
 def render_markdown(text):
     """Convert markdown text to sanitized HTML."""
     if not text:
         return ""
+    # Convert [[type:ref]] links to markdown links (before markdown processing)
+    from the_flip.apps.core.markdown_links import render_all_links
+
+    text = render_all_links(text)
     # Convert markdown to HTML
     html = markdown.markdown(text, extensions=["fenced_code", "nl2br", "smarty"])
     # Convert bare URLs to links
@@ -706,6 +730,49 @@ def maintainer_chip_input_field(
     }
 
 
+@register.inclusion_tag("components/tag_chip_input_field.html")
+def tag_chip_input_field(
+    label: str = "Tags",
+    placeholder: str = "Add tag...",
+    help_text: str = "",
+    show_label: bool = True,
+    required: bool = False,
+    initial_tags: str = "",
+    errors: list | None = None,
+):
+    """Render a chip-based tag input for wiki pages.
+
+    Usage:
+        {% tag_chip_input_field %}
+        {% tag_chip_input_field label="Categories" %}
+        {% tag_chip_input_field initial_tags="machines, guides" %}
+
+    Args:
+        label: Label text (default "Tags")
+        placeholder: Input placeholder text
+        help_text: Help text shown below input
+        show_label: Whether to show the label (default True)
+        required: Whether the field is required (affects label display)
+        initial_tags: Comma-separated string of tags to pre-populate
+        errors: List of error messages to display below the input
+    """
+    # Split tags into list for hidden input fallback
+    tags_list = []
+    if initial_tags:
+        tags_list = [tag.strip() for tag in initial_tags.split(",") if tag.strip()]
+
+    return {
+        "label": label,
+        "placeholder": placeholder,
+        "help_text": help_text,
+        "show_label": show_label,
+        "required": required,
+        "initial_tags": initial_tags,
+        "initial_tags_list": tags_list,
+        "errors": errors or [],
+    }
+
+
 # -----------------------------------------------------------------------------
 # Sidebar template tags
 # -----------------------------------------------------------------------------
@@ -765,8 +832,6 @@ def editable_sidebar_card(
         label: Aria label/title for edit button (defaults based on edit_type)
         placeholder: Search input placeholder (defaults based on edit_type)
     """
-    from django.urls import reverse
-
     if not editable:
         return content
 

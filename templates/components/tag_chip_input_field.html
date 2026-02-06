@@ -1,0 +1,28 @@
+{% load core_extras %}
+{% if show_label %}
+  <div class="form-field">
+    <label class="form-label">
+      {{ label }}
+      {% if not required %}<span class="text-muted">(optional)</span>{% endif %}
+    </label>
+  {% endif %}
+  <div class="autocomplete"
+       data-tag-chip-input
+       data-autocomplete-url="{% url 'api-wiki-tag-autocomplete' %}"
+       {% if initial_tags %}data-initial-tags="{{ initial_tags }}"{% endif %}>
+    <div class="chip-input">
+      <div data-chip-container>
+        {# Hidden inputs for initial tags - fallback when JS is disabled #}
+        {% for tag in initial_tags_list %}<input type="hidden" name="tags" value="{{ tag }}" data-fallback-input>{% endfor %}
+      </div>
+      <input type="text"
+             data-chip-search
+             class="chip-input__search"
+             placeholder="{{ placeholder }}"
+             autocomplete="off">
+    </div>
+    <div class="autocomplete__dropdown hidden"></div>
+  </div>
+  {% if help_text %}<p class="form-hint">{{ help_text }}</p>{% endif %}
+  {% for error in errors %}<p class="text-problem body-small">{{ error }}</p>{% endfor %}
+  {% if show_label %}</div>{% endif %}

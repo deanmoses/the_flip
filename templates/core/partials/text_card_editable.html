@@ -24,6 +24,9 @@
     </div>
   </div>
   <div class="hidden" data-text-edit-mode>
-    <textarea class="form-input form-textarea" data-text-textarea>{{ content|default:"" }}</textarea>
+    <textarea class="form-input form-textarea"
+              data-text-textarea
+              data-link-autocomplete
+              data-link-api-url="{% url 'api-link-targets' %}">{{ content|storage_to_authoring }}</textarea>
   </div>
 </div>

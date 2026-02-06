@@ -6,6 +6,7 @@ from functools import partial
 
 from django.conf import settings
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Prefetch
@@ -23,6 +24,10 @@ from the_flip.apps.core.attribution import (
     resolve_maintainer_for_edit,
 )
 from the_flip.apps.core.datetime import apply_browser_timezone, validate_not_future
+from the_flip.apps.core.markdown_links import (
+    save_inline_markdown_field,
+    sync_references,
+)
 from the_flip.apps.core.media import is_video_file
 from the_flip.apps.core.mixins import (
     CanAccessMaintainerPortalMixin,
@@ -188,6 +193,7 @@ class PartRequestCreateView(CanAccessMaintainerPortalMixin, FormView):
 
         part_request.occurred_at = occurred_at
         part_request.save()
+        sync_references(part_request, part_request.text)
 
         # Handle media uploads
         media_files = form.cleaned_data.get("media_file", [])
@@ -255,8 +261,11 @@ class PartRequestDetailView(CanAccessMaintainerPortalMixin, MediaUploadMixin, Vi
 
         # Handle AJAX text update
         if action == "update_text":
-            self.part_request.text = request.POST.get("text", "")
-            self.part_request.save(update_fields=["text", "updated_at"])
+            text = request.POST.get("text", "")
+            try:
+                save_inline_markdown_field(self.part_request, "text", text)
+            except ValidationError as e:
+                return JsonResponse({"success": False, "errors": e.messages}, status=400)
             return JsonResponse({"success": True})
 
         # Handle AJAX media upload
@@ -414,6 +423,7 @@ class PartRequestUpdateCreateView(CanAccessMaintainerPortalMixin, FormView):
 
         update.occurred_at = occurred_at
         update.save()
+        sync_references(update, update.text)
 
         # Handle media uploads
         media_files = form.cleaned_data.get("media_file", [])
@@ -584,8 +594,11 @@ class PartRequestUpdateDetailView(CanAccessMaintainerPortalMixin, MediaUploadMix
 
         # Handle AJAX text update
         if action == "update_text":
-            self.update.text = request.POST.get("text", "")
-            self.update.save(update_fields=["text", "updated_at"])
+            text = request.POST.get("text", "")
+            try:
+                save_inline_markdown_field(self.update, "text", text)
+            except ValidationError as e:
+                return JsonResponse({"success": False, "errors": e.messages}, status=400)
             return JsonResponse({"success": True})
 
         # Handle AJAX media upload

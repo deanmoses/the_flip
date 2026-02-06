@@ -31,6 +31,7 @@ from the_flip.apps.core.admin_views import admin_debug_view
 from the_flip.apps.core.views.feed import GlobalActivityFeedPartialView
 from the_flip.apps.core.views.health import healthz
 from the_flip.apps.core.views.home import HomeView
+from the_flip.apps.core.views.link_targets import LinkTargetsView, LinkTypesView
 from the_flip.apps.core.views.transcode import TranscodeStatusView
 from the_flip.apps.maintenance.views.autocomplete import (
     MachineAutocompleteView,
@@ -60,6 +61,15 @@ from the_flip.apps.maintenance.views.transcoding import (
     ServeSourceMediaView,
 )
 from the_flip.apps.parts import views as parts_views
+from the_flip.apps.wiki.views import (
+    WikiHomeView,
+    WikiPageCreateView,
+    WikiPageDeleteView,
+    WikiPageDetailView,
+    WikiPageEditView,
+    WikiSearchView,
+    WikiTagAutocompleteView,
+)
 from the_flip.views import serve_media
 
 urlpatterns = [
@@ -347,6 +357,35 @@ urlpatterns = [
         parts_views.PartRequestUpdateEditView.as_view(),
         name="part-request-update-edit",
     ),  # Edit part request update metadata
+    #
+    # Cross-record link autocomplete API
+    #
+    path(
+        "api/link-types/",
+        LinkTypesView.as_view(),
+        name="api-link-types",
+    ),  # AJAX: available link types for [[ type picker
+    path(
+        "api/link-targets/",
+        LinkTargetsView.as_view(),
+        name="api-link-targets",
+    ),  # AJAX: link target autocomplete for [[ syntax
+    #
+    # Wiki
+    #
+    path("wiki/", WikiHomeView.as_view(), name="wiki-home"),  # Wiki home/index
+    path("wiki/search", WikiSearchView.as_view(), name="wiki-search"),  # Wiki search
+    path("wiki/create", WikiPageCreateView.as_view(), name="wiki-page-create"),  # Create page
+    path(
+        "wiki/doc/<path:path>", WikiPageDetailView.as_view(), name="wiki-page-detail"
+    ),  # Wiki page detail (path = tag/slug or just slug)
+    path("wiki/edit/<path:path>", WikiPageEditView.as_view(), name="wiki-page-edit"),  # Edit page
+    path(
+        "wiki/delete/<path:path>", WikiPageDeleteView.as_view(), name="wiki-page-delete"
+    ),  # Delete page
+    path(
+        "api/wiki/tags/", WikiTagAutocompleteView.as_view(), name="api-wiki-tag-autocomplete"
+    ),  # AJAX: wiki tag autocomplete
 ]
 
 # Serve user-uploaded media files
