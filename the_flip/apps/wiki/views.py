@@ -90,8 +90,8 @@ class WikiPageDetailView(WikiPagePathMixin, CanAccessMaintainerPortalMixin, Deta
             context["detail_path"] = f"{self.current_tag}/{self.object.slug}"
         else:
             context["detail_path"] = self.object.slug
-        # Pre-filter tags for the "also appears in" display (excludes current tag)
-        context["other_tags"] = self.object.tags.exclude(tag=self.current_tag)
+        # Filter in Python to use the prefetched page__tags cache
+        context["other_tags"] = [t for t in self.object.tags.all() if t.tag != self.current_tag]
         return context
 
 
@@ -248,7 +248,21 @@ def _sort_nav_tree(node: dict) -> None:
         _sort_nav_tree(child)
 
 
-class WikiPageCreateView(CanAccessMaintainerPortalMixin, CreateView):
+class WikiPageSuccessUrlMixin:
+    """Shared success-URL logic for wiki create/edit views."""
+
+    def get_success_url(self):
+        """Redirect to the page detail view."""
+        page = self.object
+        first_tag = page.tags.first()
+        if first_tag and first_tag.tag:
+            path = f"{first_tag.tag}/{page.slug}"
+        else:
+            path = page.slug
+        return reverse("wiki-page-detail", args=[path])
+
+
+class WikiPageCreateView(WikiPageSuccessUrlMixin, CanAccessMaintainerPortalMixin, CreateView):
     """Create a new wiki page."""
 
     model = WikiPage
@@ -268,17 +282,6 @@ class WikiPageCreateView(CanAccessMaintainerPortalMixin, CreateView):
         form.instance.modified_by = self.request.user
         return super().form_valid(form)
 
-    def get_success_url(self):
-        """Redirect to the page detail view."""
-        # Get the first tag to build the URL path
-        page = self.object
-        first_tag = page.tags.first()
-        if first_tag and first_tag.tag:
-            path = f"{first_tag.tag}/{page.slug}"
-        else:
-            path = page.slug
-        return reverse("wiki-page-detail", args=[path])
-
     def get_context_data(self, **kwargs):
         """Add nav tree and page title."""
         context = super().get_context_data(**kwargs)
@@ -288,7 +291,9 @@ class WikiPageCreateView(CanAccessMaintainerPortalMixin, CreateView):
         return context
 
 
-class WikiPageEditView(WikiPagePathMixin, CanAccessMaintainerPortalMixin, UpdateView):
+class WikiPageEditView(
+    WikiPageSuccessUrlMixin, WikiPagePathMixin, CanAccessMaintainerPortalMixin, UpdateView
+):
     """Edit an existing wiki page."""
 
     model = WikiPage
@@ -307,16 +312,6 @@ class WikiPageEditView(WikiPagePathMixin, CanAccessMaintainerPortalMixin, Update
         """Set modified_by before saving."""
         form.instance.modified_by = self.request.user
         return super().form_valid(form)
-
-    def get_success_url(self):
-        """Redirect to the page detail view."""
-        page = self.object
-        first_tag = page.tags.first()
-        if first_tag and first_tag.tag:
-            path = f"{first_tag.tag}/{page.slug}"
-        else:
-            path = page.slug
-        return reverse("wiki-page-detail", args=[path])
 
     def get_context_data(self, **kwargs):
         """Add nav tree and page title."""

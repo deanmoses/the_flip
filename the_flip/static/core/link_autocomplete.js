@@ -78,7 +78,6 @@
     // Position dropdown relative to textarea's parent (not body) for proper containment
     const wrapper = document.createElement('div');
     wrapper.className = 'link-autocomplete-wrapper';
-    wrapper.style.position = 'relative';
     textarea.parentNode.insertBefore(wrapper, textarea);
     wrapper.appendChild(textarea);
     wrapper.appendChild(dropdown);
