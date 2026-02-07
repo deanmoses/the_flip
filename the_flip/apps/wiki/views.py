@@ -306,6 +306,9 @@ class WikiReorderSaveView(CanAccessMaintainerPortalMixin, View):
         except (json.JSONDecodeError, ValueError):
             return JsonResponse({"error": "Invalid JSON"}, status=400)
 
+        if not isinstance(data, dict):
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
         page_orders = data.get("pages", [])
         tag_orders = data.get("tags", [])
 
