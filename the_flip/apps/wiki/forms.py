@@ -48,6 +48,8 @@ class WikiPageForm(StyledFormMixin, forms.ModelForm):
         if self.instance.pk:
             tags = self.instance.tags.exclude(tag=UNTAGGED_SENTINEL).values_list("tag", flat=True)
             return ", ".join(tags)
+        if self._tags:
+            return ", ".join(self._tags)
         return ""
 
     @staticmethod

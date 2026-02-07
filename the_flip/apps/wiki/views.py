@@ -18,7 +18,7 @@ from django.views.generic import (
     UpdateView,
 )
 
-from the_flip.apps.core.mixins import CanAccessMaintainerPortalMixin
+from the_flip.apps.core.mixins import CanAccessMaintainerPortalMixin, FormPrefillMixin
 
 from .actions import build_create_url, extract_action_content, get_prefill_field
 from .forms import WikiPageForm
@@ -162,18 +162,32 @@ class WikiPageSuccessUrlMixin:
         return reverse("wiki-page-detail", args=[path])
 
 
-class WikiPageCreateView(WikiPageSuccessUrlMixin, CanAccessMaintainerPortalMixin, CreateView):
+class WikiPageCreateView(
+    WikiPageSuccessUrlMixin, FormPrefillMixin, CanAccessMaintainerPortalMixin, CreateView
+):
     """Create a new wiki page."""
 
     model = WikiPage
     form_class = WikiPageForm
     template_name = "wiki/page_form.html"
 
+    def get_initial(self):
+        """Pre-fill content (via mixin) and title from session."""
+        initial = super().get_initial()
+        title = self.request.session.pop("form_prefill_title", None)
+        if title:
+            initial["title"] = title
+        return initial
+
     def get_form_kwargs(self):
-        """Pass tags from POST data to form."""
+        """Pass tags from POST data or session prefill to form."""
         kwargs = super().get_form_kwargs()
         if self.request.method == "POST":
             kwargs["tags"] = self.request.POST.getlist("tags")
+        else:
+            tags = self.request.session.pop("form_prefill_tags", None)
+            if tags:
+                kwargs["tags"] = tags
         return kwargs
 
     def form_valid(self, form):
@@ -266,6 +280,31 @@ class WikiTagAutocompleteView(CanAccessMaintainerPortalMixin, View):
         return JsonResponse({"tags": list(tags)})
 
 
+def _resolve_action_tags(raw_tags: str, source_page: WikiPage) -> list[str]:
+    """Resolve action button tags, expanding ``@source`` to the source page's tags.
+
+    Args:
+        raw_tags: Comma-separated tag values, possibly including ``@source``.
+        source_page: The wiki page containing the action button.
+
+    Returns:
+        Deduplicated list of tag strings, preserving insertion order.
+    """
+    parts = [t.strip() for t in raw_tags.split(",") if t.strip()]
+    result: list[str] = []
+    source_tags: list[str] | None = None  # lazy-loaded, at most once
+    for part in parts:
+        if part == "@source":
+            if source_tags is None:
+                source_tags = list(
+                    source_page.tags.exclude(tag=UNTAGGED_SENTINEL).values_list("tag", flat=True)
+                )
+            result.extend(source_tags)
+        else:
+            result.append(part)
+    return list(dict.fromkeys(result))
+
+
 class WikiActionPrefillView(CanAccessMaintainerPortalMixin, View):
     """Extract wiki action block content and redirect to a pre-filled create form."""
 
@@ -283,6 +322,15 @@ class WikiActionPrefillView(CanAccessMaintainerPortalMixin, View):
             "field": get_prefill_field(action.record_type),
             "content": content,
         }
+
+        if action.record_type == "page":
+            if action.tags:
+                tags = _resolve_action_tags(action.tags, page)
+                if tags:
+                    request.session["form_prefill_tags"] = tags
+            if action.title:
+                request.session["form_prefill_title"] = action.title
+
         return redirect(build_create_url(action))
 
 
