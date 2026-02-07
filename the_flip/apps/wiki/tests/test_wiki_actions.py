@@ -514,9 +514,12 @@ class WikiContentRenderingTests(SuppressRequestLogsMixin, TestDataMixin, TestCas
     def test_markers_not_visible_in_output(self):
         self._create_page(_make_action("intake"))
         html = self._get_page_html()
-        self.assertNotIn("action:start", html)
-        self.assertNotIn("action:end", html)
-        self.assertNotIn("action:button", html)
+        # Check the rendered content area only (not the hidden textarea
+        # which contains raw markdown for checkbox toggle JS).
+        display_html = html.split("data-text-display")[1].split("data-text-textarea")[0]
+        self.assertNotIn("action:start", display_html)
+        self.assertNotIn("action:end", display_html)
+        self.assertNotIn("action:button", display_html)
 
     def test_malformed_markers_degrade_gracefully(self):
         content = '<!-- action:start name="x" -->\ncontent\n'

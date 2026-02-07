@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -18,6 +19,7 @@ from django.views.generic import (
     UpdateView,
 )
 
+from the_flip.apps.core.markdown_links import save_inline_markdown_field
 from the_flip.apps.core.mixins import CanAccessMaintainerPortalMixin, FormPrefillMixin
 
 from .actions import build_create_url, extract_action_content, get_prefill_field
@@ -91,6 +93,24 @@ class WikiPageDetailView(WikiPagePathMixin, CanAccessMaintainerPortalMixin, Deta
     context_object_name = "page"
     prefetch_page_tags = True
 
+    def post(self, request, *args, **kwargs):
+        """Handle AJAX checkbox toggle updates."""
+        self.object = self.get_object()
+        action = request.POST.get("action")
+
+        if action == "update_text":
+            raw_text = request.POST.get("text", "")
+            self.object.updated_by = request.user
+            try:
+                save_inline_markdown_field(
+                    self.object, "content", raw_text, extra_update_fields=["updated_by"]
+                )
+            except ValidationError as e:
+                return JsonResponse({"success": False, "errors": e.messages}, status=400)
+            return JsonResponse({"success": True})
+
+        return JsonResponse({"error": "Unknown action"}, status=400)
+
     def get_context_data(self, **kwargs):
         """Add wiki-specific context."""
         context = super().get_context_data(**kwargs)
@@ -113,9 +133,9 @@ class WikiHomeView(CanAccessMaintainerPortalMixin, TemplateView):
         context["nav_tree"] = build_nav_tree()
         # Show recent pages on home
         context["recent_pages"] = (
-            WikiPage.objects.select_related("created_by", "modified_by")
+            WikiPage.objects.select_related("created_by", "updated_by")
             .prefetch_related("tags")
-            .order_by("-modified_at")[:10]
+            .order_by("-updated_at")[:10]
         )
         return context
 
@@ -135,9 +155,9 @@ class WikiSearchView(CanAccessMaintainerPortalMixin, ListView):
 
         return (
             WikiPage.objects.search(query)
-            .select_related("created_by", "modified_by")
+            .select_related("created_by", "updated_by")
             .prefetch_related("tags")
-            .order_by("-modified_at")
+            .order_by("-updated_at")
         )
 
     def get_context_data(self, **kwargs):
@@ -191,9 +211,9 @@ class WikiPageCreateView(
         return kwargs
 
     def form_valid(self, form):
-        """Set created_by and modified_by before saving."""
+        """Set created_by and updated_by before saving."""
         form.instance.created_by = self.request.user
-        form.instance.modified_by = self.request.user
+        form.instance.updated_by = self.request.user
         return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
@@ -223,8 +243,8 @@ class WikiPageEditView(
         return kwargs
 
     def form_valid(self, form):
-        """Set modified_by before saving."""
-        form.instance.modified_by = self.request.user
+        """Set updated_by before saving."""
+        form.instance.updated_by = self.request.user
         return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
