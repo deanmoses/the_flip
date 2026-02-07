@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+
+from django.db import transaction
 from django.db.models import Q
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -20,7 +23,7 @@ from the_flip.apps.core.mixins import CanAccessMaintainerPortalMixin
 
 from .actions import build_create_url, extract_action_content, get_prefill_field
 from .forms import WikiPageForm
-from .models import UNTAGGED_SENTINEL, WikiPage, WikiPageTag
+from .models import UNTAGGED_SENTINEL, WikiPage, WikiPageTag, WikiTagOrder
 
 
 def parse_wiki_path(path: str) -> tuple[str, str]:
@@ -392,3 +395,44 @@ class WikiActionPrefillView(CanAccessMaintainerPortalMixin, View):
             "content": content,
         }
         return redirect(build_create_url(action))
+
+
+class WikiReorderView(CanAccessMaintainerPortalMixin, TemplateView):
+    """Dedicated page for reordering wiki docs and tags via drag-and-drop."""
+
+    template_name = "wiki/reorder.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["nav_tree"] = build_nav_tree()
+        return context
+
+
+class WikiReorderSaveView(CanAccessMaintainerPortalMixin, View):
+    """API endpoint to save wiki doc/tag reorder."""
+
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body)
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+        page_orders = data.get("pages", [])
+        tag_orders = data.get("tags", [])
+
+        try:
+            with transaction.atomic():
+                for item in page_orders:
+                    WikiPageTag.objects.filter(tag=item["tag"], slug=item["slug"]).update(
+                        order=item["order"]
+                    )
+
+                for item in tag_orders:
+                    WikiTagOrder.objects.update_or_create(
+                        tag=item["tag"],
+                        defaults={"order": item["order"]},
+                    )
+        except (KeyError, TypeError) as e:
+            return JsonResponse({"error": f"Invalid payload: {e}"}, status=400)
+
+        return JsonResponse({"status": "success"})

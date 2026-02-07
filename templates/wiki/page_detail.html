@@ -24,7 +24,7 @@
           {% icon "tags" class="space-right-sm" %}
           This page also appears in:
           {% for tag in other_tags %}
-            <a href="{% url 'wiki-page-detail' tag %}" class="link">{{ tag }}</a>
+            <a href="{% url 'wiki-page-detail' tag %}">{{ tag }}</a>
             {% if not forloop.last %},{% endif %}
           {% endfor %}
         </div>
