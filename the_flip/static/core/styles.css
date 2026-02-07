@@ -1845,7 +1845,7 @@ body {
 .markdown-content ul,
 .markdown-content ol {
   padding-left: var(--space-5);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
 .markdown-content ul {
@@ -1858,6 +1858,18 @@ body {
 
 .markdown-content ul ul {
   list-style: circle;
+}
+
+.markdown-content li {
+  margin-bottom: var(--space-1-5);
+}
+
+.markdown-content li:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content .task-list-item {
+  margin-bottom: 0;
 }
 
 .markdown-content h1,
@@ -2011,6 +2023,8 @@ body {
 .markdown-content .task-list-item {
   list-style: none;
   padding-left: 0;
+  display: flex;
+  align-items: baseline;
 }
 
 /* Only top-level task items get negative margin to align with text */
@@ -2020,12 +2034,10 @@ body {
 }
 
 .markdown-content .task-list-item input[type='checkbox'] {
+  flex-shrink: 0;
   margin-right: var(--space-2);
   width: 1em;
   height: 1em;
-  vertical-align: middle;
-  position: relative;
-  top: -0.1em;
   accent-color: var(--color-accent);
   color-scheme: light dark;
 }
