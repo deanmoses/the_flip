@@ -130,7 +130,8 @@ All JavaScript files are in `the_flip/static/core/`.
 | File                 | Purpose                                                                       |
 | -------------------- | ----------------------------------------------------------------------------- |
 | text_edit.js         | Inline text editing with markdown preview                                     |
-| checkbox_toggle.js   | Interactive task list checkboxes; Enter key auto-continues lists              |
+| task_list_enter.js   | Enter key auto-continues task lists on `[data-task-list-enter]` textareas     |
+| checkbox_toggle.js   | Interactive task list checkboxes on `[data-text-card]` detail pages           |
 | save_status.js       | Page-level "Saving…/Saved/Error" indicator via `save:start`/`save:end` events |
 | sidebar_card_edit.js | Sidebar dropdown editing (machine, problem)                                   |
 

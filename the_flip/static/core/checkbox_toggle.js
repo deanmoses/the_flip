@@ -3,6 +3,7 @@
  *
  * Enables interactive task list checkboxes in [data-text-card] containers.
  * Checkboxes rendered outside data-text-card remain disabled (read-only).
+ * For task list continuation on Enter, see task_list_enter.js.
  *
  * Auto-initializes on elements with [data-text-card] attribute.
  *
@@ -12,10 +13,6 @@
  * 3. On click: toggles the Nth checkbox marker in the raw markdown textarea
  * 4. POSTs the updated text via the existing update_text action
  * 5. On failure: reverts the checkbox and shows error status
- * 6. Enter key in textarea auto-continues task lists (like GitHub)
- *    - Creates new unchecked item with same indentation
- *    - Splits text if cursor is mid-line
- *    - Removes prefix if line is empty
  *
  * Limitation: 4-space indented code blocks are not detected. Task markers
  * inside indented code blocks will cause index mismatch with rendered
@@ -29,84 +26,6 @@
   function getCsrfToken() {
     const cookie = document.cookie.match(/csrftoken=([^;]+)/);
     return cookie ? cookie[1] : '';
-  }
-
-  /**
-   * Handle Enter key in textarea to auto-continue task lists.
-   *
-   * When pressing Enter on a task list line:
-   * - Creates a new unchecked task item with same indentation
-   * - Splits text if cursor is in middle of content
-   * - Removes the task prefix if line is empty (just "- [ ] ")
-   * - Preserves blockquote prefixes ("> ")
-   *
-   * @param {HTMLTextAreaElement} textarea - The textarea element
-   */
-  function initTaskListEnter(textarea) {
-    textarea.addEventListener('keydown', (e) => {
-      if (e.key !== 'Enter') return;
-
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const value = textarea.value;
-
-      // Don't interfere if there's a selection
-      if (start !== end) return;
-
-      // Find the current line boundaries
-      const lineStart = value.lastIndexOf('\n', start - 1) + 1;
-      let lineEnd = value.indexOf('\n', start);
-      if (lineEnd === -1) lineEnd = value.length;
-
-      // Get text before and after cursor on this line
-      const beforeCursor = value.substring(lineStart, start);
-      const afterCursor = value.substring(start, lineEnd);
-
-      // Match task list pattern: optional blockquote, optional indent, list marker, checkbox
-      // Groups: 1=blockquote+indent prefix, 2=list marker (-, *, +, or number.), 3=content before cursor
-      // Checkbox content: spaces (including none) or x/X - matches [], [ ], [  ], [x], [X]
-      const match = beforeCursor.match(/^((?:>\s*)*\s*)([-*+]|\d+\.) \[(?: *|[xX])\] ?(.*)$/);
-      if (!match) return; // Not a task list line, let default behavior happen
-
-      const prefix = match[1]; // Blockquote and/or indent
-      const marker = match[2]; // List marker
-      const contentBeforeCursor = match[3];
-
-      // If the line is empty (just checkbox with no content) and nothing after cursor
-      if (contentBeforeCursor.trim() === '' && afterCursor.trim() === '') {
-        e.preventDefault();
-        // Remove the task prefix, keep just the blockquote/indent prefix
-        const before = value.substring(0, lineStart);
-        const after = value.substring(lineEnd);
-        textarea.value = before + prefix + after;
-        textarea.selectionStart = textarea.selectionEnd = lineStart + prefix.length;
-        // Trigger input event for any listeners
-        textarea.dispatchEvent(new Event('input', { bubbles: true }));
-        return;
-      }
-
-      e.preventDefault();
-
-      // For numbered lists, increment the number
-      let newMarker = marker;
-      if (/^\d+\.$/.test(marker)) {
-        newMarker = `${parseInt(marker) + 1}.`;
-      }
-
-      // Build new line: newline + prefix + marker + unchecked checkbox + text after cursor
-      const newLine = `\n${prefix}${newMarker} [ ] ${afterCursor}`;
-
-      // Insert new line at cursor, removing text after cursor from current line
-      const newValue = value.substring(0, start) + newLine + value.substring(lineEnd);
-      textarea.value = newValue;
-
-      // Position cursor after the new checkbox (before any moved text)
-      const cursorPos = start + `\n${prefix}${newMarker} [ ] `.length;
-      textarea.selectionStart = textarea.selectionEnd = cursorPos;
-
-      // Trigger input event for any listeners
-      textarea.dispatchEvent(new Event('input', { bubbles: true }));
-    });
   }
 
   /**
@@ -160,9 +79,6 @@
       console.error('[checkbox_toggle] No textarea found in card:', card);
       return;
     }
-
-    // Initialize Enter key handler for task list continuation
-    initTaskListEnter(textarea);
 
     const checkboxes = card.querySelectorAll('input[data-checkbox-index]');
     if (checkboxes.length === 0) return;
