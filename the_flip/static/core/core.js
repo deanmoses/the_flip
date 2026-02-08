@@ -239,6 +239,72 @@ function injectFeedEntry(data) {
    ========================================================================== */
 
 /**
+ * Update machine status pill and mobile button after a successful AJAX update.
+ * @param {string} value - The new status value (good, fixing, broken, unknown)
+ * @param {string} label - The display label for the new status
+ * @param {Object} data - Response data (may contain log_entry_html for timeline injection)
+ */
+function updateMachineStatusUI(value, label, data) {
+  const statusClassMap = {
+    good: { pill: 'pill--status-good', btn: 'btn--status-good' },
+    fixing: { pill: 'pill--status-fixing', btn: 'btn--status-fixing' },
+    broken: { pill: 'pill--status-broken', btn: 'btn--status-broken' },
+    unknown: { pill: 'pill--neutral', btn: 'btn--secondary' },
+  };
+  const iconClassMap = {
+    good: 'fa-check',
+    fixing: 'fa-wrench',
+    broken: 'fa-circle-xmark',
+    unknown: 'fa-circle-question',
+  };
+
+  const pill = document.getElementById('status-pill');
+  if (pill) {
+    const labelEl = pill.querySelector('.status-label');
+    const iconEl = pill.querySelector('.status-icon');
+    labelEl.textContent = label;
+    pill.className = 'pill ' + (statusClassMap[value]?.pill || 'pill--neutral');
+    iconEl.className = 'fa-solid meta status-icon ' + (iconClassMap[value] || 'fa-circle-question');
+  }
+
+  const mobileBtn = document.querySelector('.status-btn');
+  if (mobileBtn) {
+    const iconEl = mobileBtn.querySelector('.status-icon');
+    mobileBtn.className =
+      'btn btn--dropdown status-btn ' + (statusClassMap[value]?.btn || 'btn--secondary');
+    iconEl.className = 'fa-solid status-icon ' + (iconClassMap[value] || 'fa-circle-question');
+  }
+
+  const machineName = document.querySelector('.sidebar__title')?.textContent?.trim() || 'Machine';
+  const pillHtml = `<span class="pill ${statusClassMap[value]?.pill || 'pill--neutral'}"><i class="fa-solid ${iconClassMap[value] || 'fa-circle-question'} meta"></i> ${label}</span>`;
+  showMessage('success', `Status of ${machineName} set to ${pillHtml}`);
+  injectFeedEntry(data);
+}
+
+/**
+ * Update machine location pill after a successful AJAX update.
+ * @param {string} label - The display label for the new location
+ * @param {Object} data - Response data (may contain celebration flag and log_entry_html)
+ */
+function updateMachineLocationUI(label, data) {
+  const pill = document.getElementById('location-pill');
+  if (pill) {
+    const labelEl = pill.querySelector('.location-label');
+    labelEl.textContent = label;
+  }
+
+  const machineName = document.querySelector('.sidebar__title')?.textContent?.trim() || 'Machine';
+  const pillHtml = `<span class="pill pill--neutral"><i class="fa-solid fa-location-dot meta"></i> ${label}</span>`;
+  if (data.celebration) {
+    showMessage('success', `🎉🎊 ${machineName} moved to ${pillHtml}! 🎊🎉`);
+    launchConfetti();
+  } else {
+    showMessage('success', `Location of ${machineName} set to ${pillHtml}`);
+  }
+  injectFeedEntry(data);
+}
+
+/**
  * Update a machine field via AJAX (status or location).
  * @param {HTMLElement} button - The dropdown item button that was clicked
  */
@@ -271,61 +337,10 @@ function updateMachineField(button) {
       if (data.status === 'noop') {
         return;
       } else if (data.status === 'success') {
-        const statusClassMap = {
-          good: { pill: 'pill--status-good', btn: 'btn--status-good' },
-          fixing: { pill: 'pill--status-fixing', btn: 'btn--status-fixing' },
-          broken: { pill: 'pill--status-broken', btn: 'btn--status-broken' },
-          unknown: { pill: 'pill--neutral', btn: 'btn--secondary' },
-        };
-        const iconClassMap = {
-          good: 'fa-check',
-          fixing: 'fa-wrench',
-          broken: 'fa-circle-xmark',
-          unknown: 'fa-circle-question',
-        };
         if (field === 'operational_status') {
-          // Update sidebar pill
-          const pill = document.getElementById('status-pill');
-          if (pill) {
-            const labelEl = pill.querySelector('.status-label');
-            const iconEl = pill.querySelector('.status-icon');
-            labelEl.textContent = label;
-            pill.className = 'pill ' + (statusClassMap[value]?.pill || 'pill--neutral');
-            iconEl.className =
-              'fa-solid meta status-icon ' + (iconClassMap[value] || 'fa-circle-question');
-          }
-          // Update mobile dropdown button
-          const mobileBtn = document.querySelector('.status-btn');
-          if (mobileBtn) {
-            const iconEl = mobileBtn.querySelector('.status-icon');
-            mobileBtn.className =
-              'btn btn--dropdown status-btn ' + (statusClassMap[value]?.btn || 'btn--secondary');
-            iconEl.className =
-              'fa-solid status-icon ' + (iconClassMap[value] || 'fa-circle-question');
-          }
-          const machineName =
-            document.querySelector('.sidebar__title')?.textContent?.trim() || 'Machine';
-          const pillHtml = `<span class="pill ${statusClassMap[value]?.pill || 'pill--neutral'}"><i class="fa-solid ${iconClassMap[value] || 'fa-circle-question'} meta"></i> ${label}</span>`;
-          showMessage('success', `Status of ${machineName} set to ${pillHtml}`);
-          // Inject the new log entry into the feed (only on timelines that accept this entry type)
-          injectFeedEntry(data);
+          updateMachineStatusUI(value, label, data);
         } else {
-          const pill = document.getElementById('location-pill');
-          if (pill) {
-            const labelEl = pill.querySelector('.location-label');
-            labelEl.textContent = label;
-          }
-          const machineName =
-            document.querySelector('.sidebar__title')?.textContent?.trim() || 'Machine';
-          const pillHtml = `<span class="pill pill--neutral"><i class="fa-solid fa-location-dot meta"></i> ${label}</span>`;
-          if (data.celebration) {
-            showMessage('success', `🎉🎊 ${machineName} moved to ${pillHtml}! 🎊🎉`);
-            launchConfetti();
-          } else {
-            showMessage('success', `Location of ${machineName} set to ${pillHtml}`);
-          }
-          // Inject the new log entry into the feed (only on timelines that accept this entry type)
-          injectFeedEntry(data);
+          updateMachineLocationUI(label, data);
         }
       } else {
         showMessage('error', 'Error saving change');
@@ -337,6 +352,92 @@ function updateMachineField(button) {
 /* ==========================================================================
    Problem Report Field Updates (priority/status dropdowns)
    ========================================================================== */
+
+/**
+ * Update problem report priority pills after a successful AJAX update.
+ * @param {string} value - The new priority value (untriaged, unplayable, major, minor, task)
+ * @param {string} label - The display label for the new priority
+ * @param {string} updateUrl - The problem report detail URL (for the toast link)
+ * @param {string} reportPk - The problem report PK (for the toast message)
+ * @param {string} machineName - The machine display name (for the toast message)
+ */
+function updateProblemPriorityUI(value, label, updateUrl, reportPk, machineName) {
+  const priorityClassMap = {
+    untriaged: 'pill--priority-untriaged',
+    unplayable: 'pill--priority-unplayable',
+    major: 'pill--priority-major',
+    minor: 'pill--neutral',
+    task: 'pill--neutral',
+  };
+  const priorityIconMap = {
+    untriaged: 'fa-triangle-exclamation',
+    unplayable: 'fa-circle-xmark',
+    major: 'fa-arrow-up',
+    task: 'fa-list-check',
+    minor: 'fa-arrow-down',
+  };
+
+  document.querySelectorAll('.priority-pill').forEach((pill) => {
+    const labelEl = pill.querySelector('.priority-label');
+    const iconEl = pill.querySelector('.priority-icon');
+    if (labelEl) labelEl.textContent = label;
+    pill.className = 'pill ' + (priorityClassMap[value] || 'pill--neutral') + ' priority-pill';
+    if (iconEl) {
+      iconEl.className =
+        'fa-solid meta priority-icon ' + (priorityIconMap[value] || 'fa-arrow-down');
+    }
+  });
+
+  const pillHtml = `<span class="pill ${priorityClassMap[value] || 'pill--neutral'}"><i class="fa-solid ${priorityIconMap[value] || 'fa-arrow-down'} meta"></i> ${label}</span>`;
+  showMessage(
+    'success',
+    `<a href="${updateUrl}">Problem #${reportPk}</a> on ${machineName} set to ${pillHtml}`
+  );
+}
+
+/**
+ * Update problem report status pills and Close button after a successful AJAX update.
+ * @param {string} value - The new status value (open or closed)
+ * @param {string} label - The display label for the new status
+ * @param {Object} data - Response data (may contain log_entry_html for timeline injection)
+ * @param {string} updateUrl - The problem report detail URL (for the toast link)
+ * @param {string} reportPk - The problem report PK (for the toast message)
+ * @param {string} machineName - The machine display name (for the toast message)
+ */
+function updateProblemStatusUI(value, label, data, updateUrl, reportPk, machineName) {
+  const isOpen = value === 'open';
+  const pillClass = isOpen ? 'pill--status-broken' : 'pill--status-good';
+  const iconClass = isOpen ? 'fa-circle-exclamation' : 'fa-check';
+
+  document.querySelectorAll('.status-pill').forEach((pill) => {
+    const labelEl = pill.querySelector('.status-label');
+    const iconEl = pill.querySelector('.status-icon');
+    if (labelEl) labelEl.textContent = label;
+    pill.className = 'pill ' + pillClass + ' status-pill';
+    if (iconEl) {
+      iconEl.className = 'fa-solid meta status-icon ' + iconClass;
+    }
+  });
+
+  const closeBtn = document.querySelector('.two-column__sidebar form button[type="submit"]');
+  if (closeBtn) {
+    if (isOpen) {
+      closeBtn.innerHTML =
+        '<i class="fa-solid fa-check meta" aria-hidden="true"></i> Close Problem Report';
+      closeBtn.className = 'btn btn--log btn--full';
+    } else {
+      closeBtn.innerHTML =
+        '<i class="fa-solid fa-rotate-left meta" aria-hidden="true"></i> Re-Open Problem Report';
+      closeBtn.className = 'btn btn--report btn--full';
+    }
+  }
+
+  injectFeedEntry(data);
+  showMessage(
+    'success',
+    `<a href="${updateUrl}">Problem #${reportPk}</a> on ${machineName} ${isOpen ? 're-opened' : 'closed'}`
+  );
+}
 
 /**
  * Update a problem report field via AJAX (priority or status).
@@ -374,76 +475,9 @@ function updateProblemReportField(button) {
         const reportPk = wrapper.dataset.reportPk;
         const machineName = wrapper.dataset.machineName;
         if (field === 'priority') {
-          const priorityClassMap = {
-            untriaged: 'pill--priority-untriaged',
-            unplayable: 'pill--priority-unplayable',
-            major: 'pill--priority-major',
-            minor: 'pill--neutral',
-            task: 'pill--neutral',
-          };
-          const priorityIconMap = {
-            untriaged: 'fa-triangle-exclamation',
-            unplayable: 'fa-circle-xmark',
-            major: 'fa-arrow-up',
-            task: 'fa-list-check',
-            minor: 'fa-arrow-down',
-          };
-          // Update all priority pills on the page (sidebar + mobile)
-          document.querySelectorAll('.priority-pill').forEach((pill) => {
-            const labelEl = pill.querySelector('.priority-label');
-            const iconEl = pill.querySelector('.priority-icon');
-            if (labelEl) labelEl.textContent = label;
-            pill.className =
-              'pill ' + (priorityClassMap[value] || 'pill--neutral') + ' priority-pill';
-            if (iconEl) {
-              iconEl.className =
-                'fa-solid meta priority-icon ' + (priorityIconMap[value] || 'fa-arrow-down');
-            }
-          });
-          const pillHtml = `<span class="pill ${priorityClassMap[value] || 'pill--neutral'}"><i class="fa-solid ${priorityIconMap[value] || 'fa-arrow-down'} meta"></i> ${label}</span>`;
-          showMessage(
-            'success',
-            `<a href="${updateUrl}">Problem #${reportPk}</a> on ${machineName} set to ${pillHtml}`
-          );
+          updateProblemPriorityUI(value, label, updateUrl, reportPk, machineName);
         } else if (field === 'status') {
-          const isOpen = value === 'open';
-          const pillClass = isOpen ? 'pill--status-broken' : 'pill--status-good';
-          const iconClass = isOpen ? 'fa-circle-exclamation' : 'fa-check';
-
-          // Update all status pills on the page (sidebar + mobile)
-          document.querySelectorAll('.status-pill').forEach((pill) => {
-            const labelEl = pill.querySelector('.status-label');
-            const iconEl = pill.querySelector('.status-icon');
-            if (labelEl) labelEl.textContent = label;
-            pill.className = 'pill ' + pillClass + ' status-pill';
-            if (iconEl) {
-              iconEl.className = 'fa-solid meta status-icon ' + iconClass;
-            }
-          });
-
-          // Update desktop Close/Re-Open button text
-          const closeBtn = document.querySelector(
-            '.two-column__sidebar form button[type="submit"]'
-          );
-          if (closeBtn) {
-            if (isOpen) {
-              closeBtn.innerHTML =
-                '<i class="fa-solid fa-check meta" aria-hidden="true"></i> Close Problem Report';
-              closeBtn.className = 'btn btn--log btn--full';
-            } else {
-              closeBtn.innerHTML =
-                '<i class="fa-solid fa-rotate-left meta" aria-hidden="true"></i> Re-Open Problem Report';
-              closeBtn.className = 'btn btn--report btn--full';
-            }
-          }
-
-          // Inject log entry into timeline
-          injectFeedEntry(data);
-
-          showMessage(
-            'success',
-            `<a href="${updateUrl}">Problem #${reportPk}</a> on ${machineName} ${isOpen ? 're-opened' : 'closed'}`
-          );
+          updateProblemStatusUI(value, label, data, updateUrl, reportPk, machineName);
         }
       } else {
         showMessage('error', data.error || 'Error saving change');
