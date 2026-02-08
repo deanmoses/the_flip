@@ -7,7 +7,7 @@ from uuid import uuid4
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q
+from django.db.models import Case, F, IntegerField, Prefetch, Q, Value, When
 from django.urls import reverse
 from django.utils import timezone
 from simple_history.models import HistoricalRecords
@@ -55,6 +55,52 @@ class ProblemReportQuerySet(models.QuerySet):
             | Q(log_entries__maintainers__user__first_name__icontains=query)
             | Q(log_entries__maintainers__user__last_name__icontains=query)
             | Q(log_entries__maintainer_names__icontains=query)
+        )
+
+    def for_global_list(self, search_query: str = ""):
+        """Build the queryset for the global problem report list.
+
+        Applies search filtering, eager-loads related objects, and orders by:
+
+        1. Open before closed (``-status`` descending: "open" > "closed")
+        2. Within open: priority order derived from ``Priority`` choices definition
+        3. Within same priority: location sort_order (floor first, then workshop)
+        4. Within same location: occurred_at newest first
+        5. Closed: only by occurred_at newest first (priority/location ignored)
+        """
+        latest_log_prefetch = Prefetch(
+            "log_entries",
+            queryset=LogEntry.objects.order_by("-occurred_at"),
+            to_attr="prefetched_log_entries",
+        )
+
+        # Derive sort values from TextChoices definition order so reordering
+        # the enum members automatically updates the sort.
+        priority_whens = [
+            When(priority=value, then=Value(i))
+            for i, (value, _) in enumerate(ProblemReport.Priority.choices)
+        ]
+
+        # Closed reports get a high constant so priority/location don't affect their order.
+        priority_sort = Case(
+            When(status=ProblemReport.Status.CLOSED, then=Value(999)),
+            *priority_whens,
+            default=Value(999),
+            output_field=IntegerField(),
+        )
+        location_sort = Case(
+            When(status=ProblemReport.Status.CLOSED, then=Value(999)),
+            When(machine__location__isnull=True, then=Value(998)),
+            default=F("machine__location__sort_order"),
+            output_field=IntegerField(),
+        )
+
+        return (
+            self.select_related("machine", "machine__model", "machine__location")
+            .prefetch_related(latest_log_prefetch, "media")
+            .search(search_query)
+            .annotate(priority_sort=priority_sort, location_sort=location_sort)
+            .order_by("-status", "priority_sort", "location_sort", "-occurred_at")
         )
 
     def search(self, query: str = ""):

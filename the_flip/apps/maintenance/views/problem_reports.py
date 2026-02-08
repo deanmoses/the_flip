@@ -10,7 +10,6 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Case, F, IntegerField, Prefetch, Value, When
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -53,57 +52,6 @@ from the_flip.apps.maintenance.models import (
 )
 
 
-def get_problem_report_queryset(search_query: str = ""):
-    """Build the queryset for global problem report lists.
-
-    Used by both the main list view and the infinite scroll partial view
-    to ensure consistent filtering, prefetching, and ordering.
-
-    Sort order:
-    1. Open before closed (``-status`` descending: "open" > "closed")
-    2. Within open: priority order derived from ``Priority`` choices definition
-    3. Within same priority: location sort_order (floor first, then workshop)
-    4. Within same location: occurred_at newest first
-    5. Closed: only by occurred_at newest first (priority/location ignored)
-    """
-    latest_log_prefetch = Prefetch(
-        "log_entries",
-        queryset=LogEntry.objects.order_by("-occurred_at"),
-        to_attr="prefetched_log_entries",
-    )
-
-    # Derive sort values from TextChoices definition order so reordering
-    # the enum members automatically updates the sort.
-    priority_whens = [
-        When(priority=value, then=Value(i))
-        for i, (value, _) in enumerate(ProblemReport.Priority.choices)
-    ]
-
-    # Closed reports get a high constant so priority/location don't affect their order.
-    priority_sort = Case(
-        When(status=ProblemReport.Status.CLOSED, then=Value(999)),
-        *priority_whens,
-        default=Value(999),
-        output_field=IntegerField(),
-    )
-    location_sort = Case(
-        When(status=ProblemReport.Status.CLOSED, then=Value(999)),
-        When(machine__location__isnull=True, then=Value(998)),
-        default=F("machine__location__sort_order"),
-        output_field=IntegerField(),
-    )
-
-    queryset = (
-        ProblemReport.objects.select_related("machine", "machine__model", "machine__location")
-        .prefetch_related(latest_log_prefetch, "media")
-        .search(search_query)
-        .annotate(priority_sort=priority_sort, location_sort=location_sort)
-        .order_by("-status", "priority_sort", "location_sort", "-occurred_at")
-    )
-
-    return queryset
-
-
 class ProblemReportListView(CanAccessMaintainerPortalMixin, TemplateView):
     """Global list of all problem reports across all machines. Maintainer-only access."""
 
@@ -112,7 +60,7 @@ class ProblemReportListView(CanAccessMaintainerPortalMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         search_query = self.request.GET.get("q", "").strip()
-        reports = get_problem_report_queryset(search_query)
+        reports = ProblemReport.objects.for_global_list(search_query)
 
         paginator = Paginator(reports, settings.LIST_PAGE_SIZE)
         page_obj = paginator.get_page(self.request.GET.get("page"))
@@ -147,7 +95,7 @@ class ProblemReportListPartialView(CanAccessMaintainerPortalMixin, InfiniteScrol
 
     def get_queryset(self):
         search_query = self.request.GET.get("q", "").strip()
-        return get_problem_report_queryset(search_query)
+        return ProblemReport.objects.for_global_list(search_query)
 
 
 class ProblemReportLogEntriesPartialView(CanAccessMaintainerPortalMixin, View):
