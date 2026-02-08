@@ -18,6 +18,21 @@ Focus on clean, modern, lightweight mobile-friendly pages that rely on a single 
 
 ## Page Layout
 
+### Base Templates
+
+The project uses a three-level base template hierarchy:
+
+| Template                   | Extends                  | Use For                                                                           |
+| -------------------------- | ------------------------ | --------------------------------------------------------------------------------- |
+| `base_minimal.html`        | —                        | HTML shell with `<head>` resources (fonts, CSS, favicon). No scripts, no chrome.  |
+| `base_minimal_auth.html`   | `base_minimal.html`      | Adds `core.js` (dropdowns, smart dates). For authenticated pages without app nav. |
+| `base.html`                | `base_minimal_auth.html` | Full app chrome: header, nav, messages. Most pages use this via layouts.          |
+| `base_public_minimal.html` | `base_minimal.html`      | Public pages with logo header and footer. No `core.js`.                           |
+
+Most pages don't extend these directly — use the layout templates below instead.
+
+### Layout Templates
+
 Most pages extend `layouts/two_column.html`. See that file for available blocks (`breadcrumbs`, `mobile_actions`, `sidebar`, `main`).
 
 For list pages with search and infinite scroll, extend `maintenance/global_list_base.html` instead.
