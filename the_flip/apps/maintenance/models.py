@@ -7,7 +7,7 @@ from uuid import uuid4
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q
+from django.db.models import Case, Count, F, IntegerField, Prefetch, Q, Value, When
 from django.urls import reverse
 from django.utils import timezone
 from simple_history.models import HistoricalRecords
@@ -24,19 +24,21 @@ class ProblemReportQuerySet(models.QuerySet):
         """Return only open problem reports."""
         return self.filter(status=ProblemReport.Status.OPEN)
 
-    def _build_description_and_reporter_q(self, query: str) -> Q:
-        """Build Q object for searching description and reporter fields.
+    def _build_report_fields_q(self, query: str) -> Q:
+        """Build Q object for searching core problem report fields.
 
         This is the core search pattern shared across all problem report search
         contexts. It matches:
         - Problem description
         - Status (open/closed)
+        - Priority (untriaged, unplayable, major, minor, task)
         - Reporter name (free-text field)
         - Reporter user's username, first name, last name (via FK)
         """
         return (
             Q(description__icontains=query)
             | Q(status__icontains=query)
+            | Q(priority__icontains=query)
             | Q(reported_by_name__icontains=query)
             | Q(reported_by_user__username__icontains=query)
             | Q(reported_by_user__first_name__icontains=query)
@@ -56,6 +58,79 @@ class ProblemReportQuerySet(models.QuerySet):
             | Q(log_entries__maintainer_names__icontains=query)
         )
 
+    @staticmethod
+    def _priority_whens() -> list[When]:
+        """Return When clauses mapping each priority to its sort position.
+
+        Derives sort values from ``Priority`` choices definition order so
+        reordering the enum members automatically updates the sort.
+        """
+        return [
+            When(priority=value, then=Value(i))
+            for i, (value, _) in enumerate(ProblemReport.Priority.choices)
+        ]
+
+    def for_global_list(self, search_query: str = ""):
+        """Build the queryset for the global problem report list.
+
+        Applies search filtering, eager-loads related objects, and orders by:
+
+        1. Open before closed (``-status`` descending: "open" > "closed")
+        2. Within open: priority order derived from ``Priority`` choices definition
+        3. Within same priority: location sort_order (floor first, then workshop)
+        4. Within same location: occurred_at newest first
+        5. Closed: only by occurred_at newest first (priority/location ignored)
+        """
+        latest_log_prefetch = Prefetch(
+            "log_entries",
+            queryset=LogEntry.objects.order_by("-occurred_at"),
+            to_attr="prefetched_log_entries",
+        )
+
+        # Closed reports get a high constant so priority/location don't affect their order.
+        priority_sort = Case(
+            When(status=ProblemReport.Status.CLOSED, then=Value(999)),
+            *self._priority_whens(),
+            default=Value(999),
+            output_field=IntegerField(),
+        )
+        location_sort = Case(
+            When(status=ProblemReport.Status.CLOSED, then=Value(999)),
+            When(machine__location__isnull=True, then=Value(998)),
+            default=F("machine__location__sort_order"),
+            output_field=IntegerField(),
+        )
+
+        return (
+            self.select_related("machine", "machine__model", "machine__location")
+            .prefetch_related(latest_log_prefetch, "media")
+            .search(search_query)
+            .annotate(priority_sort=priority_sort, location_sort=location_sort)
+            .order_by("-status", "priority_sort", "location_sort", "-occurred_at")
+        )
+
+    def for_wall_display(self, location_slugs: list[str]):
+        """Build the queryset for the wall display board.
+
+        Returns only open reports at the specified locations, ordered by
+        priority then newest first.  Annotates ``media_count`` for compact
+        display (no prefetch of full media objects).
+        """
+        priority_sort = Case(
+            *self._priority_whens(),
+            default=Value(999),
+            output_field=IntegerField(),
+        )
+        return (
+            self.filter(
+                status=ProblemReport.Status.OPEN,
+                machine__location__slug__in=location_slugs,
+            )
+            .select_related("machine", "machine__model", "machine__location")
+            .annotate(media_count=Count("media"), priority_sort=priority_sort)
+            .order_by("priority_sort", "-occurred_at")
+        )
+
     def search(self, query: str = ""):
         """
         Global search across multiple fields.
@@ -71,7 +146,7 @@ class ProblemReportQuerySet(models.QuerySet):
             return self
 
         return self.filter(
-            self._build_description_and_reporter_q(query)
+            self._build_report_fields_q(query)
             | Q(machine__model__name__icontains=query)
             | Q(machine__name__icontains=query)
             | self._build_log_entry_q(query)
@@ -92,7 +167,7 @@ class ProblemReportQuerySet(models.QuerySet):
             return self
 
         return self.filter(
-            self._build_description_and_reporter_q(query) | self._build_log_entry_q(query)
+            self._build_report_fields_q(query) | self._build_log_entry_q(query)
         ).distinct()
 
 
@@ -112,6 +187,25 @@ class ProblemReport(TimeStampedMixin):
         NO_CREDITS = "no_credits", "No Credits"
         OTHER = "other", "Other"
 
+    class Priority(models.TextChoices):
+        """Priority level, determining sort order in lists.
+
+        UNTRIAGED is auto-assigned to visitor submissions and cannot be
+        set by maintainers.  Use :meth:`maintainer_settable` to get the
+        choices maintainers may select.
+        """
+
+        UNTRIAGED = "untriaged", "Untriaged"
+        UNPLAYABLE = "unplayable", "Unplayable"
+        MAJOR = "major", "Major"
+        MINOR = "minor", "Minor"
+        TASK = "task", "Task"
+
+        @classmethod
+        def maintainer_settable(cls) -> list[tuple[str, str]]:
+            """Return priority choices that maintainers can explicitly set."""
+            return [(val, label) for val, label in cls.choices if val != cls.UNTRIAGED]
+
     machine = models.ForeignKey(
         MachineInstance,
         on_delete=models.CASCADE,
@@ -127,6 +221,12 @@ class ProblemReport(TimeStampedMixin):
         max_length=50,
         choices=ProblemType.choices,
         default=ProblemType.OTHER,
+        db_index=True,
+    )
+    priority = models.CharField(
+        max_length=20,
+        choices=Priority.choices,
+        default=Priority.MINOR,
         db_index=True,
     )
     description = models.TextField(blank=True)
