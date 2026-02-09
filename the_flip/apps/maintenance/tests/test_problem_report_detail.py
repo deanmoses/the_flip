@@ -96,23 +96,28 @@ class ProblemReportDetailViewTests(SuppressRequestLogsMixin, TestDataMixin, Test
         self.assertContains(response, "Anonymous")
 
     def test_detail_view_shows_close_button_for_open_report(self):
-        """Detail page should show 'Close Problem' button for open reports."""
+        """Open report: Close button visible, Re-Open button hidden."""
         self.client.force_login(self.maintainer_user)
         response = self.client.get(self.detail_url)
 
-        self.assertContains(response, "Close Problem")
-        self.assertNotContains(response, "Re-Open Problem")
+        # Both buttons always exist; hidden class controls visibility
+        self.assertContains(response, "Close Problem Report")
+        self.assertContains(response, "Re-Open Problem Report")
+        # Close button (btn--log) is visible, Re-Open button (btn--report) is hidden
+        self.assertNotContains(response, "btn--log btn--full hidden")
+        self.assertContains(response, "btn--report btn--full hidden")
 
     def test_detail_view_shows_reopen_button_for_closed_report(self):
-        """Detail page should show 'Re-Open Problem' button for closed reports."""
+        """Closed report: Close button hidden, Re-Open button visible."""
         self.report.status = ProblemReport.Status.CLOSED
         self.report.save()
 
         self.client.force_login(self.maintainer_user)
         response = self.client.get(self.detail_url)
 
-        self.assertContains(response, "Re-Open Problem")
-        self.assertNotContains(response, "Close Problem")
+        # Close button (btn--log) is hidden, Re-Open button (btn--report) is visible
+        self.assertContains(response, "btn--log btn--full hidden")
+        self.assertNotContains(response, "btn--report btn--full hidden")
 
     def test_status_toggle_requires_staff(self):
         """Non-staff users should not be able to toggle status."""
@@ -352,6 +357,7 @@ class ProblemReportPriorityUpdateTests(SuppressRequestLogsMixin, TestDataMixin, 
         self.assertTrue(result["success"])
         self.assertEqual(result["status"], "success")
         self.assertEqual(result["priority"], ProblemReport.Priority.UNPLAYABLE)
+        self.assertEqual(result["priority_display"], "Unplayable")
 
         self.report.refresh_from_db()
         self.assertEqual(self.report.priority, ProblemReport.Priority.UNPLAYABLE)
@@ -430,7 +436,9 @@ class ProblemReportStatusUpdateTests(SuppressRequestLogsMixin, TestDataMixin, Te
         self.assertEqual(response.status_code, 200)
         result = response.json()
         self.assertTrue(result["success"])
+        self.assertEqual(result["status"], "success")
         self.assertEqual(result["new_status"], ProblemReport.Status.CLOSED)
+        self.assertEqual(result["new_status_display"], "Closed")
         self.assertIn("log_entry_html", result)
 
         self.report.refresh_from_db()

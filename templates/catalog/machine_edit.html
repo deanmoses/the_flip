@@ -1,5 +1,5 @@
 {% extends "layouts/two_column.html" %}
-{% load core_extras %}
+{% load static core_extras %}
 {% block title %}Edit {{ object.name }} · {{ block.super }}{% endblock %}
 {% block breadcrumbs %}
   <a href="{% url 'maintainer-machine-list' %}">Machines</a>
@@ -58,4 +58,8 @@
       </div>
     </form>
   </div>
+{% endblock %}
+{% block extra_scripts %}
+  <script src="{% static 'core/settable_pill.js' %}" defer></script>
+  <script src="{% static 'core/machine_pill_effects.js' %}" defer></script>
 {% endblock %}

@@ -17,28 +17,9 @@
 {% endblock %}
 {% block mobile_actions %}
   <div class="mobile-meta">
-    <div class="mobile-meta__row">
-      {# Interactive status dropdown #}
-      <div class="dropdown"
-           data-update-url="{% url 'part-request-status-update' part_request.pk %}">
-        <button type="button"
-                class="pill pill--neutral"
-                aria-haspopup="true"
-                aria-expanded="false"
-                onclick="toggleDropdown(this)">
-          <span class="status-label">{{ part_request.get_status_display }}</span>
-          {% icon "caret-down" class="meta" %}
-        </button>
-        <div class="dropdown__menu dropdown__menu--left hidden">
-          {% for value, label in part_request.Status.choices %}
-            <button type="button"
-                    class="dropdown__item{% if value == part_request.status %} dropdown__item--selected{% endif %}"
-                    data-value="{{ value }}"
-                    data-label="{{ label }}"
-                    onclick="updatePartRequestStatus(this)">{{ label }}</button>
-          {% endfor %}
-        </div>
-      </div>
+    <div class="mobile-meta__row"
+         data-update-url="{% url 'part-request-status-update' part_request.pk %}">
+      {% settable_part_request_status_pill part_request %}
       {% if part_request.machine %}
         <span class="text-muted text-sm">{{ part_request.machine.short_display_name }}</span>
       {% endif %}
@@ -54,28 +35,9 @@
   {% include "components/history_link.html" with history_url=part_request.get_admin_history_url %}
   {% sidebar_section label="Parts Request" %}
   <div class="sidebar__title">{% icon "box-open" %} #{{ part_request.pk }}</div>
-  <div class="flex flex-wrap stack-tight space-above-sm">
-    <div class="dropdown"
-         data-update-url="{% url 'part-request-status-update' part_request.pk %}">
-      <button type="button"
-              id="status-pill"
-              class="pill pill--neutral"
-              aria-haspopup="true"
-              aria-expanded="false"
-              onclick="toggleDropdown(this)">
-        <span class="status-label">{{ part_request.get_status_display }}</span>
-        {% icon "caret-down" class="meta" %}
-      </button>
-      <div class="dropdown__menu dropdown__menu--left hidden">
-        {% for value, label in part_request.Status.choices %}
-          <button type="button"
-                  class="dropdown__item{% if value == part_request.status %} dropdown__item--selected{% endif %}"
-                  data-value="{{ value }}"
-                  data-label="{{ label }}"
-                  onclick="updatePartRequestStatus(this)">{{ label }}</button>
-        {% endfor %}
-      </div>
-    </div>
+  <div class="flex flex-wrap stack-tight space-above-sm"
+       data-update-url="{% url 'part-request-status-update' part_request.pk %}">
+    {% settable_part_request_status_pill part_request %}
   </div>
   <div class="sidebar__subtitle space-above-sm">
     {{ part_request.requester_display }} · {{ part_request.occurred_at|smart_date }}
@@ -132,84 +94,39 @@
 {% block extra_scripts %}
   {% include "core/partials/markdown_textarea_scripts.html" %}
   <script src="{% static 'core/infinite_scroll.js' %}" defer></script>
+  <script src="{% static 'core/settable_pill.js' %}" defer></script>
   <script>
-    const CSRF_TOKEN = '{{ csrf_token }}';
+    // Part request side effects: inject update entry + toast
+    document.addEventListener('pill:updated', (event) => {
+      const { field, value, label, data } = event.detail;
+      if (field !== 'status') return;
 
-    // Status dropdown update
-    async function updatePartRequestStatus(button) {
-      const dropdown = button.closest('.dropdown');
-      const updateUrl = dropdown.dataset.updateUrl;
-      const newStatus = button.dataset.value;
-      const newLabel = button.dataset.label;
+      // Inject the new update into the updates list
+      if (data.update_html) {
+        const noUpdatesMsg = document.querySelector('#log-container > p.text-muted');
+        if (noUpdatesMsg) noUpdatesMsg.remove();
 
-      const formData = new FormData();
-      formData.append('action', 'update_status');
-      formData.append('status', newStatus);
-      formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
+        const template = document.createElement('template');
+        template.innerHTML = data.update_html.trim();
+        const newEntry = template.content.firstChild;
 
-      try {
-        const response = await fetch(updateUrl, {
-          method: 'POST',
-          body: formData
-        });
-
-        const data = await response.json();
-        if (data.status === 'success') {
-          // Sync ALL status dropdowns with matching update URL (mobile + sidebar)
-          const allDropdowns = document.querySelectorAll(`.dropdown[data-update-url="${updateUrl}"]`);
-          allDropdowns.forEach(dd => {
-            const label = dd.querySelector('.status-label');
-            if (label) label.textContent = data.new_status_display;
-
-            dd.querySelectorAll('.dropdown__item').forEach(item => {
-              item.classList.toggle('dropdown__item--selected', item.dataset.value === newStatus);
-            });
-
-            const menu = dd.querySelector('.dropdown__menu');
-            if (menu) menu.classList.add('hidden');
-            const trigger = dd.querySelector('[aria-expanded]');
-            if (trigger) trigger.setAttribute('aria-expanded', 'false');
-          });
-
-          // Inject the new update into the updates list
-          if (data.update_html) {
-            const noUpdatesMsg = document.querySelector('#log-container > p.text-muted');
-            if (noUpdatesMsg) {
-              noUpdatesMsg.remove();
-            }
-
-            // Parse the HTML into an element
-            const template = document.createElement('template');
-            template.innerHTML = data.update_html.trim();
-            const newEntry = template.content.firstChild;
-
-            // Get or create the timeline container
-            let logList = document.getElementById('log-list');
-            if (!logList) {
-              logList = document.createElement('div');
-              logList.className = 'timeline';
-              logList.id = 'log-list';
-              logList.innerHTML = '<div class="timeline__line"></div>';
-              document.getElementById('log-container').prepend(logList);
-            }
-
-            // Insert after the timeline line (second child position)
-            const timelineLine = logList.firstElementChild;
-            timelineLine.after(newEntry);
-            applySmartDates(newEntry);
-          }
-
-          // Show success message
-          const pillHtml = `<span class="pill pill--neutral">${data.new_status_display}</span>`;
-          showMessage('success', `Part request #{{ part_request.pk }} updated to ${pillHtml}`);
-        } else if (data.status !== 'noop') {
-          alert('Failed to update status: ' + (data.error || 'Unknown error'));
+        let logList = document.getElementById('log-list');
+        if (!logList) {
+          logList = document.createElement('div');
+          logList.className = 'timeline';
+          logList.id = 'log-list';
+          logList.innerHTML = '<div class="timeline__line"></div>';
+          document.getElementById('log-container').prepend(logList);
         }
-      } catch (error) {
-        console.error('Status update error:', error);
-        alert('Failed to update status');
+
+        const timelineLine = logList.firstElementChild;
+        timelineLine.after(newEntry);
+        applySmartDates(newEntry);
       }
-    }
+
+      const pillHtml = `<span class="pill pill--neutral">${escapeHtml(label)}</span>`;
+      showMessage('success', `Part request #{{ part_request.pk }} set to ${pillHtml}`);
+    });
   </script>
   {% include "core/partials/markdown_inline_edit_scripts.html" %}
   <script src="{% static 'core/media_grid.js' %}" defer></script>

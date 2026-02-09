@@ -73,6 +73,14 @@ class IconTagTests(TestCase):
         self.assertIn('class="fa-solid fa-bug meta"', result)
         self.assertIn('<span class="visually-hidden">Problem</span>', result)
 
+    def test_data_attribute(self):
+        """Extra kwargs render as HTML attributes (underscores become hyphens)."""
+        result = icon("check", **{"class": "meta", "data_pill_icon": ""})
+        self.assertEqual(
+            result,
+            '<i class="fa-solid fa-check meta" data-pill-icon="" aria-hidden="true"></i>',
+        )
+
     def test_machine_status_icon_no_double_prefix(self):
         """Machine status icons work with {% icon %} tag without double fa- prefix.
 

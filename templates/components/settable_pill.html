@@ -1,0 +1,28 @@
+{% load core_extras %}
+<div class="dropdown">
+  <button type="button"
+          class="pill {{ pill_class }}"
+          data-pill-field="{{ field }}"
+          data-action="{{ action }}"
+          aria-haspopup="true"
+          aria-expanded="false"
+          onclick="toggleDropdown(this)">
+    {% if icon_name %}
+      {% icon icon_name class="meta" data_pill_icon="" %}
+    {% endif %}
+    <span data-pill-label>{{ display_value }}</span>
+    {% icon "caret-down" class="meta" %}
+  </button>
+  <div class="dropdown__menu dropdown__menu--left hidden" role="menu">
+    {% for item in items %}
+      <div role="menuitemradio"
+           aria-checked="{% if item.selected %}true{% else %}false{% endif %}"
+           tabindex="-1"
+           class="dropdown__item{% if item.selected %} dropdown__item--selected{% endif %}"
+           data-value="{{ item.value }}"
+           data-label="{{ item.label }}"
+           {% if item.pill_class %}data-pill-class="{{ item.pill_class }}"{% endif %}
+           {% if item.icon %}data-icon="{{ item.icon }}"{% endif %}>{{ item.label }}</div>
+    {% endfor %}
+  </div>
+</div>

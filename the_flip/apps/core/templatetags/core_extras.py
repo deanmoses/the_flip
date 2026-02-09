@@ -3,7 +3,7 @@ import secrets
 from django import template
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.html import format_html
+from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
 
 register = template.Library()
@@ -278,12 +278,15 @@ def icon(name: str, style: str = "solid", label: str | None = None, **kwargs: st
         {% icon "check" class="meta" %}
         {% icon "bug" label="Problem" %}
         {% icon "discord" style="brands" %}
+        {% icon "check" class="meta" data_pill_icon="" %}
 
     Args:
         name: Icon name without fa- prefix (e.g., "check", "bug")
         style: "solid" (default), "brands", or "regular"
         label: Screen reader text (adds visually-hidden span)
         class: Additional CSS classes (via kwargs to avoid Python keyword)
+        **kwargs: Extra kwargs become HTML attributes (underscores → hyphens).
+            E.g., ``data_pill_icon=""`` renders as ``data-pill-icon=""``.
 
     Returns:
         Safe HTML string with the icon element
@@ -296,12 +299,17 @@ def icon(name: str, style: str = "solid", label: str | None = None, **kwargs: st
         raise ValueError(f"Invalid icon style '{style}'. Must be one of: {valid}")
 
     style_class = ICON_STYLES[style]
-    extra_class = kwargs.get("class", "")
+    extra_class = kwargs.pop("class", "")
     classes = f"{style_class} fa-{name}"
     if extra_class:
         classes = f"{classes} {extra_class}"
 
-    icon_html = format_html('<i class="{}" aria-hidden="true"></i>', classes)
+    # Render remaining kwargs as HTML attributes (underscores → hyphens)
+    extra_attrs = format_html_join(
+        "", ' {}="{}"', ((k.replace("_", "-"), v) for k, v in kwargs.items())
+    )
+
+    icon_html = format_html('<i class="{}"{} aria-hidden="true"></i>', classes, extra_attrs)
 
     if label:
         return format_html(
@@ -476,28 +484,111 @@ def problem_report_priority_pill(report):
     return {"report": report}
 
 
-# --- Problem report settable dropdown pills ----------------------------------
+# --- Problem report status filters -------------------------------------------
+
+_STATUS_CSS_CLASSES = {
+    "open": "pill--status-broken",
+    "closed": "pill--status-good",
+}
+
+_STATUS_ICONS = {
+    "open": "circle-exclamation",
+    "closed": "check",
+}
 
 
-@register.inclusion_tag("components/settable_problem_status_pill.html")
+@register.filter
+def problem_status_css_class(status):
+    """Return pill CSS class for ProblemReport.status.
+
+    Usage:
+        {{ report.status|problem_status_css_class }}
+    """
+    return _STATUS_CSS_CLASSES.get(status, "pill--status-broken")
+
+
+@register.filter
+def problem_status_icon(status):
+    """Return Font Awesome icon name for ProblemReport.status.
+
+    Usage:
+        {{ report.status|problem_status_icon }}
+    """
+    return _STATUS_ICONS.get(status, "circle-exclamation")
+
+
+# --- Settable dropdown pills -------------------------------------------------
+
+
+def _settable_pill_context(
+    *,
+    field: str,
+    action: str,
+    current_value: str,
+    display_value: str,
+    items: list[dict],
+    pill_class: str = "pill--neutral",
+    icon_name: str | None = None,
+) -> dict:
+    """Build template context for a settable dropdown pill.
+
+    All ``settable_*_pill`` inclusion tags delegate here so the shared
+    template (``components/settable_pill.html``) is the single source of
+    truth for ARIA roles, keyboard attributes, and dropdown structure.
+
+    Args:
+        field: POST field name (e.g. ``"status"``, ``"operational_status"``).
+        action: POST action value (e.g. ``"update_status"``).
+        current_value: Current field value (for selected/checked state).
+        display_value: Display label shown on the pill trigger.
+        items: List of dicts, each with ``value``, ``label``, and optionally
+            ``pill_class`` and ``icon``.
+        pill_class: CSS class for the pill trigger (default ``pill--neutral``).
+        icon_name: Icon name (without ``fa-`` prefix) for the trigger, or
+            ``None`` for no icon.
+    """
+    for item in items:
+        item["selected"] = str(item["value"]) == str(current_value)
+    return {
+        "field": field,
+        "action": action,
+        "pill_class": pill_class,
+        "icon_name": icon_name,
+        "display_value": display_value,
+        "items": items,
+    }
+
+
+@register.inclusion_tag("components/settable_pill.html")
 def settable_problem_status_pill(report):
     """Render a settable status dropdown pill for a problem report.
-
-    Displays the current status as a clickable pill that opens a dropdown
-    menu to change the status via AJAX (``updateProblemReportField``).
 
     Usage:
         {% settable_problem_status_pill report %}
     """
-    return {"report": report}
+    return _settable_pill_context(
+        field="status",
+        action="update_status",
+        current_value=report.status,
+        display_value=report.get_status_display(),
+        pill_class=problem_status_css_class(report.status),
+        icon_name=problem_status_icon(report.status),
+        items=[
+            {
+                "value": v,
+                "label": label,
+                "pill_class": problem_status_css_class(v),
+                "icon": problem_status_icon(v),
+            }
+            for v, label in type(report).Status.choices
+        ],
+    )
 
 
-@register.inclusion_tag("components/settable_problem_priority_pill.html")
+@register.inclusion_tag("components/settable_pill.html")
 def settable_problem_priority_pill(report):
     """Render a settable priority dropdown pill for a problem report.
 
-    Displays the current priority as a clickable pill that opens a dropdown
-    menu to change the priority via AJAX (``updateProblemReportField``).
     Excludes UNTRIAGED from the choices — maintainers cannot set it.
 
     Usage:
@@ -505,39 +596,86 @@ def settable_problem_priority_pill(report):
     """
     from the_flip.apps.maintenance.models import ProblemReport
 
-    return {
-        "report": report,
-        "priority_choices": ProblemReport.Priority.maintainer_settable(),
-    }
+    return _settable_pill_context(
+        field="priority",
+        action="update_priority",
+        current_value=report.priority,
+        display_value=report.get_priority_display(),
+        pill_class=problem_priority_css_class(report.priority),
+        icon_name=problem_priority_icon(report.priority),
+        items=[
+            {
+                "value": v,
+                "label": label,
+                "pill_class": problem_priority_css_class(v),
+                "icon": problem_priority_icon(v),
+            }
+            for v, label in ProblemReport.Priority.maintainer_settable()
+        ],
+    )
 
 
-# --- Machine settable dropdown pills ----------------------------------------
-
-
-@register.inclusion_tag("components/settable_machine_status_pill.html")
+@register.inclusion_tag("components/settable_pill.html")
 def settable_machine_status_pill(machine):
-    """Render a settable status dropdown pill for a machine.
-
-    Displays the current operational status as a clickable pill that opens
-    a dropdown menu to change it via AJAX (``updateMachineField``).
+    """Render a settable operational-status dropdown pill for a machine.
 
     Usage:
         {% settable_machine_status_pill machine %}
     """
-    return {"machine": machine}
+    return _settable_pill_context(
+        field="operational_status",
+        action="update_status",
+        current_value=machine.operational_status,
+        display_value=machine.get_operational_status_display(),
+        pill_class=machine_status_css_class(machine.operational_status),
+        icon_name=machine_status_icon(machine.operational_status),
+        items=[
+            {
+                "value": v,
+                "label": label,
+                "pill_class": machine_status_css_class(v),
+                "icon": machine_status_icon(v),
+            }
+            for v, label in type(machine).OperationalStatus.choices
+        ],
+    )
 
 
-@register.inclusion_tag("components/settable_machine_location_pill.html")
+@register.inclusion_tag("components/settable_pill.html")
 def settable_machine_location_pill(machine, locations):
     """Render a settable location dropdown pill for a machine.
-
-    Displays the current location as a clickable pill that opens a dropdown
-    menu to change it via AJAX (``updateMachineField``).
 
     Usage:
         {% settable_machine_location_pill machine locations %}
     """
-    return {"machine": machine, "locations": locations}
+    current = machine.location.slug if machine.location else ""
+    display = machine.location.name if machine.location else "No Location"
+    items = [{"value": loc.slug, "label": loc.name} for loc in locations]
+    items.append({"value": "", "label": "No Location"})
+    return _settable_pill_context(
+        field="location",
+        action="update_location",
+        current_value=current,
+        display_value=display,
+        icon_name="location-dot",
+        items=items,
+    )
+
+
+@register.inclusion_tag("components/settable_pill.html")
+def settable_part_request_status_pill(part_request):
+    """Render a settable status dropdown pill for a part request.
+
+    Usage:
+        {% settable_part_request_status_pill part_request %}
+    """
+    return _settable_pill_context(
+        field="status",
+        action="update_status",
+        current_value=part_request.status,
+        display_value=part_request.get_status_display(),
+        items=[{"value": v, "label": label} for v, label in type(part_request).Status.choices],
+    )
 
 
 # -----------------------------------------------------------------------------

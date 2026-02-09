@@ -48,6 +48,10 @@ class MachineInlineUpdateViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
 
+        # Verify settable pill response contract
+        self.assertEqual(data["status"], "success")
+        self.assertEqual(data["location_display"], "Floor")
+
         # Check celebration flag in response
         self.assertTrue(data.get("celebration"))
 
@@ -67,6 +71,10 @@ class MachineInlineUpdateViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         data = response.json()
+
+        # Verify settable pill response contract
+        self.assertEqual(data["status"], "success")
+        self.assertEqual(data["location_display"], "Workshop")
 
         # No celebration flag
         self.assertFalse(data.get("celebration", False))
@@ -130,9 +138,15 @@ class MachineInlineUpdateViewTests(TestCase):
         self.machine._skip_auto_log = True
         self.machine.save()
 
-        self.client.post(
+        response = self.client.post(
             self.update_url, {"action": "update_status", "operational_status": "broken"}
         )
+
+        # Verify settable pill response contract
+        data = response.json()
+        self.assertEqual(data["status"], "success")
+        self.assertEqual(data["operational_status_display"], "Broken")
+        self.assertIn("log_entry_html", data)
 
         log = LogEntry.objects.filter(machine=self.machine).latest("occurred_at")
         self.assertEqual(log.created_by, self.maintainer_user)

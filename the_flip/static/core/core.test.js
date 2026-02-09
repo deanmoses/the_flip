@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const { toDateTimeLocalValue, isSameDay, formatTime, formatRelative } = require('./core.js');
+const {
+  toDateTimeLocalValue,
+  isSameDay,
+  formatTime,
+  formatRelative,
+  escapeHtml,
+} = require('./core.js');
 
 // ── toDateTimeLocalValue ────────────────────────────────────────
 
@@ -146,5 +152,33 @@ describe('formatRelative', () => {
     expect(result).toMatch(/2024/);
     // Should contain the day
     expect(result).toMatch(/25/);
+  });
+});
+
+// ── escapeHtml ──────────────────────────────────────────────────
+
+describe('escapeHtml', () => {
+  it('escapes angle brackets', () => {
+    expect(escapeHtml('<script>alert("xss")</script>')).toBe(
+      '&lt;script&gt;alert("xss")&lt;/script&gt;'
+    );
+  });
+
+  it('escapes ampersands', () => {
+    expect(escapeHtml('foo & bar')).toBe('foo &amp; bar');
+  });
+
+  it('escapes img onerror injection', () => {
+    const result = escapeHtml('Foo<img onerror=alert(1) src=x>');
+    expect(result).not.toContain('<img');
+    expect(result).toContain('&lt;img');
+  });
+
+  it('passes through plain text unchanged', () => {
+    expect(escapeHtml('Blackout')).toBe('Blackout');
+  });
+
+  it('handles empty string', () => {
+    expect(escapeHtml('')).toBe('');
   });
 });

@@ -851,6 +851,7 @@ body {
   display: block;
   padding: var(--space-2);
   border-radius: var(--radius-md);
+  cursor: pointer;
   transition: background-color 0.15s ease;
 }
 
