@@ -44,8 +44,9 @@ class MediaModelRegistryTests(TestCase):
 
     def test_get_media_model_unknown_name_raises(self):
         """get_media_model() raises ValueError for unregistered names."""
-        with self.assertRaises(ValueError, msg="Unknown media model: BogusMedia"):
+        with self.assertRaises(ValueError) as ctx:
             get_media_model("BogusMedia")
+        self.assertIn("Unknown media model", str(ctx.exception))
 
 
 @tag("models")
@@ -73,8 +74,9 @@ class RegisterMediaModelTests(TestCase):
         """Registering the same model twice raises ValueError."""
         clear_media_model_registry()
         register_media_model(LogEntryMedia)
-        with self.assertRaises(ValueError, msg="already registered"):
+        with self.assertRaises(ValueError) as ctx:
             register_media_model(LogEntryMedia)
+        self.assertIn("already registered", str(ctx.exception))
 
     def test_clear_empties_registry(self):
         """clear_media_model_registry() removes all entries."""
