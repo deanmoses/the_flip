@@ -15,14 +15,8 @@ from the_flip.apps.catalog.models import MachineInstance
 from the_flip.apps.maintenance.models import LogEntry, ProblemReport
 from the_flip.apps.parts.models import PartRequest, PartRequestUpdate
 
-# Type alias for feed entries (all have occurred_at attribute)
+# Type alias for feed entries (all have occurred_at and ENTRY_TYPE attributes)
 FeedEntry = LogEntry | ProblemReport | PartRequest | PartRequestUpdate
-
-# Entry type constants for consistency
-ENTRY_TYPE_LOG = "log"
-ENTRY_TYPE_PROBLEM_REPORT = "problem_report"
-ENTRY_TYPE_PART_REQUEST = "part_request"
-ENTRY_TYPE_PART_REQUEST_UPDATE = "part_request_update"
 
 
 @dataclass(frozen=True)
@@ -41,10 +35,10 @@ FEED_CONFIGS: dict[str, FeedConfig] = {
         title_suffix="",
         breadcrumb_label=None,
         entry_types=(
-            ENTRY_TYPE_LOG,
-            ENTRY_TYPE_PROBLEM_REPORT,
-            ENTRY_TYPE_PART_REQUEST,
-            ENTRY_TYPE_PART_REQUEST_UPDATE,
+            LogEntry.ENTRY_TYPE,
+            ProblemReport.ENTRY_TYPE,
+            PartRequest.ENTRY_TYPE,
+            PartRequestUpdate.ENTRY_TYPE,
         ),
         empty_message="No activity yet.",
         search_empty_message="No activity matches your search.",
@@ -52,21 +46,21 @@ FEED_CONFIGS: dict[str, FeedConfig] = {
     "logs": FeedConfig(
         title_suffix=" · Logs",
         breadcrumb_label="Logs",
-        entry_types=(ENTRY_TYPE_LOG,),
+        entry_types=(LogEntry.ENTRY_TYPE,),
         empty_message="No log entries yet.",
         search_empty_message="No log entries match your search.",
     ),
     "problems": FeedConfig(
         title_suffix=" · Problem Reports",
         breadcrumb_label="Problems",
-        entry_types=(ENTRY_TYPE_PROBLEM_REPORT,),
+        entry_types=(ProblemReport.ENTRY_TYPE,),
         empty_message="No problem reports yet.",
         search_empty_message="No problem reports match your search.",
     ),
     "parts": FeedConfig(
         title_suffix=" · Part Requests",
         breadcrumb_label="Parts",
-        entry_types=(ENTRY_TYPE_PART_REQUEST,),
+        entry_types=(PartRequest.ENTRY_TYPE,),
         empty_message="No parts requests yet.",
         search_empty_message="No parts requests match your search.",
     ),
@@ -120,19 +114,19 @@ def get_machine_feed_page(
     all_entries: list[FeedEntry] = []
 
     # Build querysets based on requested entry types
-    if ENTRY_TYPE_LOG in entry_types:
+    if LogEntry.ENTRY_TYPE in entry_types:
         logs = _get_log_entries(machine, search_query, fetch_limit)
         all_entries.extend(logs)
 
-    if ENTRY_TYPE_PROBLEM_REPORT in entry_types:
+    if ProblemReport.ENTRY_TYPE in entry_types:
         reports = _get_problem_reports(machine, search_query, fetch_limit)
         all_entries.extend(reports)
 
-    if ENTRY_TYPE_PART_REQUEST in entry_types:
+    if PartRequest.ENTRY_TYPE in entry_types:
         part_requests = _get_part_requests(machine, search_query, fetch_limit)
         all_entries.extend(part_requests)
 
-    if ENTRY_TYPE_PART_REQUEST_UPDATE in entry_types:
+    if PartRequestUpdate.ENTRY_TYPE in entry_types:
         part_updates = _get_part_request_updates(machine, search_query, fetch_limit)
         all_entries.extend(part_updates)
 
@@ -164,13 +158,7 @@ def _get_log_entries(
         queryset = queryset.search_for_machine(search_query)
 
     queryset = queryset.order_by("-occurred_at")
-    logs_list = list(queryset[:limit])
-
-    # Tag entries for template differentiation
-    for log in logs_list:
-        log.entry_type = ENTRY_TYPE_LOG  # type: ignore[attr-defined]
-
-    return logs_list
+    return list(queryset[:limit])
 
 
 def _get_problem_reports(
@@ -192,12 +180,7 @@ def _get_problem_reports(
         queryset = queryset.search_for_machine(search_query)
 
     queryset = queryset.order_by("-occurred_at")
-    reports_list = list(queryset[:limit])
-
-    for report in reports_list:
-        report.entry_type = ENTRY_TYPE_PROBLEM_REPORT  # type: ignore[attr-defined]
-
-    return reports_list
+    return list(queryset[:limit])
 
 
 def _get_part_requests(
@@ -219,12 +202,7 @@ def _get_part_requests(
         queryset = queryset.search_for_machine(search_query)
 
     queryset = queryset.order_by("-occurred_at")
-    requests_list = list(queryset[:limit])
-
-    for pr in requests_list:
-        pr.entry_type = ENTRY_TYPE_PART_REQUEST  # type: ignore[attr-defined]
-
-    return requests_list
+    return list(queryset[:limit])
 
 
 def _get_part_request_updates(
@@ -241,9 +219,4 @@ def _get_part_request_updates(
         queryset = queryset.search_for_machine(search_query)
 
     queryset = queryset.order_by("-occurred_at")
-    updates_list = list(queryset[:limit])
-
-    for pu in updates_list:
-        pu.entry_type = ENTRY_TYPE_PART_REQUEST_UPDATE  # type: ignore[attr-defined]
-
-    return updates_list
+    return list(queryset[:limit])

@@ -160,6 +160,9 @@ class ProblemReportQuerySet(models.QuerySet):
 class ProblemReport(TimeStampedMixin):
     """Visitor-submitted problem report about a machine."""
 
+    ENTRY_TYPE = "problem_report"
+    """Feed entry type identifier. Used by templates to dispatch to the correct partial."""
+
     class Status(models.TextChoices):
         """Whether a problem report is still active or resolved."""
 
@@ -354,6 +357,9 @@ class LogEntryQuerySet(models.QuerySet):
 
 class LogEntry(TimeStampedMixin):
     """Maintainer log entry documenting work on a machine."""
+
+    ENTRY_TYPE = "log"
+    """Feed entry type identifier. Used by templates to dispatch to the correct partial."""
 
     machine = models.ForeignKey(
         MachineInstance,

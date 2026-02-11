@@ -32,7 +32,7 @@ class MachineInlineUpdateView(CanAccessMaintainerPortalMixin, View):
                         "operational_status": status,
                         "operational_status_display": machine.get_operational_status_display(),
                         "log_entry_html": log_entry_html,
-                        "entry_type": "log",  # For live injection filtering
+                        "entry_type": LogEntry.ENTRY_TYPE,  # For live injection filtering
                     }
                 )
             return JsonResponse({"error": "Invalid status"}, status=400)
@@ -52,7 +52,7 @@ class MachineInlineUpdateView(CanAccessMaintainerPortalMixin, View):
                         "location": "",
                         "location_display": "",
                         "log_entry_html": log_entry_html,
-                        "entry_type": "log",  # For live injection filtering
+                        "entry_type": LogEntry.ENTRY_TYPE,  # For live injection filtering
                     }
                 )
             try:
@@ -71,7 +71,7 @@ class MachineInlineUpdateView(CanAccessMaintainerPortalMixin, View):
                         "location_display": location.name,
                         "celebration": celebration,
                         "log_entry_html": log_entry_html,
-                        "entry_type": "log",  # For live injection filtering
+                        "entry_type": LogEntry.ENTRY_TYPE,  # For live injection filtering
                     }
                 )
             except Location.DoesNotExist:

@@ -6,25 +6,14 @@ combining logs, problem reports, and parts entries across all machines.
 
 from __future__ import annotations
 
-from enum import StrEnum
-
 from django.conf import settings
 from django.db.models import Prefetch
 
 from the_flip.apps.maintenance.models import LogEntry, ProblemReport
 from the_flip.apps.parts.models import PartRequest, PartRequestUpdate
 
-# Type alias for feed entries (all have occurred_at attribute)
+# Type alias for feed entries (all have occurred_at and ENTRY_TYPE attributes)
 FeedEntry = LogEntry | ProblemReport | PartRequest | PartRequestUpdate
-
-
-class EntryType(StrEnum):
-    """Entry types for feed items. StrEnum allows direct template comparison."""
-
-    LOG = "log"
-    PROBLEM_REPORT = "problem_report"
-    PART_REQUEST = "part_request"
-    PART_REQUEST_UPDATE = "part_request_update"
 
 
 class PageCursor:
@@ -98,13 +87,7 @@ def _get_global_log_entries(search_query: str | None, limit: int) -> list[LogEnt
         queryset = queryset.search(search_query)
 
     queryset = queryset.order_by("-occurred_at")
-    logs_list = list(queryset[:limit])
-
-    # Tag entries for template differentiation
-    for log in logs_list:
-        log.entry_type = EntryType.LOG  # type: ignore[attr-defined]
-
-    return logs_list
+    return list(queryset[:limit])
 
 
 def _get_global_problem_reports(search_query: str | None, limit: int) -> list[ProblemReport]:
@@ -122,12 +105,7 @@ def _get_global_problem_reports(search_query: str | None, limit: int) -> list[Pr
         queryset = queryset.search(search_query)
 
     queryset = queryset.order_by("-occurred_at")
-    reports_list = list(queryset[:limit])
-
-    for report in reports_list:
-        report.entry_type = EntryType.PROBLEM_REPORT  # type: ignore[attr-defined]
-
-    return reports_list
+    return list(queryset[:limit])
 
 
 def _get_global_part_requests(search_query: str | None, limit: int) -> list[PartRequest]:
@@ -145,12 +123,7 @@ def _get_global_part_requests(search_query: str | None, limit: int) -> list[Part
         queryset = queryset.search(search_query)
 
     queryset = queryset.order_by("-occurred_at")
-    requests_list = list(queryset[:limit])
-
-    for pr in requests_list:
-        pr.entry_type = EntryType.PART_REQUEST  # type: ignore[attr-defined]
-
-    return requests_list
+    return list(queryset[:limit])
 
 
 def _get_global_part_request_updates(
@@ -165,9 +138,4 @@ def _get_global_part_request_updates(
         queryset = queryset.search(search_query)
 
     queryset = queryset.order_by("-occurred_at")
-    updates_list = list(queryset[:limit])
-
-    for pu in updates_list:
-        pu.entry_type = EntryType.PART_REQUEST_UPDATE  # type: ignore[attr-defined]
-
-    return updates_list
+    return list(queryset[:limit])

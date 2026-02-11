@@ -90,6 +90,9 @@ class PartRequestQuerySet(models.QuerySet):
 class PartRequest(TimeStampedMixin):
     """A request for a part needed for maintenance."""
 
+    ENTRY_TYPE = "part_request"
+    """Feed entry type identifier. Used by templates to dispatch to the correct partial."""
+
     class Status(models.TextChoices):
         """Lifecycle state of a part request."""
 
@@ -291,6 +294,9 @@ class PartRequestUpdateQuerySet(models.QuerySet):
 
 class PartRequestUpdate(TimeStampedMixin):
     """An update or comment on a part request."""
+
+    ENTRY_TYPE = "part_request_update"
+    """Feed entry type identifier. Used by templates to dispatch to the correct partial."""
 
     part_request = models.ForeignKey(
         PartRequest,

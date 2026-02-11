@@ -1,10 +1,10 @@
 {% load core_extras %}
-{% if entry.entry_type == "log" %}
+{% if entry.ENTRY_TYPE == "log" %}
   {% include "maintenance/partials/log_entry.html" with entry=entry %}
-{% elif entry.entry_type == "problem_report" %}
+{% elif entry.ENTRY_TYPE == "problem_report" %}
   {% include "maintenance/partials/problem_report_entry.html" with entry=entry %}
-{% elif entry.entry_type == "part_request" %}
+{% elif entry.ENTRY_TYPE == "part_request" %}
   {% include "parts/partials/part_request_activity_entry.html" with entry=entry %}
-{% elif entry.entry_type == "part_request_update" %}
+{% elif entry.ENTRY_TYPE == "part_request_update" %}
   {% include "parts/partials/part_update_activity_entry.html" with entry=entry %}
 {% endif %}

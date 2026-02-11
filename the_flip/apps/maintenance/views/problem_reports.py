@@ -418,7 +418,7 @@ class ProblemReportDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, 
                 "new_status": new_status,
                 "new_status_display": self.report.get_status_display(),
                 "log_entry_html": log_entry_html,
-                "entry_type": "log",
+                "entry_type": LogEntry.ENTRY_TYPE,
             }
         )
 
