@@ -1,12 +1,19 @@
 """Unified activity feed: paginated entries across multiple models.
 
+Each Django app registers its feed sources in AppConfig.ready() — core has
+zero imports from domain apps.
+
 Provides a single entry point for fetching activity feeds, supporting both
 machine-scoped and global (all machines) views. Machine-scoped feeds filter
 by machine and exclude machine name from search. Global feeds include machine
 info in select_related for display.
 
-Each record type is registered as a FeedEntrySource, so adding a new type
-means adding one source definition rather than editing two parallel modules.
+To add a new entry type to the feed:
+1. Add an EntryType member below
+2. Write a queryset factory in your app
+3. Register a FeedEntrySource in your AppConfig.ready()
+4. Create the entry template(s)
+5. Update the dispatcher templates (activity_entry.html, global_activity_entry.html)
 """
 
 from __future__ import annotations
@@ -16,18 +23,12 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
-from django.db.models import Prefetch, QuerySet
-
-from the_flip.apps.maintenance.models import LogEntry, ProblemReport
-from the_flip.apps.parts.models import PartRequest, PartRequestUpdate
+from django.db.models import QuerySet
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from the_flip.apps.catalog.models import MachineInstance
-
-# Type alias for feed entries (all have occurred_at attribute)
-FeedEntry = LogEntry | ProblemReport | PartRequest | PartRequestUpdate
 
 
 class EntryType(StrEnum):
@@ -39,16 +40,13 @@ class EntryType(StrEnum):
     PART_REQUEST_UPDATE = "part_request_update"
 
 
-ALL_ENTRY_TYPES: tuple[str, ...] = tuple(EntryType)
-
-
 @dataclass(frozen=True)
 class FeedConfig:
     """Configuration for a machine feed filter tab."""
 
     title_suffix: str  # Appended to browser title, e.g. "· Logs"
     breadcrumb_label: str | None  # Final breadcrumb text, None for activity feed
-    entry_types: tuple[str, ...]  # Which entry types to include (immutable)
+    entry_types: tuple[str, ...] | None  # Which entry types to include; None = all
     empty_message: str  # Shown when feed has no entries
     search_empty_message: str  # Shown when search has no results
 
@@ -57,7 +55,7 @@ FEED_CONFIGS: dict[str, FeedConfig] = {
     "all": FeedConfig(
         title_suffix="",
         breadcrumb_label=None,
-        entry_types=ALL_ENTRY_TYPES,
+        entry_types=None,
         empty_message="No activity yet.",
         search_empty_message="No activity matches your search.",
     ),
@@ -119,81 +117,33 @@ class FeedEntrySource:
     global_select_related: tuple[str, ...]
 
 
-# --- Queryset factories for each entry type ---
+# ---------------------------------------------------------------------------
+# Feed source registry
 #
-# These return base querysets with model-specific select_related/prefetch_related.
-# The caller adds machine filtering or global select_related as appropriate.
+# Apps register their FeedEntrySource instances via AppConfig.ready(), keeping
+# core free of hardcoded knowledge about other apps.  Compare the same pattern
+# in core/models.py for media model registration and core/markdown_links.py
+# for link-type registration.
+# ---------------------------------------------------------------------------
+
+_FEED_SOURCES: dict[str, FeedEntrySource] = {}
 
 
-def _log_entry_queryset() -> QuerySet[LogEntry]:
-    return LogEntry.objects.select_related("problem_report").prefetch_related(
-        "maintainers__user", "media"
-    )
+def register_feed_source(source: FeedEntrySource) -> None:
+    """Register a feed entry source. Called from each app's AppConfig.ready()."""
+    if source.entry_type in _FEED_SOURCES:
+        raise ValueError(f"Feed source '{source.entry_type}' is already registered")
+    _FEED_SOURCES[source.entry_type] = source
 
 
-def _problem_report_queryset() -> QuerySet[ProblemReport]:
-    latest_log_prefetch = Prefetch(
-        "log_entries",
-        queryset=LogEntry.objects.order_by("-occurred_at"),
-        to_attr="prefetched_log_entries",
-    )
-    return ProblemReport.objects.select_related("reported_by_user").prefetch_related(
-        latest_log_prefetch, "media"
-    )
+def clear_feed_source_registry() -> None:
+    """Reset registry state. For tests only."""
+    _FEED_SOURCES.clear()
 
 
-def _part_request_queryset() -> QuerySet[PartRequest]:
-    latest_update_prefetch = Prefetch(
-        "updates",
-        queryset=PartRequestUpdate.objects.order_by("-occurred_at"),
-        to_attr="prefetched_updates",
-    )
-    return PartRequest.objects.select_related("requested_by__user").prefetch_related(
-        "media", latest_update_prefetch
-    )
-
-
-def _part_request_update_queryset() -> QuerySet[PartRequestUpdate]:
-    return PartRequestUpdate.objects.select_related(
-        "posted_by__user", "part_request"
-    ).prefetch_related("media")
-
-
-# --- Source registry ---
-#
-# To add a new entry type to the feed:
-# 1. Add an EntryType member
-# 2. Write a queryset factory function above
-# 3. Register a FeedEntrySource here
-# 4. Create the entry template(s)
-# 5. Update the dispatcher templates (activity_entry.html, global_activity_entry.html)
-
-FEED_SOURCES: dict[str, FeedEntrySource] = {
-    EntryType.LOG: FeedEntrySource(
-        entry_type=EntryType.LOG,
-        get_base_queryset=_log_entry_queryset,
-        machine_filter_field="machine",
-        global_select_related=("machine", "machine__model"),
-    ),
-    EntryType.PROBLEM_REPORT: FeedEntrySource(
-        entry_type=EntryType.PROBLEM_REPORT,
-        get_base_queryset=_problem_report_queryset,
-        machine_filter_field="machine",
-        global_select_related=("machine", "machine__model"),
-    ),
-    EntryType.PART_REQUEST: FeedEntrySource(
-        entry_type=EntryType.PART_REQUEST,
-        get_base_queryset=_part_request_queryset,
-        machine_filter_field="machine",
-        global_select_related=("machine", "machine__model"),
-    ),
-    EntryType.PART_REQUEST_UPDATE: FeedEntrySource(
-        entry_type=EntryType.PART_REQUEST_UPDATE,
-        get_base_queryset=_part_request_update_queryset,
-        machine_filter_field="part_request__machine",
-        global_select_related=("part_request__machine",),
-    ),
-}
+def get_registered_entry_types() -> tuple[str, ...]:
+    """Return all registered entry type keys."""
+    return tuple(_FEED_SOURCES.keys())
 
 
 def get_feed_page(
@@ -201,8 +151,8 @@ def get_feed_page(
     page_size: int = settings.LIST_PAGE_SIZE,
     search_query: str | None = None,
     machine: MachineInstance | None = None,
-    entry_types: tuple[str, ...] = ALL_ENTRY_TYPES,
-) -> tuple[list[FeedEntry], bool]:
+    entry_types: tuple[str, ...] | None = None,
+) -> tuple[list[Any], bool]:
     """Get a paginated page of activity entries.
 
     When machine is provided, returns entries scoped to that machine using
@@ -215,14 +165,17 @@ def get_feed_page(
 
     Returns (page_items, has_next) tuple.
     """
+    if entry_types is None:
+        entry_types = tuple(_FEED_SOURCES.keys())
+
     offset = (page_num - 1) * page_size
     # Fetch one extra to detect if more pages exist (countless pagination pattern)
     fetch_limit = offset + page_size + 1
 
-    all_entries: list[FeedEntry] = []
+    all_entries: list[Any] = []
 
     for entry_type in entry_types:
-        source = FEED_SOURCES.get(entry_type)
+        source = _FEED_SOURCES.get(entry_type)
         if source:
             all_entries.extend(_fetch_entries(source, machine, search_query, fetch_limit))
 

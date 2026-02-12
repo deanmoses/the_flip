@@ -18,7 +18,12 @@ from the_flip.apps.catalog.forms import (
     MachineModelForm,
 )
 from the_flip.apps.catalog.models import Location, MachineInstance, MachineModel
-from the_flip.apps.core.feed import FEED_CONFIGS, PageCursor, get_feed_page
+from the_flip.apps.core.feed import (
+    FEED_CONFIGS,
+    PageCursor,
+    get_feed_page,
+    get_registered_entry_types,
+)
 from the_flip.apps.core.forms import SearchForm
 from the_flip.apps.core.mixins import CanAccessMaintainerPortalMixin
 from the_flip.apps.maintenance.forms import ProblemReportForm
@@ -160,7 +165,7 @@ class MachineFeedView(CanAccessMaintainerPortalMixin, TemplateView):
                 # Feed config context
                 "title_suffix": feed_config.title_suffix,
                 "breadcrumb_label": feed_config.breadcrumb_label,
-                "entry_types": feed_config.entry_types,
+                "entry_types": feed_config.entry_types or get_registered_entry_types(),
                 "empty_message": feed_config.empty_message,
                 "search_empty_message": feed_config.search_empty_message,
             }
