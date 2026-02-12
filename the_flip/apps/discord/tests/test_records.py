@@ -12,14 +12,16 @@ from the_flip.apps.core.test_utils import (
     create_part_request,
     create_problem_report,
 )
+from the_flip.apps.discord.bot_handlers.log_entry import LogEntryBotHandler
+from the_flip.apps.discord.bot_handlers.part_request_update import PartRequestUpdateBotHandler
 from the_flip.apps.discord.models import DiscordMessageMapping
-from the_flip.apps.discord.records import (
-    _create_log_entry,
-    _create_part_request_update,
-    _resolve_occurred_at,
-)
+from the_flip.apps.discord.records import _resolve_occurred_at
 from the_flip.apps.discord.types import DiscordUserInfo
 from the_flip.apps.maintenance.models import LogEntry
+
+# Instantiate handlers for direct unit testing of create_from_suggestion()
+_log_entry_handler = LogEntryBotHandler()
+_part_request_update_handler = PartRequestUpdateBotHandler()
 
 
 @tag("tasks")
@@ -35,11 +37,11 @@ class LogEntryParentLinkingTests(TestCase):
         """Log entry created with parent_record_id links to that problem report."""
         problem_report = create_problem_report(machine=self.machine)
 
-        log_entry = _create_log_entry(
+        log_entry = _log_entry_handler.create_from_suggestion(
             machine=self.machine,
             description="Fixed the issue",
             maintainer=self.maintainer,
-            discord_display_name=None,
+            display_name="",
             parent_record_id=problem_report.pk,
             occurred_at=django_timezone.now(),
         )
@@ -49,11 +51,11 @@ class LogEntryParentLinkingTests(TestCase):
 
     def test_log_entry_without_parent_has_no_problem_report(self):
         """Log entry created without parent_record_id has no linked problem report."""
-        log_entry = _create_log_entry(
+        log_entry = _log_entry_handler.create_from_suggestion(
             machine=self.machine,
             description="Fixed something",
             maintainer=self.maintainer,
-            discord_display_name=None,
+            display_name="",
             parent_record_id=None,
             occurred_at=django_timezone.now(),
         )
@@ -62,11 +64,11 @@ class LogEntryParentLinkingTests(TestCase):
 
     def test_log_entry_with_nonexistent_parent_has_no_problem_report(self):
         """Log entry with invalid parent_record_id gracefully has no link (logs warning)."""
-        log_entry = _create_log_entry(
+        log_entry = _log_entry_handler.create_from_suggestion(
             machine=self.machine,
             description="Fixed something",
             maintainer=self.maintainer,
-            discord_display_name=None,
+            display_name="",
             parent_record_id=99999,  # Non-existent ID
             occurred_at=django_timezone.now(),
         )
@@ -76,11 +78,11 @@ class LogEntryParentLinkingTests(TestCase):
 
     def test_log_entry_uses_maintainer_when_provided(self):
         """Log entry associates maintainer when provided."""
-        log_entry = _create_log_entry(
+        log_entry = _log_entry_handler.create_from_suggestion(
             machine=self.machine,
             description="Fixed the flipper",
             maintainer=self.maintainer,
-            discord_display_name="Discord User",
+            display_name="Discord User",
             parent_record_id=None,
             occurred_at=django_timezone.now(),
         )
@@ -90,12 +92,12 @@ class LogEntryParentLinkingTests(TestCase):
         self.assertEqual(log_entry.maintainer_names, "")
 
     def test_log_entry_uses_fallback_name_when_no_maintainer(self):
-        """Log entry uses discord_display_name as fallback when no maintainer."""
-        log_entry = _create_log_entry(
+        """Log entry uses display_name as fallback when no maintainer."""
+        log_entry = _log_entry_handler.create_from_suggestion(
             machine=self.machine,
             description="Fixed the flipper",
             maintainer=None,
-            discord_display_name="Discord User",
+            display_name="Discord User",
             parent_record_id=None,
             occurred_at=django_timezone.now(),
         )
@@ -105,11 +107,11 @@ class LogEntryParentLinkingTests(TestCase):
 
     def test_log_entry_uses_discord_fallback_when_no_display_name(self):
         """Log entry uses 'Discord' as fallback when no maintainer or display name."""
-        log_entry = _create_log_entry(
+        log_entry = _log_entry_handler.create_from_suggestion(
             machine=self.machine,
             description="Fixed the flipper",
             maintainer=None,
-            discord_display_name=None,
+            display_name="",
             parent_record_id=None,
             occurred_at=django_timezone.now(),
         )
@@ -133,10 +135,12 @@ class PartRequestUpdateParentLinkingTests(TestCase):
             requested_by=self.maintainer,
         )
 
-        update = _create_part_request_update(
+        update = _part_request_update_handler.create_from_suggestion(
             parent_record_id=part_request.pk,
             description="Parts arrived!",
+            machine=None,
             maintainer=self.maintainer,
+            display_name="",
             occurred_at=django_timezone.now(),
         )
 
@@ -146,10 +150,12 @@ class PartRequestUpdateParentLinkingTests(TestCase):
     def test_update_with_nonexistent_parent_raises(self):
         """Part request update with invalid parent_record_id raises ValueError."""
         with self.assertRaises(ValueError) as ctx:
-            _create_part_request_update(
+            _part_request_update_handler.create_from_suggestion(
                 parent_record_id=99999,  # Non-existent ID
                 description="Parts arrived!",
+                machine=None,
                 maintainer=self.maintainer,
+                display_name="",
                 occurred_at=django_timezone.now(),
             )
 
@@ -501,11 +507,11 @@ class TimestampPreservationTests(TestCase):
         # Discord message posted at 2pm
         discord_timestamp = datetime(2025, 1, 15, 14, 0, 0, tzinfo=UTC)
 
-        log_entry = _create_log_entry(
+        log_entry = _log_entry_handler.create_from_suggestion(
             machine=self.machine,
             description="Fixed the flipper",
             maintainer=self.maintainer,
-            discord_display_name=None,
+            display_name="",
             parent_record_id=None,
             occurred_at=discord_timestamp,
         )
@@ -556,3 +562,233 @@ class TimestampPreservationTests(TestCase):
 
         problem_report = ProblemReport.objects.get(pk=result.record_id)
         self.assertEqual(problem_report.occurred_at, late)
+
+
+@tag("discord")
+class GetOrLinkMaintainerEdgeCasesTests(TestCase):
+    """Edge case tests for _get_or_link_maintainer()."""
+
+    def test_auto_links_by_exact_username_match(self):
+        """Auto-links when Discord username exactly matches Flipfix username."""
+        from the_flip.apps.discord.records import _get_or_link_maintainer
+        from the_flip.apps.discord.types import DiscordUserInfo
+
+        user = create_maintainer_user(username="exactmatch")
+        expected_maintainer = Maintainer.objects.get(user=user)
+
+        discord_user = DiscordUserInfo(
+            user_id="123456789012345678",
+            username="exactmatch",  # Exact match
+            display_name="Different Display Name",
+        )
+
+        maintainer = _get_or_link_maintainer(discord_user)
+
+        self.assertEqual(maintainer, expected_maintainer)
+
+        # Verify link was created
+        from the_flip.apps.discord.models import DiscordUserLink
+
+        link = DiscordUserLink.objects.get(discord_user_id="123456789012345678")
+        self.assertEqual(link.maintainer, expected_maintainer)
+
+    def test_auto_links_by_display_name_when_username_no_match(self):
+        """Auto-links by display name when username doesn't match."""
+        from the_flip.apps.discord.records import _get_or_link_maintainer
+        from the_flip.apps.discord.types import DiscordUserInfo
+
+        user = create_maintainer_user(username="flipfixusername")
+        expected_maintainer = Maintainer.objects.get(user=user)
+
+        discord_user = DiscordUserInfo(
+            user_id="234567890123456789",
+            username="discord_user",  # No match
+            display_name="flipfixusername",  # Matches Flipfix username
+        )
+
+        maintainer = _get_or_link_maintainer(discord_user)
+
+        self.assertEqual(maintainer, expected_maintainer)
+
+    def test_case_insensitive_username_matching(self):
+        """Username matching is case-insensitive."""
+        from the_flip.apps.discord.records import _get_or_link_maintainer
+        from the_flip.apps.discord.types import DiscordUserInfo
+
+        user = create_maintainer_user(username="CamelCase")
+        expected_maintainer = Maintainer.objects.get(user=user)
+
+        discord_user = DiscordUserInfo(
+            user_id="345678901234567890",
+            username="camelcase",  # Lowercase
+            display_name="Other Name",
+        )
+
+        maintainer = _get_or_link_maintainer(discord_user)
+
+        self.assertEqual(maintainer, expected_maintainer)
+
+    def test_returns_none_when_no_match(self):
+        """Returns None when no maintainer matches."""
+        from the_flip.apps.discord.records import _get_or_link_maintainer
+        from the_flip.apps.discord.types import DiscordUserInfo
+
+        # Create a maintainer but with different username
+        create_maintainer_user(username="different")
+
+        discord_user = DiscordUserInfo(
+            user_id="456789012345678901",
+            username="nomatch",
+            display_name="No Match Either",
+        )
+
+        maintainer = _get_or_link_maintainer(discord_user)
+
+        self.assertIsNone(maintainer)
+
+    def test_idempotent_linking(self):
+        """Multiple calls with same Discord user don't create duplicate links."""
+        from the_flip.apps.discord.models import DiscordUserLink
+        from the_flip.apps.discord.records import _get_or_link_maintainer
+        from the_flip.apps.discord.types import DiscordUserInfo
+
+        user = create_maintainer_user(username="idempotent")
+        expected_maintainer = Maintainer.objects.get(user=user)
+
+        discord_user = DiscordUserInfo(
+            user_id="567890123456789012",
+            username="idempotent",
+            display_name="Test",
+        )
+
+        # Call twice
+        maintainer1 = _get_or_link_maintainer(discord_user)
+        maintainer2 = _get_or_link_maintainer(discord_user)
+
+        self.assertEqual(maintainer1, expected_maintainer)
+        self.assertEqual(maintainer2, expected_maintainer)
+
+        # Should only have one link
+        links = DiscordUserLink.objects.filter(discord_user_id="567890123456789012")
+        self.assertEqual(links.count(), 1)
+
+
+@tag("discord")
+class RecordCreationErrorHandlingTests(TestCase):
+    """Error handling tests for record creation."""
+
+    def setUp(self):
+        self.machine = create_machine()
+
+    @override_settings(SITE_URL="https://flipfix.example.com")
+    def test_invalid_machine_slug_raises_error(self):
+        """Invalid machine slug raises ValueError."""
+        from asgiref.sync import async_to_sync
+
+        from the_flip.apps.discord.llm import RecordSuggestion, RecordType
+        from the_flip.apps.discord.records import create_record
+        from the_flip.apps.discord.types import DiscordUserInfo
+
+        author_id = "123456789012345678"
+        suggestion = RecordSuggestion(
+            record_type=RecordType.PROBLEM_REPORT,
+            description="Machine broken",
+            source_message_ids=["123"],
+            author_id=author_id,
+            slug="nonexistent_machine",  # Invalid slug
+        )
+
+        discord_user = DiscordUserInfo(
+            user_id=author_id,
+            username="testuser",
+            display_name="Test User",
+        )
+        author_id_map = {author_id: discord_user}
+        message_timestamp_map = {"123": django_timezone.now()}
+
+        with self.assertRaises(ValueError) as ctx:
+            async_to_sync(create_record)(suggestion, author_id, author_id_map, message_timestamp_map)
+
+        self.assertIn("Machine not found", str(ctx.exception))
+
+    @override_settings(SITE_URL="https://flipfix.example.com")
+    def test_unknown_record_type_raises_error(self):
+        """Unknown record type raises ValueError."""
+        from asgiref.sync import async_to_sync
+
+        from the_flip.apps.discord.llm import RecordSuggestion
+        from the_flip.apps.discord.records import create_record
+        from the_flip.apps.discord.types import DiscordUserInfo
+
+        author_id = "234567890123456789"
+
+        # Create suggestion with invalid record type
+        suggestion = RecordSuggestion(
+            record_type="invalid_type",  # type: ignore[arg-type]
+            description="Something",
+            source_message_ids=["456"],
+            author_id=author_id,
+            slug=None,
+        )
+
+        discord_user = DiscordUserInfo(
+            user_id=author_id,
+            username="testuser",
+            display_name="Test User",
+        )
+        author_id_map = {author_id: discord_user}
+        message_timestamp_map = {"456": django_timezone.now()}
+
+        with self.assertRaises(ValueError) as ctx:
+            async_to_sync(create_record)(suggestion, author_id, author_id_map, message_timestamp_map)
+
+        self.assertIn("Unknown record type", str(ctx.exception))
+
+
+@tag("discord")
+class EmptySourceMessageIdsTests(TestCase):
+    """Tests for handling empty source_message_ids."""
+
+    def setUp(self):
+        self.machine = create_machine()
+
+    @override_settings(SITE_URL="https://flipfix.example.com")
+    def test_empty_source_message_ids_uses_current_time(self):
+        """Empty source_message_ids falls back to current time."""
+        from asgiref.sync import async_to_sync
+
+        from the_flip.apps.discord.llm import RecordSuggestion, RecordType
+        from the_flip.apps.discord.records import create_record
+        from the_flip.apps.discord.types import DiscordUserInfo
+
+        author_id = "345678901234567890"
+        suggestion = RecordSuggestion(
+            record_type=RecordType.PROBLEM_REPORT,
+            description="Machine broken",
+            source_message_ids=[],  # Empty list
+            author_id=author_id,
+            slug=self.machine.slug,
+        )
+
+        discord_user = DiscordUserInfo(
+            user_id=author_id,
+            username="testuser",
+            display_name="Test User",
+        )
+        author_id_map = {author_id: discord_user}
+        message_timestamp_map: dict[str, datetime] = {}
+
+        before = django_timezone.now()
+        result = async_to_sync(create_record)(
+            suggestion, author_id, author_id_map, message_timestamp_map
+        )
+        after = django_timezone.now()
+
+        # Verify record was created
+        from the_flip.apps.maintenance.models import ProblemReport
+
+        problem_report = ProblemReport.objects.get(pk=result.record_id)
+
+        # occurred_at should be between before and after (current time)
+        self.assertGreaterEqual(problem_report.occurred_at, before)
+        self.assertLessEqual(problem_report.occurred_at, after)
