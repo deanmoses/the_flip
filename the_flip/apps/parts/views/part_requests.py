@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Prefetch
@@ -23,15 +22,13 @@ from the_flip.apps.core.attribution import (
 )
 from the_flip.apps.core.datetime import apply_browser_timezone, validate_not_future
 from the_flip.apps.core.forms import SearchForm
-from the_flip.apps.core.markdown_links import (
-    save_inline_markdown_field,
-    sync_references,
-)
+from the_flip.apps.core.markdown_links import sync_references
 from the_flip.apps.core.media import attach_media_files
 from the_flip.apps.core.mixins import (
     CanAccessMaintainerPortalMixin,
     FormPrefillMixin,
     InfiniteScrollMixin,
+    InlineTextEditMixin,
     MediaUploadMixin,
     SharedAccountMixin,
 )
@@ -204,7 +201,9 @@ class PartRequestCreateView(
         return redirect("part-request-detail", pk=part_request.pk)
 
 
-class PartRequestDetailView(CanAccessMaintainerPortalMixin, MediaUploadMixin, View):
+class PartRequestDetailView(
+    InlineTextEditMixin, CanAccessMaintainerPortalMixin, MediaUploadMixin, View
+):
     """Detail view for a part request. Maintainer-only access."""
 
     template_name = "parts/part_request_detail.html"
@@ -213,6 +212,9 @@ class PartRequestDetailView(CanAccessMaintainerPortalMixin, MediaUploadMixin, Vi
         return PartRequestMedia
 
     def get_media_parent(self):
+        return self.part_request
+
+    def get_inline_edit_object(self):
         return self.part_request
 
     def get(self, request, *args, **kwargs):
@@ -234,7 +236,7 @@ class PartRequestDetailView(CanAccessMaintainerPortalMixin, MediaUploadMixin, Vi
         action = request.POST.get("action")
 
         action_handlers = {
-            "update_text": self._handle_update_text,
+            "update_text": self.handle_update_text,
             "upload_media": self.handle_upload_media,
             "delete_media": self.handle_delete_media,
         }
@@ -243,17 +245,6 @@ class PartRequestDetailView(CanAccessMaintainerPortalMixin, MediaUploadMixin, Vi
             return action_handlers[action](request)
 
         return JsonResponse({"success": False, "error": f"Unknown action: {action}"}, status=400)
-
-    # -- Action handlers -------------------------------------------------------
-
-    def _handle_update_text(self, request):
-        """AJAX: update the text field with inline markdown."""
-        text = request.POST.get("text", "")
-        try:
-            save_inline_markdown_field(self.part_request, "text", text)
-        except ValidationError as e:
-            return JsonResponse({"success": False, "errors": e.messages}, status=400)
-        return JsonResponse({"success": True})
 
     def render_response(self, request, part_request):
         from django.shortcuts import render

@@ -6,7 +6,6 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.http import JsonResponse
@@ -28,15 +27,13 @@ from the_flip.apps.core.columns import build_location_columns
 from the_flip.apps.core.datetime import apply_browser_timezone, validate_not_future
 from the_flip.apps.core.forms import SearchForm
 from the_flip.apps.core.ip import get_real_ip
-from the_flip.apps.core.markdown_links import (
-    save_inline_markdown_field,
-    sync_references,
-)
+from the_flip.apps.core.markdown_links import sync_references
 from the_flip.apps.core.media import attach_media_files
 from the_flip.apps.core.mixins import (
     CanAccessMaintainerPortalMixin,
     FormPrefillMixin,
     InfiniteScrollMixin,
+    InlineTextEditMixin,
     MediaUploadMixin,
     SharedAccountMixin,
 )
@@ -230,15 +227,21 @@ class ProblemReportCreateView(
         return redirect("problem-report-detail", pk=report.pk)
 
 
-class ProblemReportDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, View):
+class ProblemReportDetailView(
+    InlineTextEditMixin, MediaUploadMixin, CanAccessMaintainerPortalMixin, View
+):
     """Detail view for a problem report with status toggle capability. Maintainer-only access."""
 
     template_name = "maintenance/problem_report_detail.html"
+    inline_text_field_name = "description"
 
     def get_media_model(self):
         return ProblemReportMedia
 
     def get_media_parent(self):
+        return self.report
+
+    def get_inline_edit_object(self):
         return self.report
 
     def get(self, request, *args, **kwargs):
@@ -254,7 +257,7 @@ class ProblemReportDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, 
         action = request.POST.get("action")
 
         action_handlers = {
-            "update_text": self._handle_update_text,
+            "update_text": self.handle_update_text,
             "update_machine": self._handle_update_machine,
             "update_priority": self._handle_update_priority,
             "update_status": self._handle_update_status,
@@ -273,15 +276,6 @@ class ProblemReportDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, 
         return JsonResponse({"success": False, "error": f"Unknown action: {action}"}, status=400)
 
     # -- Action handlers -------------------------------------------------------
-
-    def _handle_update_text(self, request):
-        """AJAX: update the description field with inline markdown."""
-        text = request.POST.get("text", "")
-        try:
-            save_inline_markdown_field(self.report, "description", text)
-        except ValidationError as e:
-            return JsonResponse({"success": False, "errors": e.messages}, status=400)
-        return JsonResponse({"success": True})
 
     def _handle_update_machine(self, request):
         """AJAX: move the report (and its log entries) to a different machine."""

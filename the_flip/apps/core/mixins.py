@@ -7,10 +7,12 @@ from typing import TYPE_CHECKING, Any, cast
 
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.template.loader import render_to_string
 
+from the_flip.apps.core.markdown_links import save_inline_markdown_field
 from the_flip.apps.core.media import attach_media_files
 
 if TYPE_CHECKING:
@@ -219,6 +221,38 @@ class MediaUploadMixin:
 
         except media_model.DoesNotExist:
             return JsonResponse({"success": False, "error": "Media not found"}, status=404)
+
+
+class InlineTextEditMixin:
+    """
+    Mixin for views that handle inline text field updates via AJAX POST.
+
+    Provides a handle_update_text() method that can be wired into a view's
+    action dispatch table, matching the pattern used by MediaUploadMixin.
+
+    Subclasses must implement:
+        - get_inline_edit_object(): Return the model instance being edited
+
+    Subclasses may override:
+        - inline_text_field_name: Model field to update (default: "text")
+    """
+
+    inline_text_field_name: str = "text"
+
+    def get_inline_edit_object(self) -> models.Model:
+        """Return the model instance for inline text edits."""
+        raise NotImplementedError("Subclasses must implement get_inline_edit_object()")
+
+    def handle_update_text(self, request: HttpRequest) -> JsonResponse:
+        """Handle inline text update from AJAX request."""
+        text = request.POST.get("text", "")
+        try:
+            save_inline_markdown_field(
+                self.get_inline_edit_object(), self.inline_text_field_name, text
+            )
+        except ValidationError as e:
+            return JsonResponse({"success": False, "errors": e.messages}, status=400)
+        return JsonResponse({"success": True})
 
 
 class InfiniteScrollMixin:
