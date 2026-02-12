@@ -7,10 +7,13 @@ format_webhook_message() method.
 
 from __future__ import annotations
 
+import logging
 import urllib.parse
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from the_flip.apps.accounts.models import Maintainer
@@ -176,7 +179,8 @@ def format_discord_message(event_type: str, obj: Any) -> dict:
     handler = get_webhook_handler_by_event(event_type)
     if handler:
         return handler.format_webhook_message(obj)
-    return {"content": f"Unknown event: {event_type}"}
+    logger.warning("discord_unknown_event_type", extra={"event_type": event_type})
+    return {}
 
 
 def format_test_message(event_type: str) -> dict:

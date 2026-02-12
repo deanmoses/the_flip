@@ -40,17 +40,6 @@ class LogEntryBotHandler(BotRecordHandler):
     ) -> LogEntry:
         from the_flip.apps.maintenance.models import LogEntry, ProblemReport
 
-        # If no machine specified but has parent_record_id, inherit machine from parent
-        if not machine and parent_record_id:
-            parent_report = ProblemReport.objects.filter(pk=parent_record_id).first()
-            if parent_report:
-                machine = parent_report.machine
-
-        if not machine:
-            raise ValueError("Machine is required for log_entry")
-
-        fallback_name = display_name or "Discord"
-
         # Look up parent problem report if specified
         problem_report = None
         if parent_record_id:
@@ -60,6 +49,15 @@ class LogEntryBotHandler(BotRecordHandler):
                     "discord_parent_problem_report_not_found",
                     extra={"parent_record_id": parent_record_id},
                 )
+
+        # If no machine specified, inherit from parent problem report
+        if not machine and problem_report:
+            machine = problem_report.machine
+
+        if not machine:
+            raise ValueError("Machine is required for log_entry")
+
+        fallback_name = display_name or "Discord"
 
         log_entry = LogEntry.objects.create(
             machine=machine,

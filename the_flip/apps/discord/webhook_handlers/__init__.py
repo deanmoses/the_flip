@@ -76,6 +76,8 @@ class WebhookHandler:
 
 def register(handler: WebhookHandler) -> None:
     """Register a webhook handler instance."""
+    if handler.name in _registry:
+        raise ValueError(f"Duplicate webhook handler name: {handler.name!r}")
     _registry[handler.name] = handler
 
 

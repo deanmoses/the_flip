@@ -2,15 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from django.urls import reverse
 
 from the_flip.apps.discord.formatters import build_discord_embed, get_base_url
 from the_flip.apps.discord.webhook_handlers import WebhookHandler, register
-
-if TYPE_CHECKING:
-    from the_flip.apps.maintenance.models import ProblemReport
+from the_flip.apps.maintenance.models import ProblemReport
 
 
 class ProblemReportWebhookHandler(WebhookHandler):
@@ -20,7 +16,7 @@ class ProblemReportWebhookHandler(WebhookHandler):
     display_name = "Problem Report"
     emoji = "⚠️"
     color = 15158332  # Red
-    select_related = ("machine",)
+    select_related = ("machine", "reported_by_user")
 
     def get_detail_url(self, obj: ProblemReport) -> str:
         return reverse("problem-report-detail", kwargs={"pk": obj.pk})
@@ -33,7 +29,7 @@ class ProblemReportWebhookHandler(WebhookHandler):
 
         # Build description: [problem type]: [description] (omit type if "Other")
         parts: list[str] = []
-        if obj.problem_type != "other":
+        if obj.problem_type != ProblemReport.ProblemType.OTHER:
             parts.append(obj.get_problem_type_display())
         if obj.description:
             parts.append(obj.description)

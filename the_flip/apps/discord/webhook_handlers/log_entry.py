@@ -12,6 +12,7 @@ from the_flip.apps.discord.formatters import (
     get_maintainer_display_name,
 )
 from the_flip.apps.discord.webhook_handlers import WebhookHandler, register
+from the_flip.apps.maintenance.models import ProblemReport
 
 if TYPE_CHECKING:
     from the_flip.apps.maintenance.models import LogEntry
@@ -24,7 +25,7 @@ class LogEntryWebhookHandler(WebhookHandler):
     display_name = "Log Entry"
     emoji = "🗒️"
     color = 3447003  # Blue
-    select_related = ("machine", "problem_report")
+    select_related = ("machine", "problem_report", "created_by", "created_by__maintainer")
     prefetch_related = ("maintainers", "maintainers__discord_link")
 
     def get_detail_url(self, obj: LogEntry) -> str:
@@ -43,7 +44,7 @@ class LogEntryWebhookHandler(WebhookHandler):
             pr_url = base_url + reverse("problem-report-detail", kwargs={"pk": pr.pk})
             # Build PR text: [problem type]: [truncated description]
             pr_text_parts: list[str] = []
-            if pr.problem_type != "other":
+            if pr.problem_type != ProblemReport.ProblemType.OTHER:
                 pr_text_parts.append(pr.get_problem_type_display())
             if pr.description:
                 pr_desc = pr.description[:50]

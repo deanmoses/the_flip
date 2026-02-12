@@ -87,6 +87,8 @@ class BotRecordHandler:
 
 def register(handler: BotRecordHandler) -> None:
     """Register a bot record handler instance."""
+    if handler.name in _registry:
+        raise ValueError(f"Duplicate bot handler name: {handler.name!r}")
     _registry[handler.name] = handler
 
 

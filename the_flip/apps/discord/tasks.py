@@ -4,12 +4,18 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import requests
 from django_q.tasks import async_task
 
 from the_flip.apps.discord.models import DiscordMessageMapping
 from the_flip.logging import bind_log_context, current_log_context, reset_log_context
+
+if TYPE_CHECKING:
+    from django.db.models import Model
+
+    from the_flip.apps.discord.webhook_handlers import WebhookHandler
 
 logger = logging.getLogger(__name__)
 
@@ -104,14 +110,10 @@ def deliver_webhook(
 
 def _deliver_to_url(
     url: str,
-    handler: object,
-    obj: object,
+    handler: WebhookHandler,
+    obj: Model,
 ) -> WebhookDeliveryResult:
     """Deliver a webhook to a URL."""
-    from the_flip.apps.discord.webhook_handlers import WebhookHandler
-
-    assert isinstance(handler, WebhookHandler)
-
     try:
         payload = handler.format_webhook_message(obj)
         response = requests.post(
