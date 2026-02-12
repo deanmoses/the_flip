@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.http import JsonResponse
@@ -26,15 +26,13 @@ from the_flip.apps.core.datetime import (
     validate_not_future,
 )
 from the_flip.apps.core.forms import SearchForm
-from the_flip.apps.core.markdown_links import (
-    save_inline_markdown_field,
-    sync_references,
-)
+from the_flip.apps.core.markdown_links import sync_references
 from the_flip.apps.core.media import attach_media_files
 from the_flip.apps.core.mixins import (
     CanAccessMaintainerPortalMixin,
     FormPrefillMixin,
     InfiniteScrollMixin,
+    InlineTextEditMixin,
     MediaUploadMixin,
     SharedAccountMixin,
     can_access_maintainer_portal,
@@ -261,7 +259,9 @@ class LogListPartialView(CanAccessMaintainerPortalMixin, InfiniteScrollMixin, Vi
         return get_log_entry_queryset(search_query)
 
 
-class LogEntryDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, DetailView):
+class LogEntryDetailView(
+    InlineTextEditMixin, MediaUploadMixin, CanAccessMaintainerPortalMixin, DetailView
+):
     """Detail page for a single log entry with media upload support."""
 
     model = LogEntry
@@ -279,13 +279,16 @@ class LogEntryDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, Detai
     def get_media_parent(self):
         return self.object
 
+    def get_inline_edit_object(self):
+        return self.object
+
     def post(self, request, *args, **kwargs):
         """Handle AJAX updates to the log entry."""
         self.object = self.get_object()
         action = request.POST.get("action")
 
         action_handlers = {
-            "update_text": self._handle_update_text,
+            "update_text": self.handle_update_text,
             "update_occurred_at": self._handle_update_occurred_at,
             "upload_media": self.handle_upload_media,
             "delete_media": self.handle_delete_media,
@@ -300,15 +303,6 @@ class LogEntryDetailView(MediaUploadMixin, CanAccessMaintainerPortalMixin, Detai
         return JsonResponse({"success": False, "error": f"Unknown action: {action}"}, status=400)
 
     # -- Action handlers -------------------------------------------------------
-
-    def _handle_update_text(self, request):
-        """AJAX: update the text field with inline markdown."""
-        text = request.POST.get("text", "")
-        try:
-            save_inline_markdown_field(self.object, "text", text)
-        except ValidationError as e:
-            return JsonResponse({"success": False, "errors": e.messages}, status=400)
-        return JsonResponse({"success": True})
 
     def _handle_update_occurred_at(self, request):
         """AJAX: update the occurred_at timestamp."""
