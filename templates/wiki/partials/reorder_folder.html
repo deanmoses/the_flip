@@ -1,10 +1,10 @@
-{% load ui_tags %}
+{% load ui_tags wiki_tags %}
 {# Recursive folder for reorder page. Each folder is a draggable item within its parent's tag list. #}
 <div class="reorder-folder" data-tag-path="{{ node.tag_path }}">
   <div class="reorder-folder__header">
     <span class="reorder-list__handle" aria-label="Drag to reorder">{% icon "grip-vertical" %}</span>
     {% icon "hashtag" class="meta" %}
-    <span class="reorder-folder__label">{{ tag_name|title }}</span>
+    <span class="reorder-folder__label">{{ tag_name|deslugify }}</span>
   </div>
   {# Pages within this tag #}
   {% if node.pages %}

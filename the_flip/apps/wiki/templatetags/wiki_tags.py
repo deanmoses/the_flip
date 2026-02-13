@@ -9,6 +9,21 @@ from the_flip.apps.wiki.actions import inject_buttons, prepare_for_rendering
 register = template.Library()
 
 
+@register.filter
+def deslugify(value):
+    """Convert a slug back to a human-readable title.
+
+    Replaces hyphens with spaces and title-cases the result.
+
+    Usage::
+
+        {% load wiki_tags %}
+        {{ tag_name|deslugify }}
+        {# "using-flipfix" → "Using Flipfix" #}
+    """
+    return value.replace("-", " ").title()
+
+
 @register.simple_tag
 def render_wiki_content(page):
     """Render wiki page content with action buttons.
