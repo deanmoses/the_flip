@@ -441,13 +441,6 @@ class LogEntryMedia(AbstractMedia):
         verbose_name = "Log entry media"
         verbose_name_plural = "Log entry media"
 
-    def __str__(self) -> str:
-        return f"{self.get_media_type_display()} for log entry {self.log_entry_id}"
-
-    def get_admin_history_url(self) -> str:
-        """Return URL to this media's Django admin change history."""
-        return reverse("admin:maintenance_logentrymedia_history", args=[self.pk])
-
 
 def problem_report_media_upload_to(instance: ProblemReportMedia, filename: str) -> str:
     """Generate upload path for problem report media files."""
@@ -479,10 +472,3 @@ class ProblemReportMedia(AbstractMedia):
         ordering = ["display_order", "created_at"]
         verbose_name = "Problem report media"
         verbose_name_plural = "Problem report media"
-
-    def __str__(self) -> str:
-        return f"{self.get_media_type_display()} for problem report {self.problem_report_id}"
-
-    def get_admin_history_url(self) -> str:
-        """Return URL to this media's Django admin change history."""
-        return reverse("admin:maintenance_problemreportmedia_history", args=[self.pk])
