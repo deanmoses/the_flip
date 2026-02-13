@@ -194,13 +194,6 @@ class PartRequestMedia(AbstractMedia):
         verbose_name = "Part request media"
         verbose_name_plural = "Part request media"
 
-    def __str__(self) -> str:
-        return f"{self.get_media_type_display()} for part request {self.part_request_id}"
-
-    def get_admin_history_url(self) -> str:
-        """Return URL to this media's Django admin change history."""
-        return reverse("admin:parts_partrequestmedia_history", args=[self.pk])
-
 
 class PartRequestUpdateQuerySet(SearchableQuerySetMixin, models.QuerySet):
     """Custom queryset for PartRequestUpdate model."""
@@ -382,10 +375,3 @@ class PartRequestUpdateMedia(AbstractMedia):
         ordering = ["display_order", "created_at"]
         verbose_name = "Part request update media"
         verbose_name_plural = "Part request update media"
-
-    def __str__(self) -> str:
-        return f"{self.get_media_type_display()} for update {self.update_id}"
-
-    def get_admin_history_url(self) -> str:
-        """Return URL to this media's Django admin change history."""
-        return reverse("admin:parts_partrequestupdatemedia_history", args=[self.pk])

@@ -7,6 +7,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models import Q
+from django.urls import reverse
 
 from the_flip.apps.core.image_processing import (
     THUMB_IMAGE_DIMENSION,
@@ -120,6 +121,11 @@ class AbstractMedia(TimeStampedMixin):
         abstract = True
         ordering = ["display_order", "created_at"]
 
+    def __str__(self) -> str:
+        parent_id = getattr(self, f"{self.parent_field_name}_id")
+        human_name = self.parent_field_name.replace("_", " ")
+        return f"{self.get_media_type_display()} for {human_name} {parent_id}"
+
     def save(self, *args, **kwargs):
         """Process photo uploads: generate thumbnail and resize for web."""
         if self.media_type == self.MediaType.PHOTO and self.file:
@@ -146,6 +152,13 @@ class AbstractMedia(TimeStampedMixin):
                 except Exception:  # pragma: no cover
                     logger.warning("Could not resize uploaded photo %s", self.file, exc_info=True)
         super().save(*args, **kwargs)
+
+    def get_admin_history_url(self) -> str:
+        """Return URL to this media's Django admin change history."""
+        return reverse(
+            f"admin:{self._meta.app_label}_{self._meta.model_name}_history",
+            args=[self.pk],
+        )
 
     def get_parent(self):
         """Return the parent object this media is attached to."""

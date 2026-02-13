@@ -6,8 +6,16 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, tag
 
 from the_flip.apps.core.media import attach_media_files
-from the_flip.apps.core.test_utils import TestDataMixin, create_log_entry
-from the_flip.apps.maintenance.models import LogEntryMedia
+from the_flip.apps.core.test_utils import (
+    TemporaryMediaMixin,
+    TestDataMixin,
+    create_log_entry,
+    create_part_request,
+    create_part_request_update,
+    create_problem_report,
+)
+from the_flip.apps.maintenance.models import LogEntryMedia, ProblemReportMedia
+from the_flip.apps.parts.models import PartRequestMedia, PartRequestUpdateMedia
 
 
 @tag("models")
@@ -98,3 +106,105 @@ class AttachMediaFilesTests(TestDataMixin, TestCase):
 
         self.assertEqual(result[0].media_type, LogEntryMedia.MediaType.VIDEO)
         mock_enqueue.assert_called_once()
+
+
+@tag("models")
+class AbstractMediaStrTests(TemporaryMediaMixin, TestDataMixin, TestCase):
+    """Tests for AbstractMedia.__str__ across all concrete subclasses."""
+
+    def test_log_entry_media_str(self):
+        """LogEntryMedia.__str__ includes media type and parent ID."""
+        log_entry = create_log_entry(machine=self.machine, text="Test")
+        media = LogEntryMedia.objects.create(
+            log_entry=log_entry,
+            media_type=LogEntryMedia.MediaType.PHOTO,
+            file=SimpleUploadedFile("test.jpg", b"fake", content_type="image/jpeg"),
+        )
+        self.assertEqual(str(media), f"Photo for log entry {log_entry.pk}")
+
+    def test_problem_report_media_str(self):
+        """ProblemReportMedia.__str__ includes media type and parent ID."""
+        report = create_problem_report(machine=self.machine)
+        media = ProblemReportMedia.objects.create(
+            problem_report=report,
+            media_type=ProblemReportMedia.MediaType.VIDEO,
+            file=SimpleUploadedFile("test.mp4", b"fake", content_type="video/mp4"),
+        )
+        self.assertEqual(str(media), f"Video for problem report {report.pk}")
+
+    def test_part_request_media_str(self):
+        """PartRequestMedia.__str__ includes media type and parent ID."""
+        part_request = create_part_request(machine=self.machine)
+        media = PartRequestMedia.objects.create(
+            part_request=part_request,
+            media_type=PartRequestMedia.MediaType.PHOTO,
+            file=SimpleUploadedFile("test.jpg", b"fake", content_type="image/jpeg"),
+        )
+        self.assertEqual(str(media), f"Photo for part request {part_request.pk}")
+
+    def test_part_request_update_media_str(self):
+        """PartRequestUpdateMedia.__str__ includes media type and parent ID."""
+        update = create_part_request_update()
+        media = PartRequestUpdateMedia.objects.create(
+            update=update,
+            media_type=PartRequestUpdateMedia.MediaType.PHOTO,
+            file=SimpleUploadedFile("test.jpg", b"fake", content_type="image/jpeg"),
+        )
+        self.assertEqual(str(media), f"Photo for update {update.pk}")
+
+
+@tag("models")
+class AbstractMediaAdminHistoryUrlTests(TemporaryMediaMixin, TestDataMixin, TestCase):
+    """Tests for AbstractMedia.get_admin_history_url across all concrete subclasses."""
+
+    def test_log_entry_media_admin_history_url(self):
+        """LogEntryMedia returns correct admin history URL."""
+        log_entry = create_log_entry(machine=self.machine, text="Test")
+        media = LogEntryMedia.objects.create(
+            log_entry=log_entry,
+            media_type=LogEntryMedia.MediaType.PHOTO,
+            file=SimpleUploadedFile("test.jpg", b"fake", content_type="image/jpeg"),
+        )
+        self.assertEqual(
+            media.get_admin_history_url(),
+            f"/admin/maintenance/logentrymedia/{media.pk}/history/",
+        )
+
+    def test_problem_report_media_admin_history_url(self):
+        """ProblemReportMedia returns correct admin history URL."""
+        report = create_problem_report(machine=self.machine)
+        media = ProblemReportMedia.objects.create(
+            problem_report=report,
+            media_type=ProblemReportMedia.MediaType.PHOTO,
+            file=SimpleUploadedFile("test.jpg", b"fake", content_type="image/jpeg"),
+        )
+        self.assertEqual(
+            media.get_admin_history_url(),
+            f"/admin/maintenance/problemreportmedia/{media.pk}/history/",
+        )
+
+    def test_part_request_media_admin_history_url(self):
+        """PartRequestMedia returns correct admin history URL."""
+        part_request = create_part_request(machine=self.machine)
+        media = PartRequestMedia.objects.create(
+            part_request=part_request,
+            media_type=PartRequestMedia.MediaType.PHOTO,
+            file=SimpleUploadedFile("test.jpg", b"fake", content_type="image/jpeg"),
+        )
+        self.assertEqual(
+            media.get_admin_history_url(),
+            f"/admin/parts/partrequestmedia/{media.pk}/history/",
+        )
+
+    def test_part_request_update_media_admin_history_url(self):
+        """PartRequestUpdateMedia returns correct admin history URL."""
+        update = create_part_request_update()
+        media = PartRequestUpdateMedia.objects.create(
+            update=update,
+            media_type=PartRequestUpdateMedia.MediaType.PHOTO,
+            file=SimpleUploadedFile("test.jpg", b"fake", content_type="image/jpeg"),
+        )
+        self.assertEqual(
+            media.get_admin_history_url(),
+            f"/admin/parts/partrequestupdatemedia/{media.pk}/history/",
+        )
