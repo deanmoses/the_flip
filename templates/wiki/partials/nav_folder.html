@@ -1,9 +1,9 @@
-{% load ui_tags %}
+{% load ui_tags wiki_tags %}
 {# Recursive folder for nested tags #}
 <li>
   <div class="wiki-nav__folder-label">
     {% icon "hashtag" %}
-    <span>{{ tag_name|title }}</span>
+    <span>{{ tag_name|deslugify }}</span>
   </div>
   <ul class="wiki-nav__list wiki-nav__list--nested">
     {# Pages in this tag #}

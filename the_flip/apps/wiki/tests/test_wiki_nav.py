@@ -4,6 +4,7 @@ from django.http import Http404
 from django.test import TestCase, tag
 
 from the_flip.apps.wiki.models import WikiPage, WikiPageTag, WikiTagOrder
+from the_flip.apps.wiki.templatetags.wiki_tags import deslugify
 from the_flip.apps.wiki.views import build_nav_tree, parse_wiki_path
 
 
@@ -145,3 +146,16 @@ class BuildNavTreeTests(TestCase):
         nested_keys = list(tree["children"]["machines"]["children"].keys())
 
         self.assertEqual(nested_keys, ["zebra", "alpha"])
+
+
+class DeslugifyFilterTests(TestCase):
+    """Tests for the deslugify template filter."""
+
+    def test_replaces_hyphens_with_spaces(self):
+        self.assertEqual(deslugify("using-flipfix"), "Using Flipfix")
+
+    def test_single_word(self):
+        self.assertEqual(deslugify("procedures"), "Procedures")
+
+    def test_multiple_hyphens(self):
+        self.assertEqual(deslugify("one-two-three"), "One Two Three")
