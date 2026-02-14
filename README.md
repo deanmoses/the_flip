@@ -1,6 +1,6 @@
 # The Flip Pinball Museum's Maintenance System
 
-[![CI](https://github.com/deanmoses/the_flip/actions/workflows/ci.yml/badge.svg)](https://github.com/deanmoses/the_flip/actions/workflows/ci.yml)
+[![CI](https://github.com/The-Flip/flipfix/actions/workflows/ci.yml/badge.svg)](https://github.com/The-Flip/flipfix/actions/workflows/ci.yml)
 
 This is a web app for managing pinball machine problem reports at [The Flip](https://www.theflip.museum/) pinball museum.
 
@@ -24,8 +24,8 @@ It's in Django.
 1. **Clone repo**
 
    ```bash
-   git clone https://github.com/deanmoses/the_flip.git
-   cd the_flip
+   git clone https://github.com/The-Flip/flipfix.git
+   cd flipfix
    ```
 
 2. **Create and activate virtual environment**
