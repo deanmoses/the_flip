@@ -3,11 +3,16 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from django import forms as django_forms
 from django.http import HttpRequest
 from django.test import RequestFactory, TestCase
 from django.utils import timezone
 
-from the_flip.apps.core.datetime import apply_browser_timezone, parse_datetime_with_browser_timezone
+from the_flip.apps.core.datetime import (
+    apply_and_validate_timezone,
+    apply_browser_timezone,
+    parse_datetime_with_browser_timezone,
+)
 
 
 class ApplyBrowserTimezoneTests(TestCase):
@@ -228,3 +233,55 @@ class ParseDatetimeWithBrowserTimezoneTests(TestCase):
         # Convert to UTC to verify standard time was applied correctly
         utc_time = result.astimezone(ZoneInfo("UTC"))
         self.assertEqual(utc_time.hour, 22)  # 2:30 PM PST = 10:30 PM UTC
+
+
+class ApplyAndValidateTimezoneTests(TestCase):
+    """Tests for apply_and_validate_timezone function."""
+
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    def _make_form_with_occurred_at(self, dt):
+        """Create a minimal form with occurred_at in cleaned_data."""
+
+        class StubForm(django_forms.Form):
+            occurred_at = django_forms.DateTimeField(required=False)
+
+        form = StubForm(data={"occurred_at": ""})
+        form.is_valid()
+        form.cleaned_data["occurred_at"] = dt
+        return form
+
+    def test_valid_past_datetime_returns_true(self):
+        """A past datetime returns (datetime, True)."""
+        past = timezone.now() - timezone.timedelta(hours=1)
+        request = self.factory.post("/", {"browser_timezone": "UTC"})
+        form = self._make_form_with_occurred_at(past)
+
+        dt, is_valid = apply_and_validate_timezone(form, request)
+
+        self.assertTrue(is_valid)
+        self.assertIsNotNone(dt)
+
+    def test_future_datetime_returns_false_and_adds_error(self):
+        """A future datetime returns (datetime, False) and adds a form error."""
+        future = timezone.now() + timezone.timedelta(days=2)
+        request = self.factory.post("/", {"browser_timezone": "UTC"})
+        form = self._make_form_with_occurred_at(future)
+
+        dt, is_valid = apply_and_validate_timezone(form, request)
+
+        self.assertFalse(is_valid)
+        self.assertEqual(dt, future)
+        self.assertIn("occurred_at", form.errors)
+        self.assertIn("future", form.errors["occurred_at"][0])
+
+    def test_none_datetime_returns_true(self):
+        """None datetime is valid (no error added)."""
+        request = self.factory.post("/", {"browser_timezone": "UTC"})
+        form = self._make_form_with_occurred_at(None)
+
+        dt, is_valid = apply_and_validate_timezone(form, request)
+
+        self.assertTrue(is_valid)
+        self.assertIsNone(dt)

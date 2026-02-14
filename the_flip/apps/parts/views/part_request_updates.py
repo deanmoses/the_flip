@@ -15,7 +15,7 @@ from the_flip.apps.core.attribution import (
     resolve_maintainer_for_create,
     resolve_maintainer_for_edit,
 )
-from the_flip.apps.core.datetime import apply_browser_timezone, validate_not_future
+from the_flip.apps.core.datetime import apply_and_validate_timezone
 from the_flip.apps.core.markdown_links import sync_references
 from the_flip.apps.core.media import attach_media_files
 from the_flip.apps.core.mixins import (
@@ -79,10 +79,8 @@ class PartRequestUpdateCreateView(SharedAccountMixin, CanAccessMaintainerPortalM
         update.part_request = self.part_request
         update.posted_by = attribution.maintainer
         update.posted_by_name = attribution.freetext_name
-        occurred_at = apply_browser_timezone(form.cleaned_data.get("occurred_at"), self.request)
-
-        # Validate after timezone conversion (form validation runs before conversion)
-        if not validate_not_future(occurred_at, form):
+        occurred_at, is_valid = apply_and_validate_timezone(form, self.request)
+        if not is_valid:
             return self.form_invalid(form)
 
         update.occurred_at = occurred_at
@@ -210,11 +208,8 @@ class PartRequestUpdateEditView(CanAccessMaintainerPortalMixin, UpdateView):
         update.posted_by = attribution.maintainer
         update.posted_by_name = attribution.freetext_name
 
-        # Apply browser timezone to occurred_at
-        occurred_at = apply_browser_timezone(form.cleaned_data.get("occurred_at"), self.request)
-
-        # Validate after timezone conversion (form validation runs before conversion)
-        if not validate_not_future(occurred_at, form):
+        occurred_at, is_valid = apply_and_validate_timezone(form, self.request)
+        if not is_valid:
             return self.form_invalid(form)
 
         update.occurred_at = occurred_at

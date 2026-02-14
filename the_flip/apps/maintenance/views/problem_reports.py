@@ -24,7 +24,7 @@ from the_flip.apps.core.attribution import (
     resolve_maintainer_for_edit,
 )
 from the_flip.apps.core.columns import build_location_columns
-from the_flip.apps.core.datetime import apply_browser_timezone, validate_not_future
+from the_flip.apps.core.datetime import apply_and_validate_timezone
 from the_flip.apps.core.forms import SearchForm
 from the_flip.apps.core.ip import get_real_ip
 from the_flip.apps.core.markdown_links import sync_references
@@ -199,10 +199,8 @@ class ProblemReportCreateView(
             report.reported_by_user = attribution.maintainer.user
         report.reported_by_name = attribution.freetext_name
 
-        occurred_at = apply_browser_timezone(form.cleaned_data.get("occurred_at"), self.request)
-
-        # Validate after timezone conversion (form validation runs before conversion)
-        if not validate_not_future(occurred_at, form):
+        occurred_at, is_valid = apply_and_validate_timezone(form, self.request)
+        if not is_valid:
             return self.form_invalid(form)
 
         report.occurred_at = occurred_at
@@ -497,10 +495,8 @@ class ProblemReportEditView(CanAccessMaintainerPortalMixin, UpdateView):
             report.reported_by_user = None
             report.reported_by_name = attribution.freetext_name
 
-        occurred_at = apply_browser_timezone(form.cleaned_data.get("occurred_at"), self.request)
-
-        # Validate after timezone conversion (form validation runs before conversion)
-        if not validate_not_future(occurred_at, form):
+        occurred_at, is_valid = apply_and_validate_timezone(form, self.request)
+        if not is_valid:
             return self.form_invalid(form)
 
         report.occurred_at = occurred_at
