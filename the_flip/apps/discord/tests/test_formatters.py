@@ -1,7 +1,7 @@
 """Tests for Discord message formatting."""
 
 from django.core.files.base import ContentFile
-from django.test import TestCase, tag
+from django.test import TestCase, override_settings, tag
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.core.test_utils import (
@@ -340,6 +340,66 @@ class DiscordFormatterTests(TemporaryMediaMixin, TestCase):
         self.assertIn("title", embed)
         self.assertIn("description", embed)
 
+    @override_settings(SITE_URL="https://example.com")
+    def test_format_log_entry_renders_record_links(self):
+        """Log entry text with [[type:ref]] links renders as clickable Discord links."""
+        # Create a second machine to reference in the text
+        ref_machine = create_machine(name="Attack From Mars", slug="attack-from-mars")
+        log_entry = create_log_entry(
+            machine=self.machine,
+            created_by=self.maintainer_user,
+            text=f"Fixed it. See [[machine:id:{ref_machine.pk}]] for related issue.",
+        )
+        message = format_discord_message("log_entry_created", log_entry)
+
+        description = message["embeds"][0]["description"]
+
+        # Link should be rendered with absolute URL
+        self.assertIn("Attack From Mars", description)
+        self.assertIn("https://example.com/machines/attack-from-mars/", description)
+        # Raw storage format should NOT appear
+        self.assertNotIn("[[machine:id:", description)
+
+    @override_settings(SITE_URL="https://example.com")
+    def test_format_log_entry_renders_links_in_linked_record_preview(self):
+        """Linked PR preview renders [[type:ref]] as plain text labels."""
+        ref_machine = create_machine(name="Attack From Mars", slug="attack-from-mars")
+        report = create_problem_report(
+            machine=self.machine,
+            description=f"See [[machine:id:{ref_machine.pk}]] for context",
+        )
+        log_entry = create_log_entry(
+            machine=self.machine,
+            created_by=self.maintainer_user,
+            problem_report=report,
+        )
+        message = format_discord_message("log_entry_created", log_entry)
+
+        description = message["embeds"][0]["description"]
+
+        # PR preview should contain the machine name as plain text
+        self.assertIn("Attack From Mars", description)
+        # Raw storage format should NOT appear
+        self.assertNotIn("[[machine:id:", description)
+
+    @override_settings(SITE_URL="https://example.com")
+    def test_format_problem_report_renders_record_links(self):
+        """Problem report description with [[type:ref]] links renders as Discord links."""
+        ref_machine = create_machine(name="Attack From Mars", slug="attack-from-mars")
+        report = create_problem_report(
+            machine=self.machine,
+            description=f"Same issue as [[machine:id:{ref_machine.pk}]]",
+        )
+        message = format_discord_message("problem_report_created", report)
+
+        description = message["embeds"][0]["description"]
+
+        # Link should be rendered with absolute URL
+        self.assertIn("Attack From Mars", description)
+        self.assertIn("https://example.com/machines/attack-from-mars/", description)
+        # Raw storage format should NOT appear
+        self.assertNotIn("[[machine:id:", description)
+
 
 @tag("tasks")
 class PartRequestWebhookFormatterTests(TemporaryMediaMixin, TestCase):
@@ -558,6 +618,72 @@ class PartRequestWebhookFormatterTests(TemporaryMediaMixin, TestCase):
         # Should only have 1 embed (the photo with thumbnail)
         self.assertEqual(len(message["embeds"]), 1)
         self.assertIn("image", message["embeds"][0])
+
+    @override_settings(SITE_URL="https://example.com")
+    def test_format_part_request_renders_record_links(self):
+        """Part request text with [[type:ref]] links renders as Discord links."""
+        ref_machine = create_machine(name="Attack From Mars", slug="attack-from-mars")
+        part_request = create_part_request(
+            text=f"Need parts for [[machine:id:{ref_machine.pk}]] left flipper",
+            requested_by=self.maintainer,
+            machine=self.machine,
+        )
+        message = format_discord_message("part_request_created", part_request)
+
+        description = message["embeds"][0]["description"]
+
+        # Link should be rendered with absolute URL
+        self.assertIn("Attack From Mars", description)
+        self.assertIn("https://example.com/machines/attack-from-mars/", description)
+        # Raw storage format should NOT appear
+        self.assertNotIn("[[machine:id:", description)
+
+    @override_settings(SITE_URL="https://example.com")
+    def test_format_part_request_update_renders_record_links(self):
+        """Part request update text with [[type:ref]] links renders as Discord links."""
+        ref_machine = create_machine(name="Attack From Mars", slug="attack-from-mars")
+        part_request = create_part_request(
+            text="Need parts",
+            requested_by=self.maintainer,
+            machine=self.machine,
+        )
+        update = create_part_request_update(
+            part_request=part_request,
+            posted_by=self.maintainer,
+            text=f"Ordered parts for [[machine:id:{ref_machine.pk}]]",
+        )
+        message = format_discord_message("part_request_update_created", update)
+
+        description = message["embeds"][0]["description"]
+
+        # Link should be rendered with absolute URL
+        self.assertIn("Attack From Mars", description)
+        self.assertIn("https://example.com/machines/attack-from-mars/", description)
+        # Raw storage format should NOT appear
+        self.assertNotIn("[[machine:id:", description)
+
+    @override_settings(SITE_URL="https://example.com")
+    def test_format_part_request_update_renders_links_in_linked_record_preview(self):
+        """Parent PR text preview renders [[type:ref]] as plain text labels."""
+        ref_machine = create_machine(name="Attack From Mars", slug="attack-from-mars")
+        part_request = create_part_request(
+            text=f"Need parts for [[machine:id:{ref_machine.pk}]]",
+            requested_by=self.maintainer,
+            machine=self.machine,
+        )
+        update = create_part_request_update(
+            part_request=part_request,
+            posted_by=self.maintainer,
+            text="Ordered from supplier",
+        )
+        message = format_discord_message("part_request_update_created", update)
+
+        description = message["embeds"][0]["description"]
+
+        # Parent PR preview should contain the machine name as plain text
+        self.assertIn("Attack From Mars", description)
+        # Raw storage format should NOT appear
+        self.assertNotIn("[[machine:id:", description)
 
 
 @tag("tasks")

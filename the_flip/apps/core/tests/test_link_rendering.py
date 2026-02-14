@@ -3,6 +3,7 @@
 from django.test import TestCase, tag
 
 from the_flip.apps.catalog.models import MachineInstance, MachineModel
+from the_flip.apps.core.markdown_links import render_all_links
 from the_flip.apps.core.templatetags.markdown_tags import render_markdown
 from the_flip.apps.maintenance.models import LogEntry, ProblemReport
 from the_flip.apps.parts.models import PartRequest, PartRequestUpdate
@@ -211,3 +212,79 @@ class PartRequestUpdateLinkRenderingTests(TestCase):
         result = render_markdown("See [[partrequestupdate:99999]].")
 
         self.assertIn("[broken link]", result)
+
+
+@tag("views")
+class BaseUrlRenderingTests(TestCase):
+    """Tests for render_all_links() with base_url parameter."""
+
+    def test_base_url_produces_absolute_links(self):
+        """render_all_links with base_url prepends it to link URLs."""
+        model = MachineModel.objects.create(name="Test Model", slug="test-model")
+        machine = MachineInstance.objects.create(model=model, slug="blackout", name="Blackout")
+
+        result = render_all_links(
+            f"See [[machine:id:{machine.pk}]].", base_url="https://example.com"
+        )
+
+        self.assertIn("[Blackout](https://example.com/machines/blackout/)", result)
+
+    def test_default_base_url_produces_relative_links(self):
+        """Default base_url produces relative URLs (existing behavior)."""
+        model = MachineModel.objects.create(name="Test Model", slug="test-model")
+        machine = MachineInstance.objects.create(model=model, slug="blackout", name="Blackout")
+
+        result = render_all_links(f"See [[machine:id:{machine.pk}]].")
+
+        self.assertIn("[Blackout](/machines/blackout/)", result)
+        self.assertNotIn("https://", result)
+
+    def test_base_url_with_id_based_link(self):
+        """base_url works with ID-based link types."""
+        model = MachineModel.objects.create(name="Test Model", slug="test-model")
+        machine = MachineInstance.objects.create(model=model, slug="test-machine", name="Test")
+        pr = ProblemReport.objects.create(machine=machine, description="Stuck flipper")
+
+        result = render_all_links(f"See [[problem:{pr.pk}]].", base_url="https://example.com")
+
+        self.assertIn("https://example.com/problem-reports/", result)
+
+    def test_base_url_with_broken_link(self):
+        """Broken links still render as *[broken link]* even with base_url."""
+        result = render_all_links("See [[machine:id:99999]].", base_url="https://example.com")
+
+        self.assertIn("*[broken link]*", result)
+
+
+@tag("views")
+class PlainTextRenderingTests(TestCase):
+    """Tests for render_all_links() with plain_text parameter."""
+
+    def test_plain_text_renders_label_only(self):
+        """plain_text=True renders just the label with no link syntax."""
+        model = MachineModel.objects.create(name="Test Model", slug="test-model")
+        machine = MachineInstance.objects.create(model=model, slug="blackout", name="Blackout")
+
+        result = render_all_links(f"See [[machine:id:{machine.pk}]].", plain_text=True)
+
+        self.assertIn("See Blackout.", result)
+        self.assertNotIn("[", result)
+        self.assertNotIn("(", result)
+
+    def test_plain_text_with_broken_link(self):
+        """Broken links in plain_text mode render without markdown emphasis."""
+        result = render_all_links("See [[machine:id:99999]].", plain_text=True)
+
+        self.assertIn("[broken link]", result)
+        self.assertNotIn("*", result)
+
+    def test_plain_text_with_id_based_link(self):
+        """plain_text works with ID-based link types."""
+        model = MachineModel.objects.create(name="Test Model", slug="test-model")
+        machine = MachineInstance.objects.create(model=model, slug="test-machine", name="Test")
+        pr = ProblemReport.objects.create(machine=machine, description="Stuck flipper")
+
+        result = render_all_links(f"See [[problem:{pr.pk}]].", plain_text=True)
+
+        self.assertIn(f"Problem #{pr.pk}", result)
+        self.assertNotIn("](/", result)
