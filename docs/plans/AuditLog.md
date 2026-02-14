@@ -6,7 +6,7 @@ Status: IMPLEMENTED.
 
 ## Background
 
-The museum director wants to track what volunteer maintainers are doing in the system. From [GitHub Issue #33](https://github.com/deanmoses/the_flip/issues/33):
+The museum director wants to track what volunteer maintainers are doing in the system. From [GitHub Issue #33](https://github.com/The-Flip/flipfix/issues/33):
 
 > The museum director, William, tries to turn volunteers loose to do things, but he'd like to know what they did.
 

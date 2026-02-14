@@ -145,9 +145,9 @@ GitHub access:
 
 ## Repository
 
-This project is in this GitHub repo: <https://github.com/deanmoses/the_flip>
+This project is in this GitHub repo: <https://github.com/The-Flip/flipfix>
 
-- Repository owner=`deanmoses`, repo=`the_flip`
+- Repository owner=`The-Flip`, repo=`flipfix`
 
 ## Architecture
 
