@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from django.urls import reverse
 
+from the_flip.apps.core.markdown_links import render_all_links
 from the_flip.apps.discord.formatters import (
     build_discord_embed,
     get_base_url,
@@ -57,7 +58,7 @@ class PartRequestWebhookHandler(WebhookHandler):
         return build_discord_embed(
             title=title,
             title_url=url,
-            record_description=obj.text,
+            record_description=render_all_links(obj.text, base_url=base_url),
             user_attribution=user_attribution,
             color=self.color,
             photos=photos,

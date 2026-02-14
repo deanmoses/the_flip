@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from django.urls import reverse
 
+from the_flip.apps.core.markdown_links import render_all_links
 from the_flip.apps.discord.formatters import (
     build_discord_embed,
     get_base_url,
@@ -47,8 +48,9 @@ class LogEntryWebhookHandler(WebhookHandler):
             if pr.problem_type != ProblemReport.ProblemType.OTHER:
                 pr_text_parts.append(pr.get_problem_type_display())
             if pr.description:
-                pr_desc = pr.description[:50]
-                if len(pr.description) > 50:
+                rendered_desc = render_all_links(pr.description, plain_text=True)
+                pr_desc = rendered_desc[:50]
+                if len(rendered_desc) > 50:
                     pr_desc += "..."
                 pr_text_parts.append(pr_desc)
             pr_text = ": ".join(pr_text_parts) if pr_text_parts else ""
@@ -86,7 +88,7 @@ class LogEntryWebhookHandler(WebhookHandler):
         return build_discord_embed(
             title=f"{self.emoji} {obj.machine.short_display_name}",
             title_url=url,
-            record_description=obj.text,
+            record_description=render_all_links(obj.text, base_url=base_url),
             user_attribution=user_attribution,
             color=self.color,
             photos=photos,

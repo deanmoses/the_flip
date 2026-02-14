@@ -66,19 +66,24 @@ View calls sync_references() to update RecordReference table
 render_markdown filter calls render_all_links() → HTML link
 ```
 
+`render_all_links()` accepts optional parameters:
+
+- `base_url`: When provided, URLs are absolute (e.g., `https://flipfix.the-flip.com/machines/blackout/`). Used by Discord webhook handlers.
+- `plain_text`: When `True`, renders just the label with no link syntax. Used for short preview snippets where markdown links would be truncated.
+
 For slug-based types, `convert_storage_to_authoring()` converts back when loading content into an edit form (e.g., `[[machine:id:42]]` → `[[machine:blackout]]`).
 
 For ID-based types, no conversion is needed — the format is the same in both directions.
 
 ### Key modules
 
-| Module                             | Purpose                                                          |
-| ---------------------------------- | ---------------------------------------------------------------- |
-| `core/markdown_links.py`           | `LinkType` dataclass, registry, conversion, rendering, sync      |
-| `core/models.py`                   | `RecordReference` model (generic link tracking via contenttypes) |
-| `core/views/link_targets.py`       | `LinkTypesView` and `LinkTargetsView` API endpoints              |
+| Module                               | Purpose                                                          |
+| ------------------------------------ | ---------------------------------------------------------------- |
+| `core/markdown_links.py`             | `LinkType` dataclass, registry, conversion, rendering, sync      |
+| `core/models.py`                     | `RecordReference` model (generic link tracking via contenttypes) |
+| `core/views/link_targets.py`         | `LinkTypesView` and `LinkTargetsView` API endpoints              |
 | `core/templatetags/markdown_tags.py` | `render_markdown` filter calls `render_all_links()`              |
-| `static/core/link_autocomplete.js` | `[[` autocomplete UI (fully server-driven)                       |
+| `static/core/link_autocomplete.js`   | `[[` autocomplete UI (fully server-driven)                       |
 
 ## Adding a New Link Target
 

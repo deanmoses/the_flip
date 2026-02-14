@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from django.urls import reverse
 
+from the_flip.apps.core.markdown_links import render_all_links
 from the_flip.apps.discord.formatters import (
     build_discord_embed,
     get_base_url,
@@ -41,8 +42,9 @@ class PartRequestUpdateWebhookHandler(WebhookHandler):
 
         # Build linked_record for the parent parts request
         pr = obj.part_request
-        pr_desc = pr.text[:50]
-        if len(pr.text) > 50:
+        rendered_text = render_all_links(pr.text, plain_text=True)
+        pr_desc = rendered_text[:50]
+        if len(rendered_text) > 50:
             pr_desc += "..."
         linked_record = f"📎 [Parts Request #{pr.pk}]({url}): {pr_desc}"
 
@@ -71,7 +73,7 @@ class PartRequestUpdateWebhookHandler(WebhookHandler):
         return build_discord_embed(
             title=title,
             title_url=url,
-            record_description=obj.text,
+            record_description=render_all_links(obj.text, base_url=base_url),
             user_attribution=user_attribution,
             color=self.color,
             photos=photos,

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from django.urls import reverse
 
+from the_flip.apps.core.markdown_links import render_all_links
 from the_flip.apps.discord.formatters import build_discord_embed, get_base_url
 from the_flip.apps.discord.webhook_handlers import WebhookHandler, register
 from the_flip.apps.maintenance.models import ProblemReport
@@ -32,7 +33,7 @@ class ProblemReportWebhookHandler(WebhookHandler):
         if obj.problem_type != ProblemReport.ProblemType.OTHER:
             parts.append(obj.get_problem_type_display())
         if obj.description:
-            parts.append(obj.description)
+            parts.append(render_all_links(obj.description, base_url=base_url))
 
         record_description = ": ".join(parts) if len(parts) > 1 else (parts[0] if parts else "")
 

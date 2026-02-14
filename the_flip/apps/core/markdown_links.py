@@ -171,25 +171,54 @@ def get_patterns(link_type: LinkType) -> dict[str, re.Pattern[str]]:
 # ---------------------------------------------------------------------------
 
 
-def render_all_links(text: str) -> str:
+def render_all_links(text: str, base_url: str = "", plain_text: bool = False) -> str:
     """Convert all [[type:ref]] links in text to markdown links.
 
     Handles both storage format (primary path) and authoring format
     (defense-in-depth for unconverted content).
 
-    Missing targets render as "*[broken link]*".
+    Missing targets render as ``*[broken link]*`` (or ``[broken link]``
+    in plain-text mode).
+
+    Args:
+        text: Content containing ``[[type:ref]]`` links.
+        base_url: When provided, prepend to URLs to make them absolute
+            (e.g. ``"https://flipfix.the-flip.com"``).  Used by Discord
+            webhook handlers.
+        plain_text: When ``True``, render just the label with no link
+            syntax.  Useful for short preview snippets where markdown
+            links would be truncated.
     """
     for lt in get_enabled_link_types():
         pats = get_patterns(lt)
         if lt.slug_field is not None:
-            text = _render_by_id(text, lt, pats["storage"])
-            text = _render_by_slug(text, lt, pats["authoring"])
+            text = _render_by_id(text, lt, pats["storage"], base_url, plain_text)
+            text = _render_by_slug(text, lt, pats["authoring"], base_url, plain_text)
         else:
-            text = _render_by_id(text, lt, pats["id"])
+            text = _render_by_id(text, lt, pats["id"], base_url, plain_text)
     return text
 
 
-def _render_by_id(text: str, lt: LinkType, pattern: re.Pattern[str]) -> str:
+def _format_link(lt: LinkType, obj: Any | None, base_url: str, plain_text: bool) -> str:
+    """Format a single resolved link as markdown or plain text."""
+    if obj is None:
+        return "[broken link]" if plain_text else "*[broken link]*"
+    label = lt.resolve_label(obj)
+    if plain_text:
+        return label
+    url = lt.resolve_url(obj)
+    if base_url and not url.startswith(("http://", "https://")):
+        url = base_url + url
+    return f"[{label}]({url})"
+
+
+def _render_by_id(
+    text: str,
+    lt: LinkType,
+    pattern: re.Pattern[str],
+    base_url: str = "",
+    plain_text: bool = False,
+) -> str:
     """Render [[type:id:N]] or [[type:N]] links by batch PK lookup."""
     matches = list(pattern.finditer(text))
     if not matches:
@@ -206,16 +235,18 @@ def _render_by_id(text: str, lt: LinkType, pattern: re.Pattern[str]) -> str:
     for match in reversed(matches):
         obj_id = int(match.group(1))
         obj = by_id.get(obj_id)
-        if obj:
-            url = lt.resolve_url(obj)
-            label = lt.resolve_label(obj)
-            result = result[: match.start()] + f"[{label}]({url})" + result[match.end() :]
-        else:
-            result = result[: match.start()] + "*[broken link]*" + result[match.end() :]
+        replacement = _format_link(lt, obj, base_url, plain_text)
+        result = result[: match.start()] + replacement + result[match.end() :]
     return result
 
 
-def _render_by_slug(text: str, lt: LinkType, pattern: re.Pattern[str]) -> str:
+def _render_by_slug(
+    text: str,
+    lt: LinkType,
+    pattern: re.Pattern[str],
+    base_url: str = "",
+    plain_text: bool = False,
+) -> str:
     """Render [[type:slug]] links by batch slug lookup (defense-in-depth)."""
     matches = list(pattern.finditer(text))
     if not matches:
@@ -239,12 +270,8 @@ def _render_by_slug(text: str, lt: LinkType, pattern: re.Pattern[str]) -> str:
     for match in reversed(matches):
         key = match.group(1)
         obj = by_key.get(key)
-        if obj:
-            url = lt.resolve_url(obj)
-            label = lt.resolve_label(obj)
-            result = result[: match.start()] + f"[{label}]({url})" + result[match.end() :]
-        else:
-            result = result[: match.start()] + "*[broken link]*" + result[match.end() :]
+        replacement = _format_link(lt, obj, base_url, plain_text)
+        result = result[: match.start()] + replacement + result[match.end() :]
     return result
 
 
