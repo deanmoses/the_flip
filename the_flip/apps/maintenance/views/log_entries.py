@@ -21,9 +21,8 @@ from django.views.generic import DetailView, FormView, TemplateView, UpdateView
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import MachineInstance
 from the_flip.apps.core.datetime import (
-    apply_browser_timezone,
+    apply_and_validate_timezone,
     parse_datetime_with_browser_timezone,
-    validate_not_future,
 )
 from the_flip.apps.core.forms import SearchForm
 from the_flip.apps.core.markdown_links import sync_references
@@ -127,10 +126,8 @@ class MachineLogCreateView(
     def form_valid(self, form):
         description = form.cleaned_data["text"].strip()
         media_files = form.cleaned_data["media_file"]
-        occurred_at = apply_browser_timezone(form.cleaned_data["occurred_at"], self.request)
-
-        # Validate after timezone conversion (form validation runs before conversion)
-        if not validate_not_future(occurred_at, form):
+        occurred_at, is_valid = apply_and_validate_timezone(form, self.request)
+        if not is_valid:
             return self.form_invalid(form)
 
         machine = self.machine
@@ -548,11 +545,8 @@ class LogEntryEditView(CanAccessMaintainerPortalMixin, UpdateView):
     def form_valid(self, form):
         entry = form.save(commit=False)
 
-        # Apply browser timezone to occurred_at
-        occurred_at = apply_browser_timezone(form.cleaned_data.get("occurred_at"), self.request)
-
-        # Validate after timezone conversion (form validation runs before conversion)
-        if not validate_not_future(occurred_at, form):
+        occurred_at, is_valid = apply_and_validate_timezone(form, self.request)
+        if not is_valid:
             return self.form_invalid(form)
 
         entry.occurred_at = occurred_at

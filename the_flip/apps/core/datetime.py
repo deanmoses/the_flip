@@ -89,3 +89,19 @@ def validate_not_future(dt, form: forms.Form, field_name: str = "occurred_at") -
         form.add_error(field_name, "Date cannot be in the future.")
         return False
     return True
+
+
+def apply_and_validate_timezone(
+    form: forms.Form, request: HttpRequest, field_name: str = "occurred_at"
+):
+    """Apply browser timezone conversion and validate the datetime is not in the future.
+
+    Combines apply_browser_timezone() and validate_not_future() — these must always
+    be called together because form validation runs before timezone conversion.
+
+    Returns (datetime, True) on success, or (datetime, False) if validation fails
+    (a form error will have been added).
+    """
+    dt = apply_browser_timezone(form.cleaned_data.get(field_name), request)
+    is_valid = validate_not_future(dt, form, field_name)
+    return dt, is_valid
