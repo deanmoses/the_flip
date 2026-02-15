@@ -125,15 +125,56 @@ class MachineLogCreateView(
         if not is_valid:
             return self.form_invalid(form)
 
-        machine = self.machine
+        machine = self._resolve_machine(form)
+        if machine is None:
+            return self.form_invalid(form)
 
+        result = self._resolve_maintainers(form)
+        if result is None:
+            return self.form_invalid(form)
+        maintainers, freetext_names = result
+
+        log_entry = LogEntry.objects.create(
+            machine=machine,
+            problem_report=self.problem_report,
+            text=description,
+            occurred_at=occurred_at,
+            created_by=self.request.user,
+        )
+        sync_references(log_entry, log_entry.text)
+        self.machine = machine
+
+        self._link_maintainers(log_entry, maintainers, freetext_names)
+        self._attach_media(log_entry, media_files)
+        problem_closed = self._maybe_close_problem_report()
+        self._build_success_message(log_entry, problem_closed)
+
+        if self.problem_report:
+            return redirect("problem-report-detail", pk=self.problem_report.pk)
+        return redirect("maintainer-machine-detail", slug=self.machine.slug)
+
+    def _resolve_machine(self, form):
+        """Resolve the target machine from the URL or form input.
+
+        Returns the MachineInstance, or None if resolution fails
+        (after adding an error to the form).
+        """
+        if self.machine:
+            return self.machine
+
+        slug = (form.cleaned_data.get("machine_slug") or "").strip()
+        machine = MachineInstance.objects.filter(slug=slug).first()
         if not machine:
-            slug = (form.cleaned_data.get("machine_slug") or "").strip()
-            machine = MachineInstance.objects.filter(slug=slug).first()
-            if not machine:
-                form.add_error("machine_slug", "Select a machine.")
-                return self.form_invalid(form)
+            form.add_error("machine_slug", "Select a machine.")
+            return None
+        return machine
 
+    def _resolve_maintainers(self, form):
+        """Parse maintainer chip input and validate at least one is present.
+
+        Returns (maintainers, freetext_names) on success, or None on
+        failure (after setting self.maintainer_errors).
+        """
         # Get maintainer selections from chip input
         usernames = self.request.POST.getlist("maintainer_usernames")
         freetext_names = [
@@ -154,39 +195,43 @@ class MachineLogCreateView(
             if current_maintainer.is_shared_account:
                 # Shared terminal: require explicit maintainer selection
                 self.maintainer_errors = ["Please add at least one maintainer."]
-                return self.form_invalid(form)
+                return None
             else:
                 # Regular account: default to current user
                 maintainers = [current_maintainer]
 
-        log_entry = LogEntry.objects.create(
-            machine=machine,
-            problem_report=self.problem_report,
-            text=description,
-            occurred_at=occurred_at,
-            created_by=self.request.user,
-        )
-        sync_references(log_entry, log_entry.text)
-        self.machine = machine
+        return maintainers, freetext_names
 
-        # Add linked maintainers
+    def _link_maintainers(self, log_entry, maintainers, freetext_names):
+        """Set M2M maintainer links and freetext maintainer names on the log entry."""
         for maintainer in maintainers:
             log_entry.maintainers.add(maintainer)
 
-        # Add free-text names (not linked to accounts)
-        # freetext_names was extracted above for validation, now de-dup
+        # De-dup freetext names while preserving order
         freetext_names = list(dict.fromkeys(freetext_names))
         if freetext_names:
             log_entry.maintainer_names = ", ".join(freetext_names)
             log_entry.save(update_fields=["maintainer_names"])
 
+    def _attach_media(self, log_entry, media_files):
+        """Attach uploaded media files to the log entry."""
         if media_files:
             attach_media_files(media_files=media_files, parent=log_entry, media_model=LogEntryMedia)
 
-        # Close problem report if checkbox was checked
+    def _maybe_close_problem_report(self):
+        """Close the linked problem report if the user checked the close checkbox.
+
+        Returns True if the problem report was closed, False otherwise.
+        """
         if self.problem_report and self.request.POST.get("close_problem"):
             self.problem_report.status = ProblemReport.Status.CLOSED
             self.problem_report.save(update_fields=["status"])
+            return True
+        return False
+
+    def _build_success_message(self, log_entry, problem_closed):
+        """Add a success message describing the created log entry."""
+        if problem_closed:
             messages.success(
                 self.request,
                 format_html(
@@ -204,11 +249,6 @@ class MachineLogCreateView(
                     reverse("log-detail", kwargs={"pk": log_entry.pk}),
                 ),
             )
-
-        # Redirect back to problem report if created from there, otherwise to machine feed
-        if self.problem_report:
-            return redirect("problem-report-detail", pk=self.problem_report.pk)
-        return redirect("maintainer-machine-detail", slug=self.machine.slug)
 
 
 class LogListView(CanAccessMaintainerPortalMixin, TemplateView):
