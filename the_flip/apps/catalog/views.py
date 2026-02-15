@@ -241,8 +241,9 @@ class MachineModelUpdateView(CanAccessMaintainerPortalMixin, UpdateView):
 
     def form_valid(self, form):
         form.instance.updated_by = self.request.user
-        form.instance._request = self.request
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        messages.success(self.request, f"Model '{self.object.name}' saved.")
+        return response
 
     def get_success_url(self):
         return reverse("machine-model-edit", kwargs={"slug": self.object.slug})
