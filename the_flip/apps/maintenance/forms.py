@@ -3,7 +3,7 @@
 from django import forms
 from django.utils import timezone
 
-from the_flip.apps.catalog.models import MachineInstance
+from the_flip.apps.catalog.validators import clean_machine_slug
 from the_flip.apps.core.forms import (
     MarkdownTextarea,
     MultiFileField,
@@ -35,12 +35,7 @@ class ProblemReportForm(StyledFormMixin, forms.ModelForm):
         }
 
     def clean_machine_slug(self):
-        slug = (self.cleaned_data.get("machine_slug") or "").strip()
-        if not slug:
-            return ""
-        if MachineInstance.objects.filter(slug=slug).exists():
-            return slug
-        raise forms.ValidationError("Select a machine.")
+        return clean_machine_slug(self.cleaned_data)
 
     def clean(self):
         cleaned = super().clean()
@@ -228,9 +223,4 @@ class LogEntryQuickForm(StyledFormMixin, forms.Form):
         return clean_media_files(self.files, self.cleaned_data)
 
     def clean_machine_slug(self):
-        slug = (self.cleaned_data.get("machine_slug") or "").strip()
-        if not slug:
-            return ""
-        if MachineInstance.objects.filter(slug=slug).exists():
-            return slug
-        raise forms.ValidationError("Select a machine.")
+        return clean_machine_slug(self.cleaned_data)

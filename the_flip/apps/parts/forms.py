@@ -2,7 +2,7 @@
 
 from django import forms
 
-from the_flip.apps.catalog.models import MachineInstance
+from the_flip.apps.catalog.validators import clean_machine_slug
 from the_flip.apps.core.forms import (
     MarkdownTextarea,
     MultiFileField,
@@ -62,13 +62,7 @@ class PartRequestForm(StyledFormMixin, forms.ModelForm):
         return clean_markdown_field(self.cleaned_data, "text")
 
     def clean_machine_slug(self):
-        """Validate machine_slug if provided."""
-        slug = (self.cleaned_data.get("machine_slug") or "").strip()
-        if not slug:
-            return ""
-        if MachineInstance.objects.filter(slug=slug).exists():
-            return slug
-        raise forms.ValidationError("Select a valid machine.")
+        return clean_machine_slug(self.cleaned_data)
 
     def clean_media_file(self):
         """Validate uploaded media files."""
