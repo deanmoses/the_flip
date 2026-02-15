@@ -20,6 +20,7 @@ from django.views.generic import DetailView, FormView, TemplateView, UpdateView
 
 from the_flip.apps.accounts.models import Maintainer
 from the_flip.apps.catalog.models import MachineInstance
+from the_flip.apps.catalog.view_helpers import resolve_selected_machine
 from the_flip.apps.core.datetime import (
     apply_and_validate_timezone,
     parse_datetime_with_browser_timezone,
@@ -113,13 +114,7 @@ class MachineLogCreateView(
         if not self.is_shared_account and hasattr(self.request.user, "maintainer"):
             context["initial_maintainers"] = [self.request.user.maintainer]
         context["maintainer_errors"] = getattr(self, "maintainer_errors", [])
-        selected_slug = (
-            self.request.POST.get("machine_slug") if self.request.method == "POST" else ""
-        )
-        if selected_slug and not self.machine:
-            context["selected_machine"] = MachineInstance.objects.filter(slug=selected_slug).first()
-        elif self.machine:
-            context["selected_machine"] = self.machine
+        context["selected_machine"] = resolve_selected_machine(self.request, self.machine)
         return context
 
     @transaction.atomic
