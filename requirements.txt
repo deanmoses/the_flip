@@ -32,6 +32,9 @@ linkify-it-py==2.0.3
 # Audit Logging
 django-simple-history==3.11.0
 
+# Model Utilities (FieldTracker for change detection)
+django-model-utils==5.0.0
+
 # Client IP Detection (behind proxies)
 django-ipware==7.0.1
 
