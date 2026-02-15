@@ -18,6 +18,10 @@ The development documentation for The Flip maintenance system.
 - **[Deployment.md](Deployment.md)** - Deployment pipeline (PR environments, production)
 - **[Operations.md](Operations.md)** - Operations guide (monitoring, rollback, backups)
 - **[Discord.md](Discord.md)** - Discord integration setup
+- **[MarkdownEditing.md](MarkdownEditing.md)** - Markdown textarea enhancements (link autocomplete, interactive checkboxes)
+- **[MarkdownLinks.md](MarkdownLinks.md)** - `[[type:ref]]` inter-record link syntax, adding new link sources, reference tracking
+- **[WikiTemplates.md](WikiTemplates.md)** - Wiki templates for pre-filling new records from reusable wiki content
+  - **[WikiTemplateArchitecture.md](WikiTemplateArchitecture.md)** - Template marker syntax, rendering pipeline, and registration internals
 
 ## For AI Assistants
 
