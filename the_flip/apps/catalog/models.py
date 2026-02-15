@@ -8,6 +8,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.urls import reverse
 from django.utils.text import slugify
+from model_utils import FieldTracker
 from simple_history.models import HistoricalRecords
 
 from the_flip.apps.core.models import TimeStampedMixin
@@ -260,6 +261,7 @@ class MachineInstance(TimeStampedMixin):
 
     objects = MachineInstanceQuerySet.as_manager()
     history = HistoricalRecords()
+    tracker = FieldTracker(fields=["operational_status", "location_id"])
 
     class Meta:
         ordering = ["model__name", "serial_number"]
