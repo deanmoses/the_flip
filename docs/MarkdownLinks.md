@@ -294,31 +294,25 @@ The template must also include the JS:
 
 ### 4. Signal: clean up references on delete
 
-When a source record is deleted, its `RecordReference` rows must be cleaned up. Add a `post_delete` signal handler:
+When a source record is deleted, its `RecordReference` rows must be cleaned up. Use the `register_reference_cleanup()` helper in your `AppConfig.ready()` method — it connects `post_delete` signals for each model in a single call:
 
 ```python
-# myapp/signals.py
-from django.contrib.contenttypes.models import ContentType
-from django.db.models.signals import post_delete
-from django.dispatch import receiver
+# myapp/apps.py
+from django.apps import AppConfig
 
-from the_flip.apps.core.models import RecordReference
-from .models import MyModel
 
-@receiver(post_delete, sender=MyModel)
-def cleanup_references(sender, instance, **kwargs):
-    ct = ContentType.objects.get_for_model(sender)
-    RecordReference.objects.filter(source_type=ct, source_id=instance.pk).delete()
+class MyAppConfig(AppConfig):
+    ...
+
+    def ready(self):
+        from the_flip.apps.core.models import register_reference_cleanup
+
+        from .models import MyModel, MyOtherModel
+
+        register_reference_cleanup(MyModel, MyOtherModel)
 ```
 
-Import the signals module in `AppConfig.ready()`:
-
-```python
-def ready(self):
-    from . import signals
-
-    del signals  # imported for side effects (signal registration)
-```
+Pass every model whose text fields can contain `[[type:ref]]` markdown links (i.e. any model passed to `sync_references`). No separate `signals.py` file is needed.
 
 ### 5. Detail view: handle inline text edits (if applicable)
 
@@ -346,7 +340,7 @@ if action == "update_text":
 | Irregular slug format (e.g., `tag/slug`)  | `wiki/apps.py` → `page` registration                                              |
 | ModelForm source with `save(commit=True)` | `maintenance/forms.py` → `MaintainerProblemReportForm`                            |
 | Regular Form source (sync in view)        | `maintenance/forms.py` → `LogEntryQuickForm` + `maintenance/views/log_entries.py` |
-| Signal cleanup                            | `maintenance/signals.py`                                                          |
+| Signal cleanup                            | `maintenance/apps.py` → `register_reference_cleanup()` call                       |
 | Inline AJAX text editing                  | `maintenance/views/log_entries.py` → `LogEntryDetailView.post()`                  |
 
 ## RecordReference Model
