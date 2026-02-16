@@ -104,9 +104,8 @@ class ResizeImageFileTests(TestCase):
         self.assertEqual(result.content_type, "image/png")
         self.assertTrue(result.name.endswith(".png"))
 
-    def test_non_jpeg_non_png_converted_to_jpeg(self):
-        """Non-JPEG/PNG formats (like BMP, GIF) are converted to JPEG."""
-        # Create a BMP image
+    def test_non_native_format_converted_to_jpeg(self):
+        """Non-web-native formats (like BMP, GIF) are converted to JPEG."""
         bmp_image = create_test_image(100, 100, format="BMP")
         uploaded = SimpleUploadedFile("image.bmp", bmp_image, content_type="image/bmp")
 
@@ -115,6 +114,19 @@ class ResizeImageFileTests(TestCase):
         # BMP triggers format conversion even without resize
         self.assertEqual(result.content_type, "image/jpeg")
         self.assertTrue(result.name.endswith(".jpg"))
+
+    def test_webp_preserved_on_resize(self):
+        """WebP images are preserved as WebP, not converted to JPEG."""
+        large_webp = create_test_image(3000, 2000, format="WEBP")
+        uploaded = SimpleUploadedFile("photo.webp", large_webp, content_type="image/webp")
+
+        result = resize_image_file(uploaded)
+
+        self.assertEqual(result.content_type, "image/webp")
+        self.assertTrue(result.name.endswith(".webp"))
+        result.seek(0)
+        img = Image.open(result)
+        self.assertLessEqual(max(img.size), MAX_IMAGE_DIMENSION)
 
     def test_heic_extension_triggers_processing(self):
         """Files with .heic extension are processed even with generic content type.
