@@ -136,7 +136,12 @@ def _resolve_nav_items(url_name: str) -> list[dict[str, str | bool]]:
 
 
 def _resolve_admin_items(url_name: str) -> list[dict[str, str | bool]]:
-    """Build admin item context dicts with active state resolved."""
+    """Build admin item context dicts with active state resolved.
+
+    Note: active-state comparison uses exact match on url_name, but
+    resolver_match.url_name strips namespace prefixes (e.g. "admin:").
+    Items with namespaced url_names must set track_active=False.
+    """
     return [
         {
             "label": item.label,
