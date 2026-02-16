@@ -49,8 +49,8 @@ Therefore, the worker service will communicate with the web service via HTTP to 
 
 **Files for HTTP transfer:**
 
-- `the_flip/apps/maintenance/views.py` - `ReceiveTranscodedMediaView` (upload) and `ServeSourceMediaView` (download)
-- `the_flip/apps/core/tasks.py` - `_download_source_file()` and `_upload_transcoded_files()`
+- `flipfix/apps/maintenance/views.py` - `ReceiveTranscodedMediaView` (upload) and `ServeSourceMediaView` (download)
+- `flipfix/apps/core/tasks.py` - `_download_source_file()` and `_upload_transcoded_files()`
 
 ## Dependencies
 
@@ -59,13 +59,13 @@ Therefore, the worker service will communicate with the web service via HTTP to 
 
 ## Settings
 
-**File:** `the_flip/settings/base.py`
+**File:** `flipfix/settings/base.py`
 
 ```python
 INSTALLED_APPS += ["django_q"]
 
 Q_CLUSTER = {
-    "name": "the_flip_worker",
+    "name": "flipfix_worker",
     "orm": "default",              # Use Django database as broker
     "workers": 1,                  # Single worker (sufficient for ~2 videos/week)
     "timeout": 600,                # 10 minutes per job (ffmpeg processing time)
@@ -86,7 +86,7 @@ Q_CLUSTER = {
 
 ## Tasks
 
-**File:** `the_flip/apps/core/tasks.py`
+**File:** `flipfix/apps/core/tasks.py`
 
 Key functions:
 
@@ -128,7 +128,7 @@ Command: `python manage.py check_ffmpeg` - verifies ffmpeg/ffprobe are on PATH a
 
 ### Check Worker Health
 
-**File:** `the_flip/apps/maintenance/management/commands/check_worker.py`
+**File:** `flipfix/apps/maintenance/management/commands/check_worker.py`
 
 **Usage:**
 

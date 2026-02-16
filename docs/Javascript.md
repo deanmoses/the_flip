@@ -124,7 +124,7 @@ This pattern allows multiple instances per page and keeps HTML declarative.
 
 ## Component Catalog
 
-All JavaScript files are in `the_flip/static/core/`.
+All JavaScript files are in `flipfix/static/core/`.
 
 ### Core
 

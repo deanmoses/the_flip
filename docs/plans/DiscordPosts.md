@@ -27,9 +27,9 @@ _deliver_to_endpoint() formats message and POSTs to webhook URL
 
 Key files:
 
-- [signals.py](../../the_flip/apps/discord/signals.py) - Signal handlers that trigger webhooks
-- [tasks.py](../../the_flip/apps/discord/tasks.py) - Async task queue logic
-- [formatters.py](../../the_flip/apps/discord/formatters.py) - Build Discord embed payloads
+- [signals.py](../../flipfix/apps/discord/signals.py) - Signal handlers that trigger webhooks
+- [tasks.py](../../flipfix/apps/discord/tasks.py) - Async task queue logic
+- [formatters.py](../../flipfix/apps/discord/formatters.py) - Build Discord embed payloads
 
 ## New Architecture
 

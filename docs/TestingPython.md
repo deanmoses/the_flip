@@ -30,7 +30,7 @@ python manage.py test --exclude-tag=integration # Fast local runs
 **Use a `tests/` package**, not a single `tests.py` file. This keeps test files small and focused:
 
 ```text
-the_flip/apps/myapp/
+flipfix/apps/myapp/
 ├── models.py
 ├── views.py
 └── tests/
@@ -42,7 +42,7 @@ the_flip/apps/myapp/
 Organize tests by **feature**, not by layer. Name files `test_<entity>_<action>.py`:
 
 ```text
-the_flip/apps/maintenance/tests/
+flipfix/apps/maintenance/tests/
 ├── test_log_entry_create.py      # Log entry creation views
 ├── test_log_entry_detail.py      # Log entry detail view + AJAX
 ├── test_log_entry_list.py        # Log entry list views
@@ -76,7 +76,7 @@ the_flip/apps/maintenance/tests/
 
 ## Test Utilities
 
-Shared utilities in `the_flip.apps.core.test_utils`:
+Shared utilities in `flipfix.apps.core.test_utils`:
 
 ### Factory Functions
 
@@ -94,7 +94,7 @@ Shared utilities in `the_flip.apps.core.test_utils`:
 #### Example
 
 ```python
-from the_flip.apps.core.test_utils import (
+from flipfix.apps.core.test_utils import (
     create_user, create_maintainer_user, create_superuser,
     create_machine_model, create_machine,
     create_problem_report, create_log_entry, create_shared_terminal,

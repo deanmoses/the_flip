@@ -10,14 +10,14 @@ All forms should inherit from `StyledFormMixin` as the **first** parent class. T
 
 ```python
 from django import forms
-from the_flip.apps.core.forms import StyledFormMixin
+from flipfix.apps.core.forms import StyledFormMixin
 
 class MyForm(StyledFormMixin, forms.Form):
     name = forms.CharField()
     email = forms.EmailField()
 ```
 
-Import from `the_flip.apps.core.forms`. Place `StyledFormMixin` first in the inheritance list so its `__init__` runs after Django's form initialization.
+Import from `flipfix.apps.core.forms`. Place `StyledFormMixin` first in the inheritance list so its `__init__` runs after Django's form initialization.
 
 ### Form vs ModelForm
 
@@ -52,7 +52,7 @@ class MachineCreateModelDoesNotExistForm(StyledFormMixin, forms.Form):
 For fields that support markdown with `[[wiki links]]` and task list continuation, use `MarkdownTextarea` instead of `forms.Textarea`:
 
 ```python
-from the_flip.apps.core.forms import MarkdownTextarea
+from flipfix.apps.core.forms import MarkdownTextarea
 
 class MyForm(StyledFormMixin, forms.ModelForm):
     class Meta:

@@ -82,7 +82,7 @@ class MyListView(CanAccessMaintainerPortalMixin, ListView):
 Protect maintainer views with `CanAccessMaintainerPortalMixin`:
 
 ```python
-from the_flip.apps.core.mixins import CanAccessMaintainerPortalMixin
+from flipfix.apps.core.mixins import CanAccessMaintainerPortalMixin
 
 class MyProtectedView(CanAccessMaintainerPortalMixin, View):
     # Only logged-in maintainers can access
@@ -94,7 +94,7 @@ class MyProtectedView(CanAccessMaintainerPortalMixin, View):
 `FormPrefillMixin` provides a generic mechanism for pre-filling a form field from session data. Any feature can seed a create form by storing data in the session, then redirecting to the create view.
 
 ```python
-from the_flip.apps.core.mixins import FormPrefillMixin
+from flipfix.apps.core.mixins import FormPrefillMixin
 
 class MyCreateView(FormPrefillMixin, CanAccessMaintainerPortalMixin, CreateView):
     ...
@@ -143,7 +143,7 @@ When displaying activity from multiple models (logs, problems, parts) on a singl
 Pass `machine=` for a machine-scoped feed (uses `search_for_machine`) or omit it for the global feed (uses `search`, includes machine in `select_related`).
 
 ```python
-from the_flip.apps.core.feed import get_feed_page, FEED_CONFIGS
+from flipfix.apps.core.feed import get_feed_page, FEED_CONFIGS
 
 # Machine-scoped feed
 entries, has_next = get_feed_page(

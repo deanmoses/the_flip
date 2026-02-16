@@ -56,7 +56,7 @@ Compare new/modified code against documented patterns:
 
 **For Tests:**
 
-- Uses factory functions from `the_flip.apps.core.test_utils`
+- Uses factory functions from `flipfix.apps.core.test_utils`
 - Follows patterns in `docs/Testing.md`
 - Uses appropriate `@tag` decorators
 - Tests have descriptive names AND docstrings

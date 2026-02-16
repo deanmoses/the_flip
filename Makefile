@@ -33,15 +33,15 @@ help:
 
 .PHONY: test
 test:
-	DJANGO_SETTINGS_MODULE=the_flip.settings.test .venv/bin/python manage.py test --keepdb --exclude-tag=integration
+	DJANGO_SETTINGS_MODULE=flipfix.settings.test .venv/bin/python manage.py test --keepdb --exclude-tag=integration
 
 .PHONY: test-all
 test-all:
-	DJANGO_SETTINGS_MODULE=the_flip.settings.test .venv/bin/python manage.py test --keepdb
+	DJANGO_SETTINGS_MODULE=flipfix.settings.test .venv/bin/python manage.py test --keepdb
 
 .PHONY: test-models
 test-models:
-	DJANGO_SETTINGS_MODULE=the_flip.settings.test .venv/bin/python manage.py test --keepdb --tag=models
+	DJANGO_SETTINGS_MODULE=flipfix.settings.test .venv/bin/python manage.py test --keepdb --tag=models
 
 .PHONY: test-js
 test-js:
@@ -94,7 +94,7 @@ lint:
 
 .PHONY: typecheck
 typecheck:
-	.venv/bin/mypy the_flip
+	.venv/bin/mypy flipfix
 
 .PHONY: quality
 quality: lint typecheck

@@ -38,7 +38,7 @@ This enables shorter display in space-constrained contexts and shorter URLs.
 **Model changes:**
 
 ```python
-# the_flip/apps/catalog/models.py
+# flipfix/apps/catalog/models.py
 
 # NEW FIELD
 short_name = models.CharField(
@@ -87,9 +87,9 @@ Note: Multiple `MachineInstance` records can share the same `model` (e.g., two G
 **Files:**
 
 - `docs/plans/MachineShortname.md` — Copy this plan verbatim
-- `the_flip/apps/catalog/models.py` — Add field, property, `save()`, `clean()`
-- `the_flip/apps/catalog/admin.py` — Add `short_name` to form, list display, search
-- `the_flip/apps/catalog/tests.py` — Add tests
+- `flipfix/apps/catalog/models.py` — Add field, property, `save()`, `clean()`
+- `flipfix/apps/catalog/admin.py` — Add `short_name` to form, list display, search
+- `flipfix/apps/catalog/tests.py` — Add tests
 
 **Tests:**
 
@@ -147,7 +147,7 @@ Note: `[bug]` = `<i class="fa-solid fa-bug" aria-hidden="true"></i>` with adjace
 
 **Files:**
 
-- `the_flip/static/core/styles.css` — Add breadcrumb mobile classes
+- `flipfix/static/core/styles.css` — Add breadcrumb mobile classes
 - `templates/maintenance/problem_report_detail.html`
 - `templates/maintenance/log_entry_detail.html`
 - `templates/maintenance/problem_report_form_base.html`
@@ -186,9 +186,9 @@ Use `short_display_name` in `discord/formatters.py`:
 
 **Files:**
 
-- `the_flip/apps/maintenance/views/problem_reports.py`
-- `the_flip/apps/maintenance/views/log_entries.py`
-- `the_flip/apps/discord/formatters.py`
+- `flipfix/apps/maintenance/views/problem_reports.py`
+- `flipfix/apps/maintenance/views/log_entries.py`
+- `flipfix/apps/discord/formatters.py`
 
 **Tests:**
 

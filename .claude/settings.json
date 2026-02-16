@@ -13,7 +13,7 @@
           },
           {
             "type": "command",
-            "command": "DJANGO_SETTINGS_MODULE=the_flip.settings.dev python3 manage.py migrate --no-input 2>/dev/null || true"
+            "command": "DJANGO_SETTINGS_MODULE=flipfix.settings.dev python3 manage.py migrate --no-input 2>/dev/null || true"
           }
         ]
       }

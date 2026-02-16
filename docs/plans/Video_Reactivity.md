@@ -59,7 +59,7 @@ This event-based design keeps the modules decoupled - they can be included indep
 
 **Authentication:** Requires login (uses Django's `login_required` decorator)
 
-**Implementation:** `TranscodeStatusView` in `the_flip/apps/core/views.py`
+**Implementation:** `TranscodeStatusView` in `flipfix/apps/core/views.py`
 
 ## JavaScript Files
 
@@ -123,11 +123,11 @@ Only needs polling script (no upload functionality):
 
 | File                                               | Purpose                               |
 | -------------------------------------------------- | ------------------------------------- |
-| `the_flip/apps/core/views.py`                      | TranscodeStatusView API endpoint      |
-| `the_flip/urls.py`                                 | API route: `/api/transcoding/status/` |
-| `the_flip/static/core/video_transcode_poll.js`     | Polling logic                         |
-| `the_flip/static/core/media_grid.js`               | Upload/delete with progress counter   |
-| `the_flip/static/core/styles.css`                  | `.media-grid__status` styles          |
+| `flipfix/apps/core/views.py`                       | TranscodeStatusView API endpoint      |
+| `flipfix/urls.py`                                  | API route: `/api/transcoding/status/` |
+| `flipfix/static/core/video_transcode_poll.js`      | Polling logic                         |
+| `flipfix/static/core/media_grid.js`                | Upload/delete with progress counter   |
+| `flipfix/static/core/styles.css`                   | `.media-grid__status` styles          |
 | `templates/core/partials/media_card_editable.html` | Poll attributes on processing videos  |
 | `templates/core/partials/media_grid_readonly.html` | Poll attributes for list views        |
 

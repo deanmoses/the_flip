@@ -7,7 +7,7 @@ This documents the model conventions used in this project. These are choices we'
 All models that need timestamps inherit from `TimeStampedMixin`:
 
 ```python
-from the_flip.apps.core.models import TimeStampedMixin
+from flipfix.apps.core.models import TimeStampedMixin
 
 class MyModel(TimeStampedMixin):
     # Automatically has created_at and updated_at
@@ -108,7 +108,7 @@ The project uses this pattern in:
 QuerySets with search methods inherit from `SearchableQuerySetMixin`:
 
 ```python
-from the_flip.apps.core.models import SearchableQuerySetMixin
+from flipfix.apps.core.models import SearchableQuerySetMixin
 
 class LogEntryQuerySet(SearchableQuerySetMixin, models.QuerySet):
     ...

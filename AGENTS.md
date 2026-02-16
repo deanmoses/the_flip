@@ -127,7 +127,7 @@ make sample-data    # Create sample data (dev only)
 Run a single test:
 
 ```bash
-DJANGO_SETTINGS_MODULE=the_flip.settings.test .venv/bin/python manage.py test the_flip.apps.maintenance.tests.TestClassName.test_method_name
+DJANGO_SETTINGS_MODULE=flipfix.settings.test .venv/bin/python manage.py test flipfix.apps.maintenance.tests.TestClassName.test_method_name
 ```
 
 ## Tool Usage
@@ -156,14 +156,14 @@ This project is in this GitHub repo: <https://github.com/The-Flip/flipfix>
 - **Database**: PostgreSQL (prod), SQLite (dev)
 - **File Storage**: Local `/media/` in dev, persistent disk in prod
 
-Settings split by environment: `the_flip/settings/{base,dev,test,prod_base,web,worker}.py`. Set `DJANGO_SETTINGS_MODULE` accordingly.
+Settings split by environment: `flipfix/settings/{base,dev,test,prod_base,web,worker}.py`. Set `DJANGO_SETTINGS_MODULE` accordingly.
 
 ## Project Structure
 
 ```text
-the_flip/
+flipfix/
 ├── templates/              # Django templates organized by app
-└── the_flip/
+└── flipfix/
     ├── settings/           # Split settings (base/dev/test/prod_base/web/worker)
     ├── apps/
     │   ├── accounts/       # Maintainer profiles & auth

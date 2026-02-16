@@ -10,7 +10,7 @@ Focus on clean, modern, lightweight mobile-friendly pages that rely on a single 
 
 ## Organization
 
-- **Single Stylesheet**. This project uses a single stylesheet, [the_flip/static/core/styles.css](../the_flip/static/core/styles.css). Add new classes there with appropriate section comments. This handles 95% of styling needs and keeps CSS cacheable and maintainable.
+- **Single Stylesheet**. This project uses a single stylesheet, [flipfix/static/core/styles.css](../flipfix/static/core/styles.css). Add new classes there with appropriate section comments. This handles 95% of styling needs and keeps CSS cacheable and maintainable.
 
 - **Per-page Styling is a Rare Exception**. For truly one-off page-specific styling that won't be reused elsewhere, a `<style>` block in the template is acceptable. Use sparingly—if the CSS might be useful on other pages or exceeds ~20 lines, add it to styles.css instead.
 
@@ -41,7 +41,7 @@ For simple centered pages (like error pages), extend `layouts/minimal_centered.h
 
 ## Component Expectations
 
-The project establishes component patterns in [the_flip/static/core/styles.css](../the_flip/static/core/styles.css). Before creating new components, review existing patterns:
+The project establishes component patterns in [flipfix/static/core/styles.css](../flipfix/static/core/styles.css). Before creating new components, review existing patterns:
 
 ### Layout Components
 

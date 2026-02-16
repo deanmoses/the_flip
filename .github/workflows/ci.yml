@@ -99,11 +99,11 @@ jobs:
         python -m djlint templates/ --check
 
     - name: Run type checking
-      run: mypy the_flip
+      run: mypy flipfix
 
     - name: Check for missing migrations
       env:
-        DJANGO_SETTINGS_MODULE: the_flip.settings.test
+        DJANGO_SETTINGS_MODULE: flipfix.settings.test
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
       run: python manage.py makemigrations --check --dry-run
 
@@ -125,6 +125,6 @@ jobs:
     # Slower checks last
     - name: Run tests
       env:
-        DJANGO_SETTINGS_MODULE: the_flip.settings.test
+        DJANGO_SETTINGS_MODULE: flipfix.settings.test
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
       run: python manage.py test

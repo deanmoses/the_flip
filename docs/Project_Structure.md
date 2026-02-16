@@ -3,14 +3,14 @@
 This document describes the project's structure. It favors conventional Django practices: each business concern lives in its own app, shared utilities are centralized, and project-level settings stay thin.
 
 ```
-the_flip/
+flipfix/
 ├── manage.py
 ├── railpack.web.json / railpack.worker.json  # Per-service Railpack build configs
 ├── railway.toml / runtime.txt
 ├── requirements.txt / requirements.dev.txt
 ├── docs/                     # development guides, deployment docs, and plans
 ├── templates/                # Django templates organized by app
-└── the_flip/                 # Django project package
+└── flipfix/                 # Django project package
     ├── __init__.py
     ├── settings/             # split settings (base/dev/test/prod_base/web/worker)
     ├── urls.py / asgi.py / wsgi.py

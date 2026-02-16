@@ -102,7 +102,7 @@ class MyAppConfig(AppConfig):
 
     @staticmethod
     def _register_link_types():
-        from the_flip.apps.core.markdown_links import LinkType, register
+        from flipfix.apps.core.markdown_links import LinkType, register
 
         def _serialize_widget(obj):
             return {"label": obj.name, "ref": obj.slug}
@@ -223,7 +223,7 @@ There are four integration points:
 In the form's `clean_<field>()` method, convert `[[machine:blackout]]` to `[[machine:id:42]]`:
 
 ```python
-from the_flip.apps.core.markdown_links import convert_authoring_to_storage
+from flipfix.apps.core.markdown_links import convert_authoring_to_storage
 
 def clean_text(self):
     text = self.cleaned_data.get("text", "")
@@ -239,7 +239,7 @@ This raises `ValidationError` if a linked target doesn't exist, which Django sur
 After the model instance is saved, call `sync_references()` to update the `RecordReference` table:
 
 ```python
-from the_flip.apps.core.markdown_links import sync_references
+from flipfix.apps.core.markdown_links import sync_references
 
 # After save:
 sync_references(instance, instance.text)
@@ -305,7 +305,7 @@ class MyAppConfig(AppConfig):
     ...
 
     def ready(self):
-        from the_flip.apps.core.models import register_reference_cleanup
+        from flipfix.apps.core.models import register_reference_cleanup
 
         from .models import MyModel, MyOtherModel
 
@@ -319,7 +319,7 @@ Pass every model whose text fields can contain `[[type:ref]]` markdown links (i.
 If the detail page uses `text_card_editable.html` for inline AJAX editing, the detail view's POST handler must convert, save, and sync. Use `save_inline_markdown_field()` which handles all three steps:
 
 ```python
-from the_flip.apps.core.markdown_links import save_inline_markdown_field
+from flipfix.apps.core.markdown_links import save_inline_markdown_field
 
 if action == "update_text":
     text = request.POST.get("text", "")

@@ -131,7 +131,7 @@ This section documents how static files and user-uploaded media are served to br
 
 ### Media Files: Custom `serve_media` View
 
-User-uploaded media is served by a custom Django view (`the_flip/views.py:serve_media`). This is necessary because WhiteNoise cannot serve dynamically uploaded files.
+User-uploaded media is served by a custom Django view (`flipfix/views.py:serve_media`). This is necessary because WhiteNoise cannot serve dynamically uploaded files.
 
 **Why not WhiteNoise for media?**
 
@@ -429,13 +429,13 @@ When ready to implement this architecture, the following changes will be needed:
 
 **New HTTP Upload Endpoint:**
 
-- Create view: `receive_transcoded_media()` in `the_flip/apps/maintenance/views.py`
+- Create view: `receive_transcoded_media()` in `flipfix/apps/maintenance/views.py`
 - Accept multipart/form-data with fields:
   - `video_file`: transcoded video file
   - `poster_file`: generated poster image
   - `log_entry_media_id`: ID to update
   - `Authorization` header: Bearer token
-- Add URL route in `the_flip/apps/maintenance/urls.py`: `/api/transcoding/upload/`
+- Add URL route in `flipfix/apps/maintenance/urls.py`: `/api/transcoding/upload/`
 - Validate token, save files, update LogEntryMedia record, delete original
 - Return JSON response with success/error status
 
@@ -452,7 +452,7 @@ When ready to implement this architecture, the following changes will be needed:
 
 **Modify Transcoding Task:**
 
-- Update `transcode_video_job()` in `the_flip/apps/core/tasks.py`
+- Update `transcode_video_job()` in `flipfix/apps/core/tasks.py`
 - After successful transcode, POST files to Django endpoint
 - Use `requests` library for multipart upload:
   ```python
