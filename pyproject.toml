@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "the_flip"
+name = "flipfix"
 version = "0.1.0"
 description = "Pinball machine maintenance tracking system for The Flip museum"
 readme = "README.md"
@@ -60,16 +60,16 @@ ignore = [
 "*/tests/*.py" = ["S101", "S106", "S603", "S607"]  # Allow asserts, hardcoded passwords, subprocess in test files
 "manage.py" = ["T20"]  # Allow print in manage.py
 "*/management/commands/*.py" = ["T20", "S603", "S607", "B904"]  # Allow print, subprocess, and error handling patterns in management commands
-"the_flip/settings/prod_base.py" = ["T201"]  # Allow print for critical startup errors
-"the_flip/settings/test.py" = ["F405"]  # Allow star imports (Django test settings pattern)
-"the_flip/apps/maintenance/forms.py" = ["S110", "B904"]  # Allow exception suppression and error handling patterns
-"the_flip/apps/parts/forms.py" = ["S110", "B904"]  # Allow exception suppression and error handling patterns
-"the_flip/apps/core/tasks.py" = ["S603", "S607"]  # Allow subprocess for ffmpeg/ffprobe (trusted binaries validated at runtime)
+"flipfix/settings/prod_base.py" = ["T201"]  # Allow print for critical startup errors
+"flipfix/settings/test.py" = ["F405"]  # Allow star imports (Django test settings pattern)
+"flipfix/apps/maintenance/forms.py" = ["S110", "B904"]  # Allow exception suppression and error handling patterns
+"flipfix/apps/parts/forms.py" = ["S110", "B904"]  # Allow exception suppression and error handling patterns
+"flipfix/apps/core/tasks.py" = ["S603", "S607"]  # Allow subprocess for ffmpeg/ffprobe (trusted binaries validated at runtime)
 "scripts/*.py" = ["T201"]  # Allow print in build scripts
 
 [tool.ruff.lint.isort]
 # Django-style import ordering
-known-first-party = ["the_flip"]
+known-first-party = ["flipfix"]
 section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
 
 [tool.ruff.format]
@@ -100,10 +100,10 @@ module = "mypy-django-stubs.*"
 ignore_missing_imports = true
 
 [tool.django-stubs]
-django_settings_module = "the_flip.settings.dev"
+django_settings_module = "flipfix.settings.dev"
 
 [tool.coverage.run]
-source = ["the_flip"]
+source = ["flipfix"]
 omit = [
     "*/migrations/*",
     "*/tests.py",

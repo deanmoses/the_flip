@@ -148,7 +148,7 @@ make sample-data    # Create sample data (dev only)
 Run a single test:
 
 ```bash
-DJANGO_SETTINGS_MODULE=the_flip.settings.test .venv/bin/python manage.py test the_flip.apps.maintenance.tests.TestClassName.test_method_name
+DJANGO_SETTINGS_MODULE=flipfix.settings.test .venv/bin/python manage.py test flipfix.apps.maintenance.tests.TestClassName.test_method_name
 ```
 
 START_CLAUDE
@@ -159,21 +159,21 @@ When running on Claude Code for the web (no .venv), use these commands instead:
 
 ```bash
 # Testing
-DJANGO_SETTINGS_MODULE=the_flip.settings.test python3 manage.py test --keepdb
+DJANGO_SETTINGS_MODULE=flipfix.settings.test python3 manage.py test --keepdb
 
 # Code Quality (run all three before committing)
 ruff format .                    # Format code
 ruff check .                     # Lint code
 djlint templates/ --check        # Lint templates
-/usr/local/bin/mypy the_flip     # Type check (MUST use full path - see note below)
+/usr/local/bin/mypy flipfix     # Type check (MUST use full path - see note below)
 
 # Database
-DJANGO_SETTINGS_MODULE=the_flip.settings.dev python3 manage.py migrate
-DJANGO_SETTINGS_MODULE=the_flip.settings.dev python3 manage.py makemigrations
+DJANGO_SETTINGS_MODULE=flipfix.settings.dev python3 manage.py migrate
+DJANGO_SETTINGS_MODULE=flipfix.settings.dev python3 manage.py makemigrations
 
 # Django commands
-DJANGO_SETTINGS_MODULE=the_flip.settings.dev python3 manage.py shell
-DJANGO_SETTINGS_MODULE=the_flip.settings.dev python3 manage.py check
+DJANGO_SETTINGS_MODULE=flipfix.settings.dev python3 manage.py shell
+DJANGO_SETTINGS_MODULE=flipfix.settings.dev python3 manage.py check
 ```
 
 The SessionStart hook in `.claude/settings.json` automatically installs dependencies (ffmpeg, Python packages) and runs migrations.
@@ -228,14 +228,14 @@ This project is in this GitHub repo: <https://github.com/The-Flip/flipfix>
 - **Database**: PostgreSQL (prod), SQLite (dev)
 - **File Storage**: Local `/media/` in dev, persistent disk in prod
 
-Settings split by environment: `the_flip/settings/{base,dev,test,prod_base,web,worker}.py`. Set `DJANGO_SETTINGS_MODULE` accordingly.
+Settings split by environment: `flipfix/settings/{base,dev,test,prod_base,web,worker}.py`. Set `DJANGO_SETTINGS_MODULE` accordingly.
 
 ## Project Structure
 
 ```text
-the_flip/
+flipfix/
 ├── templates/              # Django templates organized by app
-└── the_flip/
+└── flipfix/
     ├── settings/           # Split settings (base/dev/test/prod_base/web/worker)
     ├── apps/
     │   ├── accounts/       # Maintainer profiles & auth

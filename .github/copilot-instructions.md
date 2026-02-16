@@ -11,14 +11,14 @@ This guide enables AI coding agents to work productively in this Django-based co
 
 ## Project Structure & Conventions
 
-- Each domain lives in its own app under `the_flip/apps/`:
+- Each domain lives in its own app under `flipfix/apps/`:
   - `accounts`: Maintainer profiles/auth
   - `catalog`: Machine models/instances
   - `maintenance`: Problem reports, logs
   - `core`: Shared utilities
 - Settings split by environment/service: `settings/base.py`, `dev.py`, `test.py`, `prod_base.py`, `web.py`, `worker.py`. Set `DJANGO_SETTINGS_MODULE` accordingly.
 - Templates organized by app in `templates/<app>/`.
-- Static files in `the_flip/static/`.
+- Static files in `flipfix/static/`.
 - Shared helpers go in `core`, not in `__init__.py`.
 
 ## Developer Workflows

@@ -39,10 +39,10 @@ This keeps the production behavior identical (IIFE, no globals) while making pur
 
 ## Test File Location
 
-Test files live alongside their source in `the_flip/static/core/`:
+Test files live alongside their source in `flipfix/static/core/`:
 
 ```text
-the_flip/static/core/
+flipfix/static/core/
 ├── markdown_shortcuts.js          # Source
 ├── markdown_shortcuts.test.js     # Tests
 ```

@@ -18,5 +18,5 @@ mkdir -p static_collected
 
 # Collect static files
 echo "Collecting static files..."
-DJANGO_SETTINGS_MODULE=the_flip.settings.web python manage.py collectstatic --no-input
+DJANGO_SETTINGS_MODULE=flipfix.settings.web python manage.py collectstatic --no-input
 echo "✓ Static files collected"

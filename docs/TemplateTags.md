@@ -25,7 +25,7 @@ When adding a new template tag, use the "where does this go?" test:
 
 ### Core Libraries
 
-These live in `the_flip/apps/core/templatetags/` and are loaded as `{% load <name> %}`.
+These live in `flipfix/apps/core/templatetags/` and are loaded as `{% load <name> %}`.
 
 #### `nav_tags` — Navigation components
 

@@ -100,7 +100,7 @@ repos:
       # Run Django tests before push
       - id: django-tests
         name: django-tests
-        entry: env DJANGO_SETTINGS_MODULE=the_flip.settings.test .venv/bin/python manage.py test --keepdb
+        entry: env DJANGO_SETTINGS_MODULE=flipfix.settings.test .venv/bin/python manage.py test --keepdb
         language: system
         pass_filenames: false
         always_run: true
