@@ -27,6 +27,19 @@ When adding a new template tag, use the "where does this go?" test:
 
 These live in `the_flip/apps/core/templatetags/` and are loaded as `{% load <name> %}`.
 
+#### `nav_tags` — Navigation components
+
+Defines main nav items as data and renders each navigation variant with pre-computed active states.
+
+| Component             | Type          | Description                                     |
+| --------------------- | ------------- | ----------------------------------------------- |
+| `desktop_nav`         | Inclusion tag | Desktop horizontal nav bar (md+ breakpoints)    |
+| `mobile_priority_bar` | Inclusion tag | Mobile priority+ bar with icons                 |
+| `mobile_hamburger`    | Inclusion tag | Mobile hamburger dropdown with all sections     |
+| `user_dropdown`       | Inclusion tag | Desktop avatar dropdown with account and logout |
+
+Also exports `MAIN_NAV_ITEMS` (tuple of `_NavItem` dataclasses) and `_is_active()` helper for testing.
+
 #### `ui_tags` — Atomic UI primitives
 
 No domain knowledge. Used on every page type.

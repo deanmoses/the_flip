@@ -1,0 +1,31 @@
+{% load ui_tags %}
+{% if user.is_authenticated %}
+  <div class="dropdown {% if perms.accounts.can_access_maintainer_portal %}avatar-dropdown--mobile-hidden{% endif %}">
+    <button type="button"
+            class="avatar"
+            aria-haspopup="true"
+            aria-expanded="false"
+            aria-label="Account menu"
+            onclick="toggleDropdown(this)">
+      {% if user.first_name and user.last_name %}
+        {{ user.first_name|make_list|first }}{{ user.last_name|make_list|first }}
+      {% elif user.first_name %}
+        {{ user.first_name|make_list|first }}
+      {% else %}
+        {{ user.username|make_list|first|upper }}
+      {% endif %}
+    </button>
+    <div class="dropdown__menu dropdown__menu--narrow hidden">
+      <p class="body-small text-muted space-below-sm">{{ user.username }}</p>
+      <a href="{% url 'profile' %}" class="dropdown__item">{% icon "gear" class="space-right-sm" %} Account</a>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="dropdown__item dropdown__item--danger">
+          {% icon "right-from-bracket" class="space-right-sm" %} Logout
+        </button>
+      </form>
+    </div>
+  </div>
+{% else %}
+  <a href="{% url 'login' %}" class="nav-link">Login</a>
+{% endif %}
