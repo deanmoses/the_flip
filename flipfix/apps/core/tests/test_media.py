@@ -5,6 +5,7 @@ from unittest.mock import patch
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, tag
 
+from flipfix.apps.core.media import ALLOWED_MEDIA_EXTENSIONS, ALLOWED_PHOTO_EXTENSIONS
 from flipfix.apps.core.media_upload import attach_media_files
 from flipfix.apps.core.test_utils import (
     TemporaryMediaMixin,
@@ -16,6 +17,19 @@ from flipfix.apps.core.test_utils import (
 )
 from flipfix.apps.maintenance.models import LogEntryMedia, ProblemReportMedia
 from flipfix.apps.parts.models import PartRequestMedia, PartRequestUpdateMedia
+
+
+@tag("unit")
+class MediaExtensionConfigTests(TestCase):
+    """Tests for media extension configuration."""
+
+    def test_avif_in_allowed_photo_extensions(self):
+        """AVIF is in the allowed photo extensions set."""
+        self.assertIn(".avif", ALLOWED_PHOTO_EXTENSIONS)
+
+    def test_avif_in_allowed_media_extensions(self):
+        """AVIF is in the allowed media extensions set."""
+        self.assertIn(".avif", ALLOWED_MEDIA_EXTENSIONS)
 
 
 @tag("models")

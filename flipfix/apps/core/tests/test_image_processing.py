@@ -128,6 +128,41 @@ class ResizeImageFileTests(TestCase):
         img = Image.open(result)
         self.assertLessEqual(max(img.size), MAX_IMAGE_DIMENSION)
 
+    def test_avif_preserved_on_resize(self):
+        """AVIF images are preserved as AVIF, not converted to JPEG."""
+        large_avif = create_test_image(3000, 2000, format="AVIF")
+        uploaded = SimpleUploadedFile("photo.avif", large_avif, content_type="image/avif")
+
+        result = resize_image_file(uploaded)
+
+        self.assertEqual(result.content_type, "image/avif")
+        self.assertTrue(result.name.endswith(".avif"))
+        result.seek(0)
+        img = Image.open(result)
+        self.assertLessEqual(max(img.size), MAX_IMAGE_DIMENSION)
+
+    def test_small_avif_stays_avif(self):
+        """Small AVIF stays AVIF (may be re-encoded due to HEIF transpose quirk)."""
+        small_avif = create_test_image(100, 100, format="AVIF")
+        uploaded = SimpleUploadedFile("small.avif", small_avif, content_type="image/avif")
+
+        result = resize_image_file(uploaded)
+
+        self.assertEqual(result.content_type, "image/avif")
+        self.assertTrue(result.name.endswith(".avif"))
+
+    def test_avif_extension_with_generic_content_type(self):
+        """.avif with application/octet-stream is not rejected."""
+        avif_data = create_test_image(100, 100, format="AVIF")
+        uploaded = SimpleUploadedFile(
+            "photo.avif", avif_data, content_type="application/octet-stream"
+        )
+
+        result = resize_image_file(uploaded)
+
+        # Should not be rejected — AVIF is in BROWSER_QUIRK_EXTENSIONS
+        self.assertEqual(result.content_type, "image/avif")
+
     def test_heic_extension_triggers_processing(self):
         """Files with .heic extension are processed even with generic content type.
 

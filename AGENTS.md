@@ -208,7 +208,7 @@ This project uses Django's `@register.inclusion_tag` and `@register.simple_block
 | Library              | Location    | What it contains                                                                                                                      |
 | -------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `nav_tags`           | core        | Navigation components: `desktop_nav`, `mobile_priority_bar`, `mobile_hamburger`, `user_dropdown`                                      |
-| `ui_tags`            | core        | Atomic primitives: `icon`, `pill`, `smart_date`, `month_name`, `addstr`                                                               |
+| `ui_tags`            | core        | Atomic primitives: `icon`, `pill`, `smart_date`, `month_name`, `addstr`, `media_accept`                                               |
 | `video_tags`         | core        | `video_player`, `video_thumbnail`                                                                                                     |
 | `sidebar_tags`       | core        | `sidebar_section`, `editable_sidebar_card`                                                                                            |
 | `list_tags`          | core        | `empty_state`, `child_list_search`, `stat_grid`, `timeline`, `timeline_entry`                                                         |

@@ -109,9 +109,9 @@
       {% form_label form.text %}
       {{ form.text }}
       {% field_errors form.text %}
-      <!-- MEDIA UPLOAD -->
-      {% media_file_input form.media_file %}
     </div>
+    <!-- MEDIA UPLOAD -->
+    {% media_file_input form.media_file %}
     <!-- Submit -->
     <div class="form-actions">
       <a href="{% if is_edit %}{% url 'part-request-detail' part_request.pk %}{% else %}{% url 'part-request-list' %}{% endif %}"

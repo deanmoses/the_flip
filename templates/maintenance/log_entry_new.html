@@ -86,9 +86,9 @@
       {% form_label form.text %}
       {{ form.text }}
       {% field_errors form.text %}
-      <!-- MEDIA UPLOAD -->
-      {% media_file_input form.media_file %}
     </div>
+    <!-- MEDIA UPLOAD -->
+    {% media_file_input form.media_file %}
     <div class="form-actions">
       {% if problem_report %}
         <label class="checkbox-label">

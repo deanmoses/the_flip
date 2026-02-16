@@ -2,7 +2,7 @@
 
 Provides resizing and format conversion for uploaded images, including:
 - HEIC/HEIF to JPEG conversion for browser compatibility
-- Preservation of web-native formats (JPEG, PNG, WebP)
+- Preservation of web-native formats (JPEG, PNG, WebP, AVIF)
 - Downscaling large images to reasonable web dimensions
 - EXIF orientation correction
 - Thumbnail generation
@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from PIL import Image, ImageOps, UnidentifiedImageError
@@ -155,11 +155,12 @@ def resize_image_file(
     )
 
     buffer = BytesIO()
-    quality = fmt_info.quality
-    if quality is not None:
-        image.save(buffer, format=target_format, quality=quality, optimize=True)
-    else:
-        image.save(buffer, format=target_format, optimize=True)
+    save_kwargs: dict[str, Any] = {"format": target_format}
+    if fmt_info.quality is not None:
+        save_kwargs["quality"] = fmt_info.quality
+    if fmt_info.optimize:
+        save_kwargs["optimize"] = True
+    image.save(buffer, **save_kwargs)
     size = buffer.tell()
     buffer.seek(0)
 
