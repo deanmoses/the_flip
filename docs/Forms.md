@@ -192,7 +192,6 @@ Use HTML5 `required` attribute on inputs for browser validation.
 | `.form-field`           | Wrapper for label + input + help text + errors              |
 | `.form-label`           | Field label styling                                         |
 | `.form-input`           | Text inputs, selects, and textareas                         |
-| `.form-input--width-4`  | Narrow width (4em) for single-digit inputs                  |
 | `.form-input--width-6`  | Narrow width (6em) for small numbers                        |
 | `.form-input--width-8`  | Narrow width (8em) for IDs                                  |
 | `.form-input--width-10` | Narrow width (10em) for years                               |

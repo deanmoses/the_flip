@@ -169,20 +169,6 @@ def build_discord_embed(
     return {"embeds": _build_gallery_embeds(main_embed, photos, title_url, base_url, color)}
 
 
-def format_discord_message(event_type: str, obj: Any) -> dict:
-    """Format a Discord webhook message for the given event and object.
-
-    Delegates to the registered webhook handler for the event type.
-    """
-    from the_flip.apps.discord.webhook_handlers import get_webhook_handler_by_event
-
-    handler = get_webhook_handler_by_event(event_type)
-    if handler:
-        return handler.format_webhook_message(obj)
-    logger.warning("discord_unknown_event_type", extra={"event_type": event_type})
-    return {}
-
-
 def format_test_message(event_type: str) -> dict:
     """Format a test message for a given event type."""
     from the_flip.apps.discord.webhook_handlers import get_webhook_handler_by_event

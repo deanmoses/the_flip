@@ -95,11 +95,6 @@ def get_webhook_handler_by_event(event_type: str) -> WebhookHandler | None:
     return None
 
 
-def get_all_webhook_handlers() -> list[WebhookHandler]:
-    """Return all registered webhook handlers."""
-    return list(_registry.values())
-
-
 def connect_signals() -> None:
     """Connect Django post_save signals for all registered webhook handlers.
 

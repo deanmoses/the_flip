@@ -63,22 +63,6 @@ class PartRequestModelTests(TestDataMixin, TestCase):
             part_request.refresh_from_db()
             self.assertEqual(part_request.status, status)
 
-    def test_status_display_class(self):
-        """status_display_class returns correct CSS class."""
-        part_request = create_part_request(requested_by=self.maintainer)
-
-        part_request.status = PartRequest.Status.REQUESTED
-        self.assertEqual(part_request.status_display_class, "requested")
-
-        part_request.status = PartRequest.Status.ORDERED
-        self.assertEqual(part_request.status_display_class, "ordered")
-
-        part_request.status = PartRequest.Status.RECEIVED
-        self.assertEqual(part_request.status_display_class, "received")
-
-        part_request.status = PartRequest.Status.CANCELLED
-        self.assertEqual(part_request.status_display_class, "cancelled")
-
     def test_requester_display_with_fk(self):
         """requester_display returns maintainer name when FK is set."""
         part_request = create_part_request(requested_by=self.maintainer)
