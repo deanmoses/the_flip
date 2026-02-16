@@ -144,16 +144,6 @@ class PartRequest(TimeStampedMixin):
         return f"Parts Request #{self.pk}: {preview}"
 
     @property
-    def status_display_class(self) -> str:
-        """Return CSS class for status badge styling."""
-        return {
-            self.Status.REQUESTED.value: "requested",
-            self.Status.ORDERED.value: "ordered",
-            self.Status.RECEIVED.value: "received",
-            self.Status.CANCELLED.value: "cancelled",
-        }.get(self.status, "")
-
-    @property
     def requester_display(self) -> str:
         """Return display name for who requested the part."""
         if self.requested_by:

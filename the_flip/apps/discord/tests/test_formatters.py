@@ -15,12 +15,21 @@ from the_flip.apps.core.test_utils import (
 )
 from the_flip.apps.discord.formatters import (
     DISCORD_POST_DESCRIPTION_MAX_CHARS,
-    format_discord_message,
     format_test_message,
     get_base_url,
 )
 from the_flip.apps.discord.models import DiscordUserLink
 from the_flip.apps.maintenance.models import LogEntryMedia
+
+
+def format_discord_message(event_type, obj):
+    """Test helper: format a Discord webhook message for the given event and object."""
+    from the_flip.apps.discord.webhook_handlers import get_webhook_handler_by_event
+
+    handler = get_webhook_handler_by_event(event_type)
+    if handler:
+        return handler.format_webhook_message(obj)
+    return {}
 
 
 @tag("tasks")

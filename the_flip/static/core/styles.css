@@ -775,25 +775,6 @@ body {
   font-weight: var(--font-bold);
 }
 
-.nav--icons {
-  gap: var(--space-3);
-  font-size: var(--text-xl);
-}
-
-.nav-icon {
-  padding: var(--space-2);
-  color: var(--color-text-muted);
-  transition: color 0.15s ease;
-}
-
-.nav-icon:hover {
-  color: var(--color-accent);
-}
-
-.nav-icon--active {
-  color: var(--color-accent);
-}
-
 /* --- Dropdown --- */
 .dropdown {
   position: relative;
@@ -996,20 +977,6 @@ body {
   color: var(--color-text-muted);
 }
 
-/* Input with inline button (e.g., username check) */
-.input-with-button {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.input-with-button .form-input {
-  flex: 1;
-}
-
-.input-with-button .btn {
-  flex-shrink: 0;
-}
-
 .form-hint {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
@@ -1070,10 +1037,6 @@ body {
 }
 
 /* Width variants for inputs that don't need full width (values in em, scale with font) */
-.form-input--width-4 {
-  width: 4em;
-}
-
 .form-input--width-6 {
   width: 6em;
 }
@@ -1127,7 +1090,6 @@ body {
 }
 
 .autocomplete__item:hover,
-.autocomplete__item-active,
 .autocomplete__item.dropdown-active {
   background-color: var(--color-gray-100);
 }
@@ -1906,11 +1868,6 @@ body {
   margin: 0;
 }
 
-.log-entry-meta {
-  font-size: var(--text-xs);
-  color: var(--color-gray-500);
-}
-
 /* --- Breadcrumbs --- */
 .breadcrumbs {
   display: flex;
@@ -2426,10 +2383,6 @@ body {
 /* Font weights */
 .font-semibold {
   font-weight: var(--font-semibold);
-}
-
-.font-bold {
-  font-weight: var(--font-bold);
 }
 
 /* Flex utilities */

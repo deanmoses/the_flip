@@ -452,7 +452,7 @@ When ready to implement this architecture, the following changes will be needed:
 
 **Modify Transcoding Task:**
 
-- Update `transcode_video_job()` in `the_flip/apps/maintenance/tasks.py`
+- Update `transcode_video_job()` in `the_flip/apps/core/tasks.py`
 - After successful transcode, POST files to Django endpoint
 - Use `requests` library for multipart upload:
   ```python

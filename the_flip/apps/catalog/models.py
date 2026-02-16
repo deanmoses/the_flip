@@ -13,9 +13,6 @@ from simple_history.models import HistoricalRecords
 
 from the_flip.apps.core.models import TimeStampedMixin
 
-# Cache timeout for machine matching lookups (used by Discord bot)
-MACHINE_MATCHING_CACHE_SECONDS = 300  # 5 minutes
-
 
 class Location(models.Model):
     """Physical location where a machine can be placed."""
@@ -326,21 +323,3 @@ class MachineInstance(TimeStampedMixin):
                 counter += 1
             self.slug = slug
         super().save(*args, **kwargs)
-
-
-def get_machines_for_matching() -> list[MachineInstance]:
-    """Get list of machines for Discord message matching.
-
-    Uses Django cache to avoid repeated database queries.
-    Cache expires after 5 minutes, so new machines will be picked up.
-    """
-    from django.core.cache import cache
-
-    cache_key = "machines_for_matching"
-    machines = cache.get(cache_key)
-
-    if machines is None:
-        machines = list(MachineInstance.objects.active_for_matching())
-        cache.set(cache_key, machines, timeout=MACHINE_MATCHING_CACHE_SECONDS)
-
-    return machines
