@@ -39,6 +39,7 @@ It's in Django.
 
    ```bash
    pip install -r requirements.dev.txt
+   pip install -r requirements.native.txt
    ```
 
 4. **Configure environment variables**
