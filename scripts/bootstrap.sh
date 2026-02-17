@@ -134,7 +134,7 @@ if [ "$NEED_VENV" = true ]; then
   info "Creating Python venv at .venv..."
   "$PYTHON_CMD" -m venv "$VENV_DIR"
 else
-  info "Python venv already exists (Python $PYTHON_VERSION)."
+  info "Python venv already exists (Python $VENV_MAJOR.$VENV_MINOR)."
 fi
 
 info "Installing Python dependencies..."
@@ -147,7 +147,7 @@ info "Installing Python dependencies..."
 
 # --- Node.js dependencies ---
 
-if command -v node >/dev/null 2>&1; then
+if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
   if [ -f package-lock.json ]; then
     info "Installing Node.js dependencies..."
     npm ci --silent
@@ -179,7 +179,8 @@ if [ ! -f .env ]; then
 import pathlib
 from django.core.management.utils import get_random_secret_key
 env = pathlib.Path('.env')
-env.write_text(env.read_text().replace('SECRET_KEY=change-me', 'SECRET_KEY=' + get_random_secret_key()))
+key = get_random_secret_key()
+env.write_text(env.read_text().replace('SECRET_KEY=change-me', \"SECRET_KEY='\" + key + \"'\"))
 "
   info ".env created with generated SECRET_KEY."
 else
