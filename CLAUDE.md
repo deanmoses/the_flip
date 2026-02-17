@@ -94,6 +94,16 @@ Run `/pre-pr-check` to execute the full pre-PR quality checklist.
 
 Address findings before submitting.
 
+## Getting Started
+
+New contributors — clone the repo and run:
+
+```bash
+make bootstrap
+```
+
+This checks your Python version (3.13+ required), installs system dependencies, creates a venv, installs packages, sets up pre-commit hooks, configures `.env`, and runs migrations. After that, `make runserver` starts the dev server.
+
 ## Development Commands
 
 ```bash

@@ -10,6 +10,9 @@ PRECOMMIT ?= $(shell test -x .venv/bin/pre-commit && echo .venv/bin/pre-commit |
 help:
 	@echo "Django project Makefile commands:"
 	@echo ""
+	@echo "Setup:"
+	@echo "  make bootstrap      - Install everything needed for development"
+	@echo ""
 	@echo "Development:"
 	@echo "  make runserver      - Start development web server"
 	@echo "  make runq           - Start development queue worker"
@@ -38,6 +41,10 @@ help:
 	@echo "Documentation:"
 	@echo "  make agent-docs     - Regenerate CLAUDE.md and AGENTS.md from source"
 	@echo ""
+
+.PHONY: bootstrap
+bootstrap:
+	scripts/bootstrap.sh
 
 .PHONY: test
 test:
