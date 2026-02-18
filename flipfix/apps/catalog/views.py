@@ -21,14 +21,13 @@ from flipfix.apps.catalog.forms import (
 from flipfix.apps.catalog.models import Location, MachineInstance, MachineModel
 from flipfix.apps.core.feed import FEED_CONFIGS, PageCursor, get_feed_page
 from flipfix.apps.core.forms import SearchForm
-from flipfix.apps.core.mixins import CanAccessMaintainerPortalMixin
 from flipfix.apps.maintenance.models import ProblemReport
 
 # Maximum stats shown in sidebar grid (Total + up to 3 location counts)
 SIDEBAR_STAT_LIMIT = 4
 
 
-class MachineListView(CanAccessMaintainerPortalMixin, ListView):
+class MachineListView(ListView):
     """Maintainer machine list with location stats in the sidebar."""
 
     template_name = "catalog/machine_list_for_maintainers.html"
@@ -99,6 +98,10 @@ class MachineListView(CanAccessMaintainerPortalMixin, ListView):
             if len(stats) >= SIDEBAR_STAT_LIMIT:
                 break
         context["stats"] = stats
+        context["meta_description"] = (
+            "Pinball machines at The Flip, Chicago's playable pinball museum"
+            " — status, repairs, and logs."
+        )
 
         return context
 
@@ -112,7 +115,7 @@ class MachineDetailViewForPublic(DetailView):
     slug_url_kwarg = "slug"
 
 
-class MachineFeedView(CanAccessMaintainerPortalMixin, TemplateView):
+class MachineFeedView(TemplateView):
     """Feed of activity on a specific machine, with filtering and search."""
 
     template_name = "catalog/machine_feed.html"
@@ -152,12 +155,16 @@ class MachineFeedView(CanAccessMaintainerPortalMixin, TemplateView):
                 "entry_types": feed_config.entry_types,
                 "empty_message": feed_config.empty_message,
                 "search_empty_message": feed_config.search_empty_message,
+                "meta_description": (
+                    f"{self.machine.name} at The Flip"
+                    f" — {self.machine.get_operational_status_display().lower()}."
+                ),
             }
         )
         return context
 
 
-class MachineFeedPartialView(CanAccessMaintainerPortalMixin, View):
+class MachineFeedPartialView(View):
     """AJAX endpoint for infinite scroll of machine feed entries."""
 
     def get(self, request, slug):
@@ -187,7 +194,9 @@ class MachineFeedPartialView(CanAccessMaintainerPortalMixin, View):
 
         # Render each entry using the activity_entry dispatcher template
         items_html = "".join(
-            render_to_string("maintenance/partials/activity_entry.html", {"entry": entry})
+            render_to_string(
+                "maintenance/partials/activity_entry.html", {"entry": entry}, request=request
+            )
             for entry in page_items
         )
 
@@ -200,7 +209,7 @@ class MachineFeedPartialView(CanAccessMaintainerPortalMixin, View):
         )
 
 
-class MachineUpdateView(CanAccessMaintainerPortalMixin, UpdateView):
+class MachineUpdateView(UpdateView):
     """Edit machine instance details (excluding model)."""
 
     model = MachineInstance
@@ -222,7 +231,7 @@ class MachineUpdateView(CanAccessMaintainerPortalMixin, UpdateView):
         return reverse("maintainer-machine-detail", kwargs={"slug": self.object.slug})
 
 
-class MachineModelUpdateView(SuccessMessageMixin, CanAccessMaintainerPortalMixin, UpdateView):
+class MachineModelUpdateView(SuccessMessageMixin, UpdateView):
     """Edit the pinball machine model."""
 
     model = MachineModel
@@ -249,7 +258,7 @@ class MachineModelUpdateView(SuccessMessageMixin, CanAccessMaintainerPortalMixin
         return reverse("machine-model-edit", kwargs={"slug": self.object.slug})
 
 
-class MachineCreateLandingView(CanAccessMaintainerPortalMixin, View):
+class MachineCreateLandingView(View):
     """Landing page for adding a new machine - select model first."""
 
     template_name = "catalog/machine_create_landing.html"
@@ -270,7 +279,7 @@ class MachineCreateLandingView(CanAccessMaintainerPortalMixin, View):
         return redirect("machine-create-model-exists", model_slug=model.slug)
 
 
-class MachineCreateModelExistsView(CanAccessMaintainerPortalMixin, FormView):
+class MachineCreateModelExistsView(FormView):
     """Add an instance of a specific machine model."""
 
     template_name = "catalog/machine_create_model_exists.html"
@@ -311,7 +320,7 @@ class MachineCreateModelExistsView(CanAccessMaintainerPortalMixin, FormView):
         return redirect("maintainer-machine-detail", slug=instance.slug)
 
 
-class MachineCreateModelDoesNotExistView(CanAccessMaintainerPortalMixin, FormView):
+class MachineCreateModelDoesNotExistView(FormView):
     """Create a new machine model and first instance."""
 
     template_name = "catalog/machine_create_model_does_not_exist.html"

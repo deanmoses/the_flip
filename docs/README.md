@@ -10,6 +10,7 @@ The development documentation for The Flip maintenance system.
 - **[Views.md](Views.md)** - View patterns, CBVs, query optimization, access control
 - **[HTML_CSS.md](HTML_CSS.md)** - HTML templates, CSS styling, page layouts, CSS component conventions
 - **[Javascript.md](Javascript.md)** - JavaScript patterns, JS component catalog, custom events
+- **[TemplateTags.md](TemplateTags.md)** - Template tag libraries, component reference, pill variants
 - **[Forms.md](Forms.md)** - Form rendering, markup patterns, optional field marking, CSS classes
 - **[Django_Python.md](Django_Python.md)** - Python coding rules (mixins, secrets, linting, file organization)
 - **[Testing.md](Testing.md)** - Test runner configuration and CI
@@ -17,6 +18,8 @@ The development documentation for The Flip maintenance system.
   - **[TestingJavascript.md](TestingJavascript.md)** - JavaScript test patterns, IIFE exports, vitest conventions
 - **[Deployment.md](Deployment.md)** - Deployment pipeline (PR environments, production)
 - **[Operations.md](Operations.md)** - Operations guide (monitoring, rollback, backups)
+- **[PublicAccess.md](PublicAccess.md)** - Public/guest access system, route annotations
+- **[SEO.md](SEO.md)** - SEO controls
 - **[Discord.md](Discord.md)** - Discord integration setup
 - **[MarkdownLinks.md](MarkdownLinks.md)** - Adding new link sources, reference tracking
 - **[WikiTemplateArchitecture.md](WikiTemplateArchitecture.md)** - Template marker syntax, rendering pipeline, and registration internals

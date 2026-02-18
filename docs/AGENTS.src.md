@@ -87,6 +87,7 @@ STOP and read the relevant doc before writing code. Code that doesn't follow doc
 | Directory layout                 | [`docs/Project_Structure.md`](docs/Project_Structure.md) |
 | `[[type:ref]]` markdown links    | [`docs/MarkdownLinks.md`](docs/MarkdownLinks.md)         |
 | Template tags & components       | [`docs/TemplateTags.md`](docs/TemplateTags.md)           |
+| Public/guest access system       | [`docs/Auth.md`](docs/Auth.md)                           |
 
 Follow the patterns in these docs exactly. Do not introduce new conventions without asking. Update docs when changing behavior.
 
@@ -314,8 +315,8 @@ This project uses Django's `@register.inclusion_tag` and `@register.simple_block
 | `form_tags`          | core        | `form_field`, `form_fields`, `form_label`, `form_non_field_errors`, `field_errors`, `field_help_text`, `media_file_input`, `getfield` |
 | `markdown_tags`      | core        | `render_markdown`, `storage_to_authoring`                                                                                             |
 | `catalog_tags`       | catalog     | Machine status pills/filters, `manufacturer_year`                                                                                     |
-| `maintenance_tags`   | maintenance | Problem/log pills/filters, `problem_report_summary`, `log_entry_meta`                                                                 |
-| `parts_tags`         | parts       | `settable_part_request_status_pill`                                                                                                   |
+| `maintenance_tags`   | maintenance | Problem/log pills/filters, `problem_report_summary`, `log_entry_meta`, `report_problem_button`                                        |
+| `parts_tags`         | parts       | `settable_part_request_status_pill`, `part_request_meta`, `part_update_meta`                                                          |
 | `accounts_tags`      | accounts    | `display_name_with_username`                                                                                                          |
 | `accounts_form_tags` | accounts    | `maintainer_autocomplete_field`, `maintainer_chip_input_field`                                                                        |
 | `wiki_tags`          | wiki        | `render_wiki_content`, `deslugify`                                                                                                    |

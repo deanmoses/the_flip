@@ -47,6 +47,8 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.auth.middleware.LoginRequiredMiddleware",
+    "flipfix.middleware.MaintainerAccessMiddleware",
     "flipfix.middleware.RequestContextMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -115,6 +117,9 @@ STATICFILES_DIRS = [REPO_ROOT / "flipfix/static"]
 MEDIA_URL = "/media/"
 MEDIA_ROOT = REPO_ROOT / "media"
 
+# Whitenoise serves files from this directory at the site root (e.g. robots.txt)
+WHITENOISE_ROOT = REPO_ROOT / "public"
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_URL = "login"
@@ -147,6 +152,8 @@ LOG_LEVEL = config("LOG_LEVEL", default="WARNING").upper()
 CONSTANCE_BACKEND = "constance.backends.database.DatabaseBackend"
 
 CONSTANCE_CONFIG = {
+    # Public access
+    "PUBLIC_ACCESS_ENABLED": (False, "Allow unauthenticated visitors to browse public pages", bool),
     # Discord Bot settings (inbound - listening to Discord messages)
     "DISCORD_BOT_ENABLED": (False, "Master switch for Discord bot", bool),
     "DISCORD_BOT_TOKEN": ("", "Discord bot token (keep secret!)", str),
@@ -163,6 +170,10 @@ CONSTANCE_CONFIG = {
 }
 
 CONSTANCE_CONFIG_FIELDSETS = (
+    (
+        "Public Access",
+        ("PUBLIC_ACCESS_ENABLED",),
+    ),
     (
         "Discord Webhooks (Outbound)",
         (

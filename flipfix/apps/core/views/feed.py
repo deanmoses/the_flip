@@ -7,12 +7,11 @@ from django.views.generic import TemplateView
 
 from flipfix.apps.core.feed import PageCursor, get_feed_page
 from flipfix.apps.core.forms import SearchForm
-from flipfix.apps.core.mixins import CanAccessMaintainerPortalMixin
 from flipfix.apps.maintenance.models import ProblemReport
 from flipfix.apps.parts.models import PartRequest
 
 
-class GlobalActivityFeedView(CanAccessMaintainerPortalMixin, TemplateView):
+class GlobalActivityFeedView(TemplateView):
     """Global activity feed showing all entries across all machines."""
 
     template_name = "core/global_activity_feed.html"
@@ -50,7 +49,7 @@ class GlobalActivityFeedView(CanAccessMaintainerPortalMixin, TemplateView):
         return context
 
 
-class GlobalActivityFeedPartialView(CanAccessMaintainerPortalMixin, View):
+class GlobalActivityFeedPartialView(View):
     """AJAX endpoint for infinite scroll on global activity feed."""
 
     def get(self, request):
@@ -70,6 +69,7 @@ class GlobalActivityFeedPartialView(CanAccessMaintainerPortalMixin, View):
             render_to_string(
                 "core/partials/global_activity_entry.html",
                 {"entry": entry},
+                request=request,
             )
             for entry in page_items
         )

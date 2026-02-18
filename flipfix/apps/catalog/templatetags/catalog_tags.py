@@ -78,8 +78,8 @@ def manufacturer_year(model):
 # ---- Settable pills ---------------------------------------------------------
 
 
-@register.inclusion_tag("components/settable_pill.html")
-def settable_machine_status_pill(machine, trigger_style="pill"):
+@register.inclusion_tag("components/settable_pill.html", takes_context=True)
+def settable_machine_status_pill(context, machine, trigger_style="pill"):
     """Render a settable operational-status dropdown for a machine.
 
     Usage::
@@ -109,7 +109,7 @@ def settable_machine_status_pill(machine, trigger_style="pill"):
         aria_label = "Change status"
         title_prefix = "Status: "
         title = f"{title_prefix}{machine.get_operational_status_display()}"
-    return _settable_pill_context(
+    ctx = _settable_pill_context(
         field="operational_status",
         action="update_status",
         current_value=machine.operational_status,
@@ -123,10 +123,12 @@ def settable_machine_status_pill(machine, trigger_style="pill"):
         title=title,
         title_prefix=title_prefix,
     )
+    ctx["user"] = context["user"]
+    return ctx
 
 
-@register.inclusion_tag("components/settable_pill.html")
-def settable_machine_location_pill(machine, locations, trigger_style="pill"):
+@register.inclusion_tag("components/settable_pill.html", takes_context=True)
+def settable_machine_location_pill(context, machine, locations, trigger_style="pill"):
     """Render a settable location dropdown for a machine.
 
     Usage::
@@ -150,7 +152,7 @@ def settable_machine_location_pill(machine, locations, trigger_style="pill"):
         aria_label = "Change location"
         title_prefix = "Location: "
         title = f"{title_prefix}{display}"
-    return _settable_pill_context(
+    ctx = _settable_pill_context(
         field="location",
         action="update_location",
         current_value=current,
@@ -163,3 +165,5 @@ def settable_machine_location_pill(machine, locations, trigger_style="pill"):
         title=title,
         title_prefix=title_prefix,
     )
+    ctx["user"] = context["user"]
+    return ctx

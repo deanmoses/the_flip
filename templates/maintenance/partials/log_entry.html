@@ -7,7 +7,7 @@
   <a href="{% url 'log-detail' entry.pk %}" class="timeline__card-link">
     <div class="timeline__header">
       <span class="timeline__title timeline__title--log">Work</span>
-      <span class="timeline__meta">{{ entry|log_entry_meta }}</span>
+      <span class="timeline__meta">{% log_entry_meta entry %}</span>
     </div>
   </a>
   <div class="timeline__body {% if entry.problem_report or entry.media.all %}space-below-sm{% endif %} markdown-content markdown-content--compact">

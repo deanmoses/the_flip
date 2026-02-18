@@ -278,12 +278,17 @@ class DesktopNavRenderTests(TestCase):
         html = _render_tag("{% desktop_nav %}", request)
         self.assertNotIn("Wall Display", html)
 
-    def test_no_nav_without_permission(self):
-        """Non-maintainer user sees no desktop nav."""
+    def test_public_nav_without_permission(self):
+        """Non-maintainer user sees public nav items only."""
         regular = create_user(username="nonavuser")
         request = _make_request("", user=regular)
         html = _render_tag("{% desktop_nav %}", request)
-        self.assertNotIn("nav--desktop", html)
+        self.assertIn("nav--desktop", html)
+        self.assertIn("Machines", html)
+        self.assertIn("Problems", html)
+        self.assertIn("Logs", html)
+        self.assertNotIn("Parts", html)
+        self.assertNotIn("Docs", html)
 
 
 @tag("views")

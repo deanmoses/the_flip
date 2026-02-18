@@ -27,7 +27,7 @@ Examples of FBVs in this project: `healthz` (health check), user registration vi
 ## CBV Pattern
 
 ```python
-class MyListView(CanAccessMaintainerPortalMixin, ListView):
+class MyListView(ListView):
     """Docstring describing the view's purpose."""
 
     # Always specify template explicitly, don't rely on auto-discovery
@@ -79,15 +79,57 @@ class MyListView(CanAccessMaintainerPortalMixin, ListView):
 
 ## Access Control
 
-Protect maintainer views with `CanAccessMaintainerPortalMixin`:
+Access control is handled globally by middleware and route annotations — individual views don't need mixins or decorators for auth. See [`docs/Auth.md`](Auth.md) for the full public access system.
+
+### Route-level access with `path()`
+
+Routes in `urls.py` use `flipfix.apps.core.routing.path()` which accepts an `access=` parameter:
 
 ```python
-from flipfix.apps.core.mixins import CanAccessMaintainerPortalMixin
+from flipfix.apps.core.routing import path
 
-class MyProtectedView(CanAccessMaintainerPortalMixin, View):
-    # Only logged-in maintainers can access
-    ...
+# Default (no access=): logged-in maintainer required
+path("parts/", PartRequestListView.as_view(), name="part-request-list"),
+
+# Public when PUBLIC_ACCESS_ENABLED toggle is on
+path("machines/", MachineListView.as_view(), name="maintainer-machine-list", access="public"),
+
+# Always open — infrastructure (login, healthz, QR form, API endpoints)
+path("healthz", healthz, name="healthz", access="always_public"),
+
+# Logged-in, any role — profile, password change
+path("profile/", ProfileUpdateView.as_view(), name="profile", access="authenticated"),
+
+# Superuser only
+path("terminals/", TerminalListView.as_view(), name="terminal-list", access="superuser"),
 ```
+
+| Level         | Who                            | `access=`         |
+| ------------- | ------------------------------ | ----------------- |
+| Always public | Anyone, regardless of toggle   | `"always_public"` |
+| Public        | Unauthenticated when toggle on | `"public"`        |
+| Authenticated | Any logged-in user             | `"authenticated"` |
+| Maintainer    | Logged-in + portal permission  | `None` (default)  |
+| Superuser     | Superuser                      | `"superuser"`     |
+
+### Middleware stack
+
+1. **`LoginRequiredMiddleware`** — Django 5.1 built-in. Redirects unauthenticated users to login unless the view is marked `login_not_required` (our `path()` handles this automatically for `access="always_public"` and `access="public"`).
+2. **`MaintainerAccessMiddleware`** — checks the `can_access_maintainer_portal` permission globally. Views with `access="always_public"`, `"authenticated"`, or guest visitors on `"public"` routes are skipped automatically.
+
+Views don't need `CanAccessMaintainerPortalMixin` — it was removed in favor of middleware.
+
+See [`docs/Auth.md`](Auth.md) for the authoritative reference on the access control system.
+
+### `render_to_string` and guest-aware templates
+
+When using `render_to_string()` to render partials that contain guest-aware template logic (`{% if user.is_authenticated %}`), always pass `request=request` so the template gets a `RequestContext` with `user`:
+
+```python
+html = render_to_string("my_partial.html", context, request=request)
+```
+
+Without `request`, the `user` variable will be missing and authenticated maintainers will see the guest view.
 
 ## Form Pre-filling via Session
 
@@ -96,7 +138,7 @@ class MyProtectedView(CanAccessMaintainerPortalMixin, View):
 ```python
 from flipfix.apps.core.mixins import FormPrefillMixin
 
-class MyCreateView(FormPrefillMixin, CanAccessMaintainerPortalMixin, CreateView):
+class MyCreateView(FormPrefillMixin, CreateView):
     ...
 ```
 

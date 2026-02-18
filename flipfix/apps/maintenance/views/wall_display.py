@@ -6,13 +6,12 @@ from django.views.generic import TemplateView
 
 from flipfix.apps.catalog.models import Location
 from flipfix.apps.core.columns import build_location_columns
-from flipfix.apps.core.mixins import CanAccessMaintainerPortalMixin
 from flipfix.apps.maintenance.models import ProblemReport
 
 MIN_REFRESH_SECONDS = 10
 
 
-class WallDisplaySetupView(CanAccessMaintainerPortalMixin, TemplateView):
+class WallDisplaySetupView(TemplateView):
     """Configuration page for the wall display board."""
 
     template_name = "maintenance/wall_display_setup.html"
@@ -23,7 +22,7 @@ class WallDisplaySetupView(CanAccessMaintainerPortalMixin, TemplateView):
         return context
 
 
-class WallDisplayBoardView(CanAccessMaintainerPortalMixin, TemplateView):
+class WallDisplayBoardView(TemplateView):
     """Full-screen wall display showing open problems by location."""
 
     template_name = "maintenance/wall_display_board.html"

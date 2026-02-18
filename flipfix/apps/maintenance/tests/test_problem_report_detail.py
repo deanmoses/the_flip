@@ -40,11 +40,11 @@ class ProblemReportDetailViewTests(SuppressRequestLogsMixin, TestDataMixin, Test
         self.assertEqual(response.status_code, 302)
         self.assertIn("/login/", response.url)
 
-    def test_detail_view_requires_staff_permission(self):
-        """Non-staff users should be denied access (403)."""
+    def test_non_maintainer_can_browse_public_route(self):
+        """Non-maintainer users can browse public routes (read-only)."""
         self.client.force_login(self.regular_user)
         response = self.client.get(self.detail_url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
 
     def test_detail_view_accessible_to_staff(self):
         """Staff users should be able to access the detail page."""
@@ -825,8 +825,8 @@ class ProblemReportLogEntriesPartialViewTests(SuppressRequestLogsMixin, TestData
         self.assertFalse(data["has_next"])
         self.assertIsNone(data["next_page"])
 
-    def test_requires_staff(self):
-        """AJAX endpoint should require staff permission."""
+    def test_non_maintainer_can_browse_public_route(self):
+        """Non-maintainer users can browse public routes (read-only)."""
         self.client.force_login(self.regular_user)
         response = self.client.get(self.entries_url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)

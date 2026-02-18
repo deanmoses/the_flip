@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils.html import format_html
+from django.utils.text import Truncator
 from django.views.generic import DetailView, FormView, UpdateView
 
 from flipfix.apps.accounts.models import Maintainer
@@ -19,7 +20,6 @@ from flipfix.apps.core.datetime import apply_and_validate_timezone
 from flipfix.apps.core.markdown_links import sync_references
 from flipfix.apps.core.media_upload import attach_media_files
 from flipfix.apps.core.mixins import (
-    CanAccessMaintainerPortalMixin,
     InlineTextEditMixin,
     MediaUploadMixin,
     SharedAccountMixin,
@@ -35,7 +35,7 @@ from flipfix.apps.parts.models import (
 )
 
 
-class PartRequestUpdateCreateView(SharedAccountMixin, CanAccessMaintainerPortalMixin, FormView):
+class PartRequestUpdateCreateView(SharedAccountMixin, FormView):
     """Add an update/comment to a part request."""
 
     template_name = "parts/part_update_new.html"
@@ -123,10 +123,8 @@ class PartRequestUpdateCreateView(SharedAccountMixin, CanAccessMaintainerPortalM
         return super().form_invalid(form)
 
 
-class PartRequestUpdateDetailView(
-    InlineTextEditMixin, CanAccessMaintainerPortalMixin, MediaUploadMixin, DetailView
-):
-    """Detail view for a part request update. Maintainer-only access."""
+class PartRequestUpdateDetailView(InlineTextEditMixin, MediaUploadMixin, DetailView):
+    """Detail view for a part request update."""
 
     model = PartRequestUpdate
     template_name = "parts/part_update_detail.html"
@@ -146,6 +144,7 @@ class PartRequestUpdateDetailView(
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["part_request"] = self.object.part_request
+        context["meta_description"] = Truncator(self.object.text).chars(155)
         return context
 
     def post(self, request, *args, **kwargs):
@@ -164,7 +163,7 @@ class PartRequestUpdateDetailView(
         return JsonResponse({"success": False, "error": f"Unknown action: {action}"}, status=400)
 
 
-class PartRequestUpdateEditView(CanAccessMaintainerPortalMixin, UpdateView):
+class PartRequestUpdateEditView(UpdateView):
     """Edit a part request update's metadata (poster, timestamp)."""
 
     model = PartRequestUpdate

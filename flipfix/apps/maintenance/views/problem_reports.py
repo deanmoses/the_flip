@@ -14,6 +14,7 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
+from django.utils.text import Truncator
 from django.views import View
 from django.views.generic import DetailView, FormView, TemplateView, UpdateView
 
@@ -31,7 +32,6 @@ from flipfix.apps.core.ip import get_real_ip
 from flipfix.apps.core.markdown_links import sync_references
 from flipfix.apps.core.media_upload import attach_media_files
 from flipfix.apps.core.mixins import (
-    CanAccessMaintainerPortalMixin,
     FormPrefillMixin,
     InfiniteScrollMixin,
     InlineTextEditMixin,
@@ -50,7 +50,7 @@ from flipfix.apps.maintenance.models import (
 )
 
 
-class ProblemReportListView(CanAccessMaintainerPortalMixin, TemplateView):
+class ProblemReportListView(TemplateView):
     """Global column board of open problem reports, grouped by location."""
 
     template_name = "maintenance/problem_report_list.html"
@@ -69,10 +69,13 @@ class ProblemReportListView(CanAccessMaintainerPortalMixin, TemplateView):
         context["card_template"] = "maintenance/partials/column_problem_report_entry.html"
         context["search_form"] = SearchForm(initial={"q": query})
         context["query"] = query
+        context["meta_description"] = (
+            "Problem reports for pinball machines at The Flip, Chicago's playable pinball museum."
+        )
         return context
 
 
-class ProblemReportLogEntriesPartialView(CanAccessMaintainerPortalMixin, InfiniteScrollMixin, View):
+class ProblemReportLogEntriesPartialView(InfiniteScrollMixin, View):
     """AJAX endpoint for infinite scrolling log entries on a problem report detail page."""
 
     item_template = "maintenance/partials/problem_report_log_entry.html"
@@ -131,9 +134,7 @@ class PublicProblemReportCreateView(FormView):
         return redirect("public-problem-report-create", slug=self.machine.slug)
 
 
-class ProblemReportCreateView(
-    FormPrefillMixin, SharedAccountMixin, CanAccessMaintainerPortalMixin, FormView
-):
+class ProblemReportCreateView(FormPrefillMixin, SharedAccountMixin, FormView):
     """Maintainer-facing problem report creation (global or machine-scoped)."""
 
     template_name = "maintenance/problem_report_new.html"
@@ -222,9 +223,7 @@ class ProblemReportCreateView(
         return redirect("problem-report-detail", pk=report.pk)
 
 
-class ProblemReportDetailView(
-    InlineTextEditMixin, MediaUploadMixin, CanAccessMaintainerPortalMixin, DetailView
-):
+class ProblemReportDetailView(InlineTextEditMixin, MediaUploadMixin, DetailView):
     """Detail view for a problem report with status toggle capability. Maintainer-only access."""
 
     model = ProblemReport
@@ -257,6 +256,7 @@ class ProblemReportDetailView(
         context["log_entries"] = page_obj.object_list
         context["log_count"] = paginator.count
         context["search_query"] = search_query
+        context["meta_description"] = Truncator(self.object.description).chars(155)
         return context
 
     def post(self, request, *args, **kwargs):
@@ -439,7 +439,7 @@ class ProblemReportDetailView(
         return log_entry
 
 
-class ProblemReportEditView(CanAccessMaintainerPortalMixin, UpdateView):
+class ProblemReportEditView(UpdateView):
     """Edit a problem report's metadata (reporter, timestamp)."""
 
     model = ProblemReport

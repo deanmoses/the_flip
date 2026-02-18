@@ -9,12 +9,11 @@ from flipfix.apps.core.markdown_links import (
     get_enabled_link_types,
     get_link_type,
 )
-from flipfix.apps.core.mixins import CanAccessMaintainerPortalMixin
 
 AUTOCOMPLETE_RESULT_LIMIT = 50
 
 
-class LinkTypesView(CanAccessMaintainerPortalMixin, View):
+class LinkTypesView(View):
     """JSON endpoint returning available link types for the type picker."""
 
     def get(self, request, *args, **kwargs):
@@ -22,7 +21,7 @@ class LinkTypesView(CanAccessMaintainerPortalMixin, View):
         return JsonResponse({"types": get_autocomplete_types()})
 
 
-class LinkTargetsView(CanAccessMaintainerPortalMixin, View):
+class LinkTargetsView(View):
     """JSON endpoint for link target autocomplete.
 
     Dispatches to registered link types via the markdown_links registry.

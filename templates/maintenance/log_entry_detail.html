@@ -19,27 +19,30 @@
 {% endblock %}
 {% block mobile_actions %}
   <div class="mobile-meta">
-    <div class="mobile-meta__row text-muted text-sm">{{ entry|log_entry_meta }}</div>
+    <div class="mobile-meta__row text-muted text-sm">{% log_entry_meta entry %}</div>
   </div>
-  <a href="{% url 'log-entry-edit' entry.pk %}"
-     class="btn btn--secondary btn--full">{% icon "pen" class="meta" label="Edit Details" %}</a>
+  {% if user.is_authenticated %}
+    <a href="{% url 'log-entry-edit' entry.pk %}"
+       class="btn btn--secondary btn--full">{% icon "pen" class="meta" label="Edit Details" %}</a>
+  {% endif %}
 {% endblock %}
 {% block sidebar %}
   {% include "components/history_link.html" with history_url=entry.get_admin_history_url %}
   {% sidebar_section label="Log Entry" %}
-  <div class="sidebar__subtitle space-above-sm">{{ entry|log_entry_meta }}</div>
+  <div class="sidebar__subtitle space-above-sm">{% log_entry_meta entry %}</div>
 {% endsidebar_section %}
 {% sidebar_section label="Machine" %}
 {% if entry.problem_report %}
   {# Machine is controlled by problem report, not directly editable #}
   {% include "components/machine_sidebar_card.html" with machine=entry.machine %}
 {% else %}
-  {# Orphan log entry: machine is directly editable #}
-  {% include "components/machine_sidebar_card.html" with machine=entry.machine editable=True %}
+  {# Orphan log entry: machine is directly editable by maintainers #}
+  {% include "components/machine_sidebar_card.html" with machine=entry.machine editable=user.is_authenticated %}
 {% endif %}
 {% endsidebar_section %}
-{% sidebar_section label="Problem" %}
-{% include "components/problem_report_sidebar_card.html" with problem_report=entry.problem_report editable=True current_machine_slug=entry.machine.slug %}
+{% if user.is_authenticated %}
+  {% sidebar_section label="Problem" %}
+  {% include "components/problem_report_sidebar_card.html" with problem_report=entry.problem_report editable=True current_machine_slug=entry.machine.slug %}
 {% endsidebar_section %}
 {% sidebar_section %}
 <a href="{% url 'log-entry-edit' entry.pk %}"
@@ -48,6 +51,7 @@
   Edit Details
 </a>
 {% endsidebar_section %}
+{% endif %}
 {% endblock %}
 {% block main %}
   <!-- DESCRIPTION CARD -->
@@ -56,10 +60,12 @@
   {% include "core/partials/media_card_editable.html" with media_items=entry.media.all alt="Log entry photo" model_name="LogEntryMedia" %}
 {% endblock %}
 {% block extra_scripts %}
-  {% include "core/partials/markdown_textarea_scripts.html" %}
-  {% include "core/partials/markdown_inline_edit_scripts.html" %}
-  <script src="{% static 'core/media_grid.js' %}" defer></script>
   <script src="{% static 'core/video_transcode_poll.js' %}" defer></script>
-  <script src="{% static 'core/searchable_dropdown.js' %}" defer></script>
-  <script src="{% static 'core/sidebar_card_edit.js' %}" defer></script>
+  {% if user.is_authenticated %}
+    {% include "core/partials/markdown_textarea_scripts.html" %}
+    {% include "core/partials/markdown_inline_edit_scripts.html" %}
+    <script src="{% static 'core/media_grid.js' %}" defer></script>
+    <script src="{% static 'core/searchable_dropdown.js' %}" defer></script>
+    <script src="{% static 'core/sidebar_card_edit.js' %}" defer></script>
+  {% endif %}
 {% endblock %}

@@ -1,6 +1,7 @@
 {% extends "base_public_minimal.html" %}
 {% load ui_tags %}
 {% load humanize %}
+{% load maintenance_tags %}
 {% block title %}{{ object.name }} · {{ block.super }}{% endblock %}
 {% block content %}
   <h1 class="centered">{{ object.name }}</h1>
@@ -63,7 +64,6 @@
   </div>
   <div class="card centered">
     <h2>Having trouble with this machine?</h2>
-    <a href="{% url 'public-problem-report-create' object.slug %}"
-       class="btn btn-primary">Report a Problem</a>
+    {% report_problem_button object btn_class="btn btn--primary" label="Report a Problem" %}
   </div>
 {% endblock %}

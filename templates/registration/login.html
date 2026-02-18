@@ -1,5 +1,6 @@
 {% extends "layouts/minimal_centered.html" %}
 {% block title %}Login · The Flip{% endblock %}
+{% block extra_head %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block centered_content %}
   <div class="card card--padded">
     <form method="post" action="{% url 'login' %}" class="form-main">

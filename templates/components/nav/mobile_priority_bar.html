@@ -1,14 +1,12 @@
 {% load ui_tags %}
-{% if perms.accounts.can_access_maintainer_portal %}
-  <nav class="nav nav--priority nav--mobile" aria-label="Main navigation">
-    {% for item in nav_items %}
-      {% if item.in_mobile_bar %}
-        <a href="{% url item.url_name %}"
-           class="nav-priority__item {{ item.mobile_extra_class }} {% if item.is_active %}nav-priority__item--active{% endif %}"
-           {% if item.is_active %}aria-current="page"{% endif %}>
-          {% icon item.icon %}<span class="nav-priority__label">{{ item.label }}</span>
-        </a>
-      {% endif %}
-    {% endfor %}
-  </nav>
-{% endif %}
+<nav class="nav nav--priority nav--mobile" aria-label="Main navigation">
+  {% for item in nav_items %}
+    {% if item.in_mobile_bar %}
+      <a href="{% url item.url_name %}"
+         class="nav-priority__item {{ item.mobile_extra_class }} {% if item.is_active %}nav-priority__item--active{% endif %}"
+         {% if item.is_active %}aria-current="page"{% endif %}>
+        {% icon item.icon %}<span class="nav-priority__label">{{ item.label }}</span>
+      </a>
+    {% endif %}
+  {% endfor %}
+</nav>

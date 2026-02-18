@@ -23,7 +23,7 @@ from django.views.generic import (
 )
 
 from flipfix.apps.core.markdown_links import save_inline_markdown_field
-from flipfix.apps.core.mixins import CanAccessMaintainerPortalMixin, FormPrefillMixin
+from flipfix.apps.core.mixins import FormPrefillMixin
 
 from .actions import (
     TemplateSyncResult,
@@ -115,7 +115,7 @@ class WikiPagePathMixin:
         return page.slug
 
 
-class WikiPageDetailView(WikiPagePathMixin, CanAccessMaintainerPortalMixin, DetailView):
+class WikiPageDetailView(WikiPagePathMixin, DetailView):
     """Display a single wiki page."""
 
     model = WikiPage
@@ -159,7 +159,7 @@ class WikiPageDetailView(WikiPagePathMixin, CanAccessMaintainerPortalMixin, Deta
         return context
 
 
-class WikiHomeView(CanAccessMaintainerPortalMixin, TemplateView):
+class WikiHomeView(TemplateView):
     """Wiki home/index page."""
 
     template_name = "wiki/home.html"
@@ -177,7 +177,7 @@ class WikiHomeView(CanAccessMaintainerPortalMixin, TemplateView):
         return context
 
 
-class WikiSearchView(CanAccessMaintainerPortalMixin, ListView):
+class WikiSearchView(ListView):
     """Search wiki pages."""
 
     model = WikiPage
@@ -219,9 +219,7 @@ class WikiPageSuccessUrlMixin:
         return reverse("wiki-page-detail", args=[path])
 
 
-class WikiPageCreateView(
-    WikiPageSuccessUrlMixin, FormPrefillMixin, CanAccessMaintainerPortalMixin, CreateView
-):
+class WikiPageCreateView(WikiPageSuccessUrlMixin, FormPrefillMixin, CreateView):
     """Create a new wiki page."""
 
     model = WikiPage
@@ -264,9 +262,7 @@ class WikiPageCreateView(
         return context
 
 
-class WikiPageEditView(
-    WikiPageSuccessUrlMixin, WikiPagePathMixin, CanAccessMaintainerPortalMixin, UpdateView
-):
+class WikiPageEditView(WikiPageSuccessUrlMixin, WikiPagePathMixin, UpdateView):
     """Edit an existing wiki page."""
 
     model = WikiPage
@@ -299,7 +295,7 @@ class WikiPageEditView(
         return context
 
 
-class WikiPageDeleteView(WikiPagePathMixin, CanAccessMaintainerPortalMixin, DeleteView):
+class WikiPageDeleteView(WikiPagePathMixin, DeleteView):
     """Delete a wiki page."""
 
     model = WikiPage
@@ -325,7 +321,7 @@ class WikiPageDeleteView(WikiPagePathMixin, CanAccessMaintainerPortalMixin, Dele
         return context
 
 
-class WikiTagAutocompleteView(CanAccessMaintainerPortalMixin, View):
+class WikiTagAutocompleteView(View):
     """JSON endpoint for wiki tag autocomplete."""
 
     def get(self, request, *args, **kwargs):
@@ -366,7 +362,7 @@ def _resolve_template_tags(raw_tags: str, source_page: WikiPage) -> list[str]:
     return list(dict.fromkeys(result))
 
 
-class WikiTemplatePrefillView(CanAccessMaintainerPortalMixin, View):
+class WikiTemplatePrefillView(View):
     """Extract wiki template block content and redirect to a pre-filled create form."""
 
     def get(self, request, page_pk, template_name):
@@ -407,7 +403,7 @@ class WikiTemplatePrefillView(CanAccessMaintainerPortalMixin, View):
         return redirect(build_create_url(action))
 
 
-class WikiReorderView(CanAccessMaintainerPortalMixin, TemplateView):
+class WikiReorderView(TemplateView):
     """Dedicated page for reordering wiki docs and tags via drag-and-drop."""
 
     template_name = "wiki/reorder.html"
@@ -418,7 +414,7 @@ class WikiReorderView(CanAccessMaintainerPortalMixin, TemplateView):
         return context
 
 
-class WikiReorderSaveView(CanAccessMaintainerPortalMixin, View):
+class WikiReorderSaveView(View):
     """API endpoint to save wiki doc/tag reorder."""
 
     def post(self, request, *args, **kwargs):
@@ -451,7 +447,7 @@ class WikiReorderSaveView(CanAccessMaintainerPortalMixin, View):
         return JsonResponse({"success": True})
 
 
-class WikiTemplateListView(CanAccessMaintainerPortalMixin, View):
+class WikiTemplateListView(View):
     """JSON endpoint listing template options matching filters.
 
     Query parameters:
@@ -500,7 +496,7 @@ class WikiTemplateListView(CanAccessMaintainerPortalMixin, View):
         return JsonResponse({"templates": templates})
 
 
-class WikiTemplateContentView(CanAccessMaintainerPortalMixin, View):
+class WikiTemplateContentView(View):
     """JSON endpoint returning the content of a single template block."""
 
     def get(self, request, page_pk, template_name):
