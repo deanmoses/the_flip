@@ -28,6 +28,72 @@ from flipfix.apps.maintenance.models import ProblemReport
 SIDEBAR_STAT_LIMIT = 4
 
 
+def get_machine_list_queryset():
+    """Build the queryset for the machine list grid.
+
+    Annotates open report counts, prefetches the latest open report,
+    and orders by operational status priority, then by most recent
+    open report, then alphabetically by model name.
+
+    Used by both the maintainer machine list and the showcase machine list.
+    """
+    return (
+        MachineInstance.objects.visible()
+        .annotate(
+            open_report_count=Count(
+                "problem_reports", filter=Q(problem_reports__status=ProblemReport.Status.OPEN)
+            ),
+            latest_open_report_date=Max(
+                "problem_reports__occurred_at",
+                filter=Q(problem_reports__status=ProblemReport.Status.OPEN),
+            ),
+        )
+        .prefetch_related(
+            Prefetch(
+                "problem_reports",
+                queryset=ProblemReport.objects.filter(status=ProblemReport.Status.OPEN).order_by(
+                    "-occurred_at"
+                )[:1],
+                to_attr="latest_open_report",
+            )
+        )
+        .order_by(
+            Case(
+                When(operational_status=MachineInstance.OperationalStatus.FIXING, then=Value(1)),
+                When(operational_status=MachineInstance.OperationalStatus.BROKEN, then=Value(2)),
+                When(operational_status=MachineInstance.OperationalStatus.UNKNOWN, then=Value(3)),
+                When(operational_status=MachineInstance.OperationalStatus.GOOD, then=Value(4)),
+                default=Value(5),
+                output_field=CharField(),
+            ),
+            F("latest_open_report_date").desc(nulls_last=True),
+            Lower("model__name"),
+        )
+    )
+
+
+def get_machine_list_stats():
+    """Build sidebar stats for the machine list grid.
+
+    Returns a list of stat dicts (total + up to 3 location counts).
+    Used by both the maintainer machine list and the showcase machine list.
+    """
+    visible_machines = MachineInstance.objects.visible()
+    stats = [{"value": visible_machines.count(), "label": "Total"}]
+    for slug, label in [
+        ("floor", "Floor"),
+        ("workshop", "Workshop"),
+        ("storage", "Storage"),
+        ("hall", "Hall"),
+    ]:
+        count = visible_machines.filter(location__slug=slug).count()
+        if count > 0:
+            stats.append({"value": count, "label": label})
+        if len(stats) >= SIDEBAR_STAT_LIMIT:
+            break
+    return stats
+
+
 class MachineListView(CanAccessMaintainerPortalMixin, ListView):
     """Maintainer machine list with location stats in the sidebar."""
 
@@ -35,71 +101,11 @@ class MachineListView(CanAccessMaintainerPortalMixin, ListView):
     context_object_name = "machines"
 
     def get_queryset(self):
-        return (
-            MachineInstance.objects.visible()
-            .annotate(
-                # Count open problem reports
-                open_report_count=Count(
-                    "problem_reports", filter=Q(problem_reports__status=ProblemReport.Status.OPEN)
-                ),
-                # Get the most recent open problem report date
-                latest_open_report_date=Max(
-                    "problem_reports__occurred_at",
-                    filter=Q(problem_reports__status=ProblemReport.Status.OPEN),
-                ),
-            )
-            .prefetch_related(
-                Prefetch(
-                    "problem_reports",
-                    queryset=ProblemReport.objects.filter(
-                        status=ProblemReport.Status.OPEN
-                    ).order_by("-occurred_at")[:1],
-                    to_attr="latest_open_report",
-                )
-            )
-            .order_by(
-                # 1. Status priority: fixing, broken, unknown, good
-                Case(
-                    When(
-                        operational_status=MachineInstance.OperationalStatus.FIXING, then=Value(1)
-                    ),
-                    When(
-                        operational_status=MachineInstance.OperationalStatus.BROKEN, then=Value(2)
-                    ),
-                    When(
-                        operational_status=MachineInstance.OperationalStatus.UNKNOWN, then=Value(3)
-                    ),
-                    When(operational_status=MachineInstance.OperationalStatus.GOOD, then=Value(4)),
-                    default=Value(5),
-                    output_field=CharField(),
-                ),
-                # 2. Machines with open problem reports first (nulls last means machines with no reports come last)
-                F("latest_open_report_date").desc(nulls_last=True),
-                # 3. Within machines with open reports, sort by most recent report first (already handled by step 2)
-                # 4. Machine name as tie-breaker
-                Lower("model__name"),
-            )
-        )
+        return get_machine_list_queryset()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        visible_machines = MachineInstance.objects.visible()
-
-        # Stats for sidebar (total + location counts, max 4 to fit grid)
-        stats = [{"value": visible_machines.count(), "label": "Total"}]
-        for slug, label in [
-            ("floor", "Floor"),
-            ("workshop", "Workshop"),
-            ("storage", "Storage"),
-            ("hall", "Hall"),
-        ]:
-            count = visible_machines.filter(location__slug=slug).count()
-            if count > 0:
-                stats.append({"value": count, "label": label})
-            if len(stats) >= SIDEBAR_STAT_LIMIT:
-                break
-        context["stats"] = stats
-
+        context["stats"] = get_machine_list_stats()
         return context
 
 

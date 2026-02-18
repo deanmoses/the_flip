@@ -1,0 +1,91 @@
+{% extends "layouts/two_column.html" %}
+{% load static %}
+{% load ui_tags %}
+{% load sidebar_tags %}
+{% load list_tags %}
+{% load catalog_tags %}
+{% load maintenance_tags %}
+{% load showcase_tags %}
+{% block title %}
+  {% if report.machine %}{{ report.machine.short_display_name }} ·{% endif %}
+  Problem Report #{{ report.pk }} · {{ block.super }}
+{% endblock %}
+{% block breadcrumbs %}
+  <a href="{% url 'showcase:machines' %}">Machines</a>
+  <a href="{% url 'showcase:machine' machine.slug %}">{{ machine.short_display_name }}</a>
+  <a href="{% url 'showcase:machine' machine.slug %}?f=problems">Problems</a>
+  <span>{% icon "bug" label="Problem" %} #{{ report.pk }}</span>
+{% endblock %}
+{% block sidebar %}
+  {% sidebar_section label="Problem Report #"|addstr:report.pk %}
+  <div class="flex flex-wrap stack-tight space-above-sm">
+    {% pill label=report.get_status_display variant=report.status %}
+    {% problem_report_priority_pill report %}
+    {% problem_report_type_pill report %}
+  </div>
+  <div class="sidebar__subtitle space-above-sm">{{ report|problem_report_meta }}</div>
+{% endsidebar_section %}
+{% sidebar_section label="Machine" %}
+<a href="{% url 'showcase:machine' machine.slug %}"
+   class="sidebar-card sidebar-card--neutral">
+  <div class="sidebar-card__header">{{ machine.name }}</div>
+  <p class="sidebar-card__meta">{{ machine.model|manufacturer_year }}</p>
+  <div class="sidebar-card__badges">
+    <span class="pill {{ machine.operational_status|machine_status_css_class }}">
+      {% icon machine.operational_status|machine_status_icon class="meta" %}
+      {{ machine.get_operational_status_display }}
+    </span>
+    {% if machine.location %}
+      <span class="pill pill--neutral">
+        {% icon "location-dot" class="meta" %}
+        {{ machine.location.name }}
+      </span>
+    {% endif %}
+  </div>
+</a>
+{% endsidebar_section %}
+{% endblock %}
+{% block mobile_actions %}
+  <div class="mobile-meta">
+    <div class="mobile-meta__row">
+      {% pill label=report.get_status_display variant=report.status %}
+      {% problem_report_priority_pill report %}
+      {% problem_report_type_pill report %}
+      <span class="text-muted text-sm">{{ machine.short_display_name }}</span>
+    </div>
+    <div class="mobile-meta__row text-muted text-sm">{{ report|problem_report_meta }}</div>
+  </div>
+{% endblock %}
+{% block main %}
+  <!-- DESCRIPTION CARD -->
+  {% include "showcase/partials/description_card.html" with content=report.description %}
+  <!-- MEDIA CARD -->
+  {% include "showcase/partials/media_card.html" with media_items=report.media.all alt="Problem report photo" model_name="ProblemReportMedia" %}
+  <!-- LOG ENTRIES SECTION -->
+  <div class="space-above-lg">
+    <div class="section-header{% if not log_entries %} section-header--divider{% endif %}">
+      <h3 class="section-header__title">Log Entries</h3>
+    </div>
+    {% child_list_search total_count=log_count search_value=search_query placeholder="Search logs..." %}
+    <div id="log-container"
+         class="space-above-sm"
+         data-fetch-url="{% url 'showcase:problem-entries' report.pk %}">
+      {% if log_entries %}
+        {% timeline id="log-list" %}
+        {% for entry in log_entries %}
+          {% include "showcase/partials/log_problem_card.html" with entry=entry %}
+        {% endfor %}
+      {% endtimeline %}
+      <div id="log-pagination"
+           data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}0{% endif %}"></div>
+    {% else %}
+    {% empty_state empty_message="No log entries yet." search_message="No log entries match your search." is_search=search_query %}
+    {% endif %}
+    <div id="log-loading" class="hidden">Loading…</div>
+    <div id="log-sentinel"></div>
+  </div>
+{% endblock %}
+{% block extra_scripts %}
+  <script src="{% static 'core/infinite_scroll.js' %}" defer></script>
+  <script src="{% static 'core/video_transcode_poll.js' %}" defer></script>
+{% endblock %}

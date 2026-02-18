@@ -1,0 +1,36 @@
+{% extends "layouts/two_column.html" %}
+{% load static %}
+{% load ui_tags %}
+{% load sidebar_tags %}
+{% load list_tags %}
+{% block title %}Machines · {{ block.super }}{% endblock %}
+{% block sidebar %}
+  {% sidebar_section label="Machines" %}
+  {% stat_grid stats=stats %}
+{% endsidebar_section %}
+{% endblock %}
+{% block main %}
+  <!-- SEARCH BAR -->
+  <div class="filter-bar">
+    <div class="filter-bar__search filter-bar__search--full">
+      <input type="search"
+             id="machine-search"
+             placeholder="Search machines..."
+             class="filter-bar__search-input">
+      {% icon "magnifying-glass" class="filter-bar__search-icon" %}
+    </div>
+  </div>
+  <!-- MACHINE LIST -->
+  {% if machines %}
+    <div class="machine-list" id="machine-list">
+      {% for machine in machines %}
+        {% include "showcase/partials/machine_card.html" with machine=machine %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-muted">No machines yet.</p>
+  {% endif %}
+{% endblock %}
+{% block extra_scripts %}
+  <script src="{% static 'core/machine_filter.js' %}" defer></script>
+{% endblock %}

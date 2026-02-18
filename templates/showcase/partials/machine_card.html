@@ -1,0 +1,38 @@
+{% load ui_tags %}
+{% load catalog_tags %}
+{% load maintenance_tags %}
+<article class="machine-card"
+         data-search-text="{{ machine.name }} {{ machine.model.year }} {{ machine.model.manufacturer }} {{ machine.get_operational_status_display }}{% if machine.location %} {{ machine.location.name }}{% endif %}{% if machine.latest_open_report %} {{ machine.latest_open_report.0.description }}{% endif %}">
+  <a href="{% url 'showcase:machine' machine.slug %}"
+     class="machine-card__link">
+    <span class="machine-card__title">{{ machine.name }}</span>
+    <div class="machine-card__pills">
+      <span class="pill {{ machine.operational_status|machine_status_css_class }}">
+        {% icon machine.operational_status|machine_status_icon class="meta" %}
+        {{ machine.get_operational_status_display }}
+      </span>
+      {% if machine.location %}
+        <span class="pill pill--neutral">
+          {% icon "location-dot" class="meta" %}
+          {{ machine.location.name }}
+        </span>
+      {% endif %}
+    </div>
+  </a>
+  <div class="machine-card__actions">
+    <a href="{% url 'public-problem-report-create' machine.slug %}"
+       class="btn btn--secondary btn--sm"
+       title="Report a problem">
+      {% icon "bug" %}
+      <span class="machine-card__btn-text--short">Report</span>
+      <span class="machine-card__btn-text--long">Report Problem</span>
+    </a>
+  </div>
+  {% if machine.latest_open_report %}
+    <a href="{% url 'showcase:problem' machine.latest_open_report.0.pk %}"
+       class="machine-card__problem">
+      <span class="snippet-label text-problem">{% icon "bug" %}Problem:</span>
+      <span class="snippet-text">{{ machine.latest_open_report.0|problem_report_summary }}</span>
+    </a>
+  {% endif %}
+</article>

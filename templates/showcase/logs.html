@@ -1,0 +1,64 @@
+{% extends "layouts/two_column.html" %}
+{% load static %}
+{% load ui_tags %}
+{% load sidebar_tags %}
+{% block title %}Logs · {{ block.super }}{% endblock %}
+{% block sidebar %}
+  {% sidebar_section %}
+  <div class="sidebar__label">Log Entries</div>
+  <div class="stat-grid">
+    <div class="stat">
+      <span class="stat__value">{{ this_week_count }}</span>
+      <span class="stat__label">This Week</span>
+    </div>
+    <div class="stat">
+      <span class="stat__value">{{ total_count }}</span>
+      <span class="stat__label">Total</span>
+    </div>
+  </div>
+{% endsidebar_section %}
+{% endblock %}
+{% block main %}
+  <!-- SEARCH BAR -->
+  <div class="filter-bar">
+    <div class="filter-bar__search filter-bar__search--full">
+      <form method="get" action="">
+        <input type="search"
+               name="q"
+               placeholder="Search..."
+               value="{{ search_form.q.value|default:'' }}"
+               class="filter-bar__search-input">
+        {% icon "magnifying-glass" class="filter-bar__search-icon" %}
+      </form>
+    </div>
+  </div>
+  <!-- LIST CONTENT -->
+  <div id="log-container" data-fetch-url="{% url 'showcase:log-entries' %}">
+    {% if log_entries %}
+      <div class="timeline">
+        <div class="timeline__line"></div>
+        <div id="log-list">
+          {% for entry in log_entries %}
+            {% include "showcase/partials/log_global_card.html" with entry=entry %}
+          {% endfor %}
+        </div>
+      </div>
+      <div id="log-pagination"
+           data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}0{% endif %}"></div>
+    {% else %}
+      <p class="text-muted">
+        {% if search_form.q.value %}
+          No log entries match your search.
+        {% else %}
+          No log entries yet.
+        {% endif %}
+      </p>
+    {% endif %}
+  </div>
+  <div id="log-loading" class="hidden">Loading…</div>
+  <div id="log-sentinel"></div>
+{% endblock %}
+{% block extra_scripts %}
+  <script src="{% static 'core/infinite_scroll.js' %}" defer></script>
+  <script src="{% static 'core/video_transcode_poll.js' %}" defer></script>
+{% endblock extra_scripts %}

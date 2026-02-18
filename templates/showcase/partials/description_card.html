@@ -1,0 +1,15 @@
+{# Read-only description card for showcase pages #}
+{# Usage: {% include "showcase/partials/description_card.html" with content=entry.text %} #}
+{% load showcase_tags %}
+<div class="card card--padded">
+  <div class="card__header">
+    <div class="card__title">Description</div>
+  </div>
+  <div class="markdown-content">
+    {% if content %}
+      {{ content|render_markdown_showcase }}
+    {% else %}
+      <p class="text-muted">No description provided.</p>
+    {% endif %}
+  </div>
+</div>

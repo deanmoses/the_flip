@@ -1,0 +1,27 @@
+{# Read-only media card for showcase pages (no upload/delete) #}
+{# Usage: {% include "showcase/partials/media_card.html" with media_items=entry.media.all alt="Log entry photo" model_name="LogEntryMedia" %} #}
+{% load video_tags %}
+{% if media_items %}
+  <div class="card card--padded space-above-lg">
+    <div class="card__header">
+      <div class="card__title">Media</div>
+    </div>
+    <div class="media-grid">
+      {% for media in media_items %}
+        <div class="media-grid__item">
+          {% if media.media_type == media.MediaType.VIDEO %}
+            {% video_player media=media model_name=model_name|default:"LogEntryMedia" %}
+          {% else %}
+            <a href="{{ media.file.url }}" target="_blank">
+              {% if media.thumbnail_file %}
+                <img src="{{ media.thumbnail_file.url }}" alt="{{ alt|default:'Photo' }}">
+              {% else %}
+                <img src="{{ media.file.url }}" alt="{{ alt|default:'Photo' }}">
+              {% endif %}
+            </a>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}

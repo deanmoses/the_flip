@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "flipfix.apps.parts",
     "flipfix.apps.discord",
     "flipfix.apps.wiki",
+    "flipfix.apps.showcase",
 ]
 
 MIDDLEWARE = [
@@ -160,6 +161,8 @@ CONSTANCE_CONFIG = {
         "Master switch for all Discord webhook notifications",
         bool,
     ),
+    # Public showcase
+    "SHOWCASE_ENABLED": (False, "Enable public showcase at /visit/", bool),
 }
 
 CONSTANCE_CONFIG_FIELDSETS = (
@@ -178,6 +181,10 @@ CONSTANCE_CONFIG_FIELDSETS = (
             "DISCORD_GUILD_ID",
             "ANTHROPIC_API_KEY",
         ),
+    ),
+    (
+        "Public Showcase",
+        ("SHOWCASE_ENABLED",),
     ),
 )
 

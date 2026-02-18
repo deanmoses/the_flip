@@ -2660,6 +2660,13 @@ body {
   flex-direction: column;
 }
 
+/* Showcase nav: always visible and centered (only 3 items, fits on mobile) */
+.nav--showcase {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+}
+
 .centered-container {
   flex: 1;
   display: flex;

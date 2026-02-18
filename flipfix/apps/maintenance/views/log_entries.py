@@ -62,6 +62,28 @@ def get_log_entry_queryset(search_query: str = ""):
     return queryset
 
 
+def get_log_list_context(request):
+    """Build shared context for the global log entry list page.
+
+    Used by both the maintainer log list and the showcase log list.
+    """
+    search_query = request.GET.get("q", "").strip()
+    logs = get_log_entry_queryset(search_query)
+
+    paginator = Paginator(logs, settings.LIST_PAGE_SIZE)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    week_ago = datetime.now(UTC) - timedelta(days=7)
+
+    return {
+        "page_obj": page_obj,
+        "log_entries": page_obj.object_list,
+        "search_form": SearchForm(initial={"q": search_query}),
+        "this_week_count": LogEntry.objects.filter(occurred_at__gte=week_ago).count(),
+        "total_count": LogEntry.objects.count(),
+    }
+
+
 class MachineLogCreateView(
     FormPrefillMixin, SharedAccountMixin, CanAccessMaintainerPortalMixin, FormView
 ):
@@ -262,26 +284,7 @@ class LogListView(CanAccessMaintainerPortalMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        search_query = self.request.GET.get("q", "").strip()
-        logs = get_log_entry_queryset(search_query)
-
-        paginator = Paginator(logs, settings.LIST_PAGE_SIZE)
-        page_obj = paginator.get_page(self.request.GET.get("page"))
-
-        # Stats for sidebar
-        week_ago = datetime.now(UTC) - timedelta(days=7)
-        this_week_count = LogEntry.objects.filter(occurred_at__gte=week_ago).count()
-        total_count = LogEntry.objects.count()
-
-        context.update(
-            {
-                "page_obj": page_obj,
-                "log_entries": page_obj.object_list,
-                "search_form": SearchForm(initial={"q": search_query}),
-                "this_week_count": this_week_count,
-                "total_count": total_count,
-            }
-        )
+        context.update(get_log_list_context(self.request))
         return context
 
 

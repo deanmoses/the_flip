@@ -50,6 +50,60 @@ from flipfix.apps.maintenance.models import (
 )
 
 
+def get_problem_log_entry_queryset(problem_report: ProblemReport, search_query: str = ""):
+    """Build the queryset for log entries on a problem report.
+
+    Used by both the detail view and the infinite scroll partial view
+    (in both the maintainer and showcase apps) to ensure consistent
+    filtering, prefetching, and ordering.
+    """
+    return (
+        LogEntry.objects.filter(problem_report=problem_report)
+        .search_for_problem_report(search_query)
+        .select_related("machine")
+        .prefetch_related("maintainers__user", "media")
+        .order_by("-occurred_at")
+    )
+
+
+def get_problem_board_context(request, max_results_per_column=20):
+    """Build shared context for the problem report column board.
+
+    Used by both the maintainer problem list and the showcase problem list.
+    """
+    query = request.GET.get("q", "").strip()
+    reports = ProblemReport.objects.search(query).for_open_by_location()
+    return {
+        "columns": build_location_columns(
+            reports,
+            Location.objects.all(),
+            include_empty_columns=False,
+            max_results_per_column=max_results_per_column,
+        ),
+        "search_form": SearchForm(initial={"q": query}),
+        "query": query,
+    }
+
+
+def get_problem_detail_context(problem_report, request):
+    """Build shared context for a problem report detail page.
+
+    Used by both the maintainer detail view and the showcase detail view.
+    """
+    search_query = request.GET.get("q", "").strip()
+    log_entries = get_problem_log_entry_queryset(problem_report, search_query)
+    paginator = Paginator(log_entries, settings.LIST_PAGE_SIZE)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    return {
+        "machine": problem_report.machine,
+        "page_obj": page_obj,
+        "log_entries": page_obj.object_list,
+        "log_count": paginator.count,
+        "search_query": search_query,
+    }
+
+
 class ProblemReportListView(CanAccessMaintainerPortalMixin, TemplateView):
     """Global column board of open problem reports, grouped by location."""
 
@@ -58,17 +112,8 @@ class ProblemReportListView(CanAccessMaintainerPortalMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        query = self.request.GET.get("q", "").strip()
-        reports = ProblemReport.objects.search(query).for_open_by_location()
-        context["columns"] = build_location_columns(
-            reports,
-            Location.objects.all(),
-            include_empty_columns=False,
-            max_results_per_column=self.max_results_per_column,
-        )
+        context.update(get_problem_board_context(self.request, self.max_results_per_column))
         context["card_template"] = "maintenance/partials/column_problem_report_entry.html"
-        context["search_form"] = SearchForm(initial={"q": query})
-        context["query"] = query
         return context
 
 
@@ -79,13 +124,7 @@ class ProblemReportLogEntriesPartialView(CanAccessMaintainerPortalMixin, Infinit
 
     def get_queryset(self):
         problem_report = get_object_or_404(ProblemReport, pk=self.kwargs["pk"])
-        return (
-            LogEntry.objects.filter(problem_report=problem_report)
-            .search_for_problem_report(self.request.GET.get("q", ""))
-            .select_related("machine")
-            .prefetch_related("maintainers__user", "media")
-            .order_by("-occurred_at")
-        )
+        return get_problem_log_entry_queryset(problem_report, self.request.GET.get("q", ""))
 
 
 class PublicProblemReportCreateView(FormView):
@@ -240,23 +279,7 @@ class ProblemReportDetailView(
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        search_query = self.request.GET.get("q", "").strip()
-        log_entries = (
-            LogEntry.objects.filter(problem_report=self.object)
-            .search_for_problem_report(search_query)
-            .select_related("machine")
-            .prefetch_related("maintainers__user", "media")
-            .order_by("-occurred_at")
-        )
-        paginator = Paginator(log_entries, settings.LIST_PAGE_SIZE)
-        page_obj = paginator.get_page(self.request.GET.get("page"))
-
-        context["machine"] = self.object.machine
-        context["page_obj"] = page_obj
-        context["log_entries"] = page_obj.object_list
-        context["log_count"] = paginator.count
-        context["search_query"] = search_query
+        context.update(get_problem_detail_context(self.object, self.request))
         return context
 
     def post(self, request, *args, **kwargs):

@@ -1,0 +1,65 @@
+{% extends "layouts/two_column.html" %}
+{% load ui_tags %}
+{% load sidebar_tags %}
+{% load showcase_tags %}
+{% load catalog_tags %}
+{% block title %}
+  {% if entry.machine %}{{ entry.machine.short_display_name }} ·{% endif %}
+  Log #{{ entry.pk }} · {{ block.super }}
+{% endblock %}
+{% block breadcrumbs %}
+  <a href="{% url 'showcase:machines' %}">Machines</a>
+  <a href="{% url 'showcase:machine' entry.machine.slug %}">{{ entry.machine.short_display_name }}</a>
+  {% if entry.problem_report %}
+    <a href="{% url 'showcase:problem' entry.problem_report.pk %}">{% icon "bug" label="Problem" %} #{{ entry.problem_report.pk }}</a>
+  {% else %}
+    <a href="{% url 'showcase:machine' entry.machine.slug %}?f=logs">Logs</a>
+  {% endif %}
+  <span>Log Entry {% icon "screwdriver-wrench" %}</span>
+{% endblock %}
+{% block mobile_actions %}
+  <div class="mobile-meta">
+    <div class="mobile-meta__row text-muted text-sm">{{ entry|log_entry_meta }}</div>
+  </div>
+{% endblock %}
+{% block sidebar %}
+  {% sidebar_section label="Log Entry" %}
+  <div class="sidebar__subtitle space-above-sm">{{ entry|log_entry_meta }}</div>
+{% endsidebar_section %}
+{% sidebar_section label="Machine" %}
+<a href="{% url 'showcase:machine' entry.machine.slug %}"
+   class="sidebar-card sidebar-card--neutral">
+  <div class="sidebar-card__header">{{ entry.machine.name }}</div>
+  <p class="sidebar-card__meta">{{ entry.machine.model|manufacturer_year }}</p>
+  <div class="sidebar-card__badges">
+    <span class="pill {{ entry.machine.operational_status|machine_status_css_class }}">
+      {% icon entry.machine.operational_status|machine_status_icon class="meta" %}
+      {{ entry.machine.get_operational_status_display }}
+    </span>
+    {% if entry.machine.location %}
+      <span class="pill pill--neutral">
+        {% icon "location-dot" class="meta" %}
+        {{ entry.machine.location.name }}
+      </span>
+    {% endif %}
+  </div>
+</a>
+{% endsidebar_section %}
+{% if entry.problem_report %}
+  {% sidebar_section label="Problem" %}
+  <a href="{% url 'showcase:problem' entry.problem_report.pk %}"
+     class="sidebar-card sidebar-card--neutral">
+    <div class="sidebar-card__header">Problem Report #{{ entry.problem_report.pk }}</div>
+    <div class="sidebar-card__badges">
+      {% pill label=entry.problem_report.get_status_display variant=entry.problem_report.status %}
+    </div>
+  </a>
+{% endsidebar_section %}
+{% endif %}
+{% endblock %}
+{% block main %}
+  <!-- DESCRIPTION CARD -->
+  {% include "showcase/partials/description_card.html" with content=entry.text %}
+  <!-- MEDIA CARD -->
+  {% include "showcase/partials/media_card.html" with media_items=entry.media.all alt="Log entry photo" model_name="LogEntryMedia" %}
+{% endblock %}

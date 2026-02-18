@@ -1,0 +1,127 @@
+{% extends "base_showcase.html" %}
+{% load static %}
+{% load ui_tags %}
+{% load list_tags %}
+{% load catalog_tags %}
+{% block title %}{{ machine.short_display_name }}{{ title_suffix }} · {{ block.super }}{% endblock %}
+{% block content %}
+  <!-- BREADCRUMBS -->
+  <nav class="breadcrumbs breadcrumbs--responsive">
+    <a href="{% url 'showcase:machines' %}">Machines</a>
+    {% if breadcrumb_label %}
+      <a href="{% url 'showcase:machine' machine.slug %}">{{ machine.short_display_name }}</a>
+      <span>{{ breadcrumb_label }}</span>
+    {% else %}
+      <span>{{ machine.short_display_name }}</span>
+    {% endif %}
+  </nav>
+  <!-- TWO COLUMN LAYOUT: Main Content + Sidebar -->
+  <div class="two-column">
+    <!-- SIDEBAR (desktop only) -->
+    <aside class="two-column__sidebar">
+      <div class="card card--padded sidebar--sticky">
+        <!-- MACHINE INFO -->
+        <div class="sidebar__section">
+          <div class="sidebar__title">{{ machine.name }}</div>
+          <div class="sidebar__subtitle">{{ machine.model|manufacturer_year }}</div>
+          <div class="flex flex-wrap stack-tight space-above-sm">
+            <span class="pill {{ machine.operational_status|machine_status_css_class }}">
+              {% icon machine.operational_status|machine_status_icon class="meta" %}
+              {{ machine.get_operational_status_display }}
+            </span>
+            {% if machine.location %}
+              <span class="pill pill--neutral">
+                {% icon "location-dot" class="meta" %}
+                {{ machine.location.name }}
+              </span>
+            {% endif %}
+          </div>
+        </div>
+        <!-- ACTIONS -->
+        <div class="sidebar__section">
+          <a href="{% url 'public-problem-report-create' machine.slug %}"
+             class="btn btn--report btn--full">
+            {% icon "bug" class="meta" %}
+            Report Problem
+          </a>
+        </div>
+      </div>
+    </aside>
+    <!-- MAIN COLUMN -->
+    <div class="two-column__main">
+      <!-- MOBILE MACHINE INFO -->
+      <div class="mobile-actions">
+        <div class="flex flex-wrap stack-tight">
+          <span class="pill {{ machine.operational_status|machine_status_css_class }}">
+            {% icon machine.operational_status|machine_status_icon class="meta" %}
+            {{ machine.get_operational_status_display }}
+          </span>
+          {% if machine.location %}
+            <span class="pill pill--neutral">
+              {% icon "location-dot" class="meta" %}
+              {{ machine.location.name }}
+            </span>
+          {% endif %}
+        </div>
+        <a href="{% url 'public-problem-report-create' machine.slug %}"
+           class="btn btn--report">
+          {% icon "bug" class="meta" %}
+          Report
+        </a>
+      </div>
+      <!-- FILTER BAR -->
+      <div class="filter-bar">
+        <!-- Filter Buttons -->
+        <div class="filter-bar__filters">
+          <a href="{% url 'showcase:machine' machine.slug %}"
+             class="pill pill--filter {% if active_filter == 'all' %}pill--filter-active{% else %}pill--neutral{% endif %}">
+            {% icon "list" %} All Activity
+          </a>
+          <a href="{% url 'showcase:machine' machine.slug %}?f=problems"
+             class="pill pill--filter {% if active_filter == 'problems' %}pill--filter-active{% else %}pill--neutral{% endif %}">
+            {% icon "bug" %}
+            Problems
+          </a>
+          <a href="{% url 'showcase:machine' machine.slug %}?f=logs"
+             class="pill pill--filter {% if active_filter == 'logs' %}pill--filter-active{% else %}pill--neutral{% endif %}">
+            {% icon "screwdriver-wrench" %}
+            Logs
+          </a>
+        </div>
+        <!-- Search Box -->
+        <div class="filter-bar__search">
+          <form method="get" action="">
+            {% if active_filter != 'all' %}<input type="hidden" name="f" value="{{ active_filter }}">{% endif %}
+            <input type="search"
+                   name="q"
+                   placeholder="Search..."
+                   value="{{ search_form.q.value|default:'' }}"
+                   class="filter-bar__search-input">
+            {% icon "magnifying-glass" class="filter-bar__search-icon" %}
+          </form>
+        </div>
+      </div>
+      <!-- FEED CONTENT (Timeline) -->
+      <div id="log-container"
+           data-fetch-url="{% url 'showcase:machine-entries' machine.slug %}">
+        {% if entries %}
+          {% timeline id="log-list" entry_types=entry_types %}
+          {% for entry in entries %}
+            {% include "showcase/partials/feed_card.html" with entry=entry %}
+          {% endfor %}
+        {% endtimeline %}
+      {% else %}
+      {% empty_state empty_message=empty_message search_message=search_empty_message is_search=search_form.q.value %}
+      {% endif %}
+      <div id="log-pagination"
+           data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}0{% endif %}"></div>
+    </div>
+    <div id="log-loading" class="hidden">Loading...</div>
+    <div id="log-sentinel"></div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+  <script src="{% static 'core/infinite_scroll.js' %}" defer></script>
+  <script src="{% static 'core/video_transcode_poll.js' %}" defer></script>
+{% endblock extra_scripts %}

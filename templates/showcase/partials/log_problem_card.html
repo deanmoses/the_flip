@@ -1,0 +1,18 @@
+{# Log card on the problem detail page (anonymized) #}
+{% load list_tags %}
+{% load showcase_tags %}
+{% timeline_entry icon="screwdriver-wrench" variant="log" %}
+<article class="card card--log timeline__card">
+  <a href="{% url 'showcase:log' entry.pk %}" class="timeline__card-link">
+    <div class="timeline__header">
+      <span class="timeline__title timeline__title--log">Log Entry</span>
+      <span class="timeline__meta">{{ entry|log_entry_meta }}</span>
+    </div>
+  </a>
+  <div class="timeline__body markdown-content markdown-content--compact">{{ entry.text|render_markdown_showcase }}</div>
+  {% if entry.media.all %}
+    {% url 'showcase:log' entry.pk as entry_url %}
+    {% include "core/partials/media_grid_readonly.html" with media_items=entry.media.all detail_url=entry_url model_name="LogEntryMedia" %}
+  {% endif %}
+</article>
+{% endtimeline_entry %}

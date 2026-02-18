@@ -125,13 +125,17 @@ def fenced_code_ranges(content: str) -> list[tuple[int, int]]:
     ]
 
 
-def render_markdown_html(text: str) -> str:
+def render_markdown_html(text: str, *, live_links: bool = True) -> str:
     """Convert markdown text to sanitized HTML.
 
     Full pipeline: wiki links → markdown (with linkify) → nh3 → checkboxes.
 
     Args:
         text: Raw markdown text (may contain ``[[type:ref]]`` links).
+        live_links: When ``True`` (default), ``[[type:ref]]`` links render as
+            clickable markdown links. When ``False``, they render as plain text
+            labels (no URLs). Use ``False`` for public/anonymous contexts where
+            internal URLs would be inaccessible.
 
     Returns:
         Sanitized HTML ``SafeString``, safe for direct use in templates.
@@ -141,7 +145,7 @@ def render_markdown_html(text: str) -> str:
     # Convert [[type:ref]] links to markdown links (before markdown processing)
     from flipfix.apps.core.markdown_links import render_all_links
 
-    text = render_all_links(text)
+    text = render_all_links(text, plain_text=not live_links)
     # Convert markdown to HTML (bare URLs are auto-linked during parsing)
     html = _md.render(text)
     # Sanitize to prevent XSS

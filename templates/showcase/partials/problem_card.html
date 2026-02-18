@@ -1,0 +1,40 @@
+{# Problem card for the machine activity feed (anonymized) #}
+{% load ui_tags %}
+{% load list_tags %}
+{% load maintenance_tags %}
+{% load showcase_tags %}
+{% timeline_entry icon="bug" variant="problem" %}
+<div class="card card--problem timeline__card">
+  <a href="{% url 'showcase:problem' entry.pk %}"
+     class="timeline__card-link">
+    <div class="timeline__header">
+      <div class="flex items-center stack-tight">
+        <span class="timeline__title timeline__title--problem">Problem</span>
+        <span class="badge {% if entry.status == entry.Status.OPEN %}badge--warning{% else %}badge--success{% endif %}">
+          {{ entry.get_status_display }}
+        </span>
+        {% problem_report_priority_pill entry %}
+      </div>
+      <span class="timeline__meta">{{ entry|problem_report_meta }}</span>
+    </div>
+  </a>
+  <div class="timeline__body {% if entry.media.all or entry.prefetched_log_entries %}space-below-sm{% endif %} markdown-content markdown-content--compact">
+    {% if entry.description %}
+      {{ entry.description|render_markdown_showcase }}
+    {% else %}
+      {{ entry|problem_report_summary }}
+    {% endif %}
+  </div>
+  {% url 'showcase:problem' entry.pk as entry_url %}
+  {% include "core/partials/media_grid_readonly.html" with media_items=entry.media.all detail_url=entry_url model_name="ProblemReportMedia" %}
+  {% if entry.prefetched_log_entries %}
+    {% with latest_log=entry.prefetched_log_entries.0 %}
+      <a href="{% url 'showcase:log' latest_log.pk %}"
+         class="timeline__snippet-link">
+        <span class="snippet-label text-log">{% icon "screwdriver-wrench" %}Latest:</span>
+        <span class="snippet-text">{{ latest_log.text|truncatewords:15 }}</span>
+      </a>
+    {% endwith %}
+  {% endif %}
+</div>
+{% endtimeline_entry %}

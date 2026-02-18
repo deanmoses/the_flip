@@ -1,0 +1,19 @@
+{% extends "base_minimal.html" %}
+{% load static showcase_tags %}
+{% block extra_head %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block core_scripts %}
+  <script src="{% static 'core/core.js' %}" defer></script>
+{% endblock %}
+{% block body %}
+  <header class="app-header">
+    <a href="{% url 'showcase:machines' %}">
+      <img src="{% static 'core/images/logo_blue.svg' %}"
+           alt="The Flip"
+           class="brand-logo">
+    </a>
+    {% showcase_nav %}
+  </header>
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+{% endblock %}

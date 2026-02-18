@@ -1,0 +1,7 @@
+<nav class="nav nav--showcase" aria-label="Showcase navigation">
+  {% for item in nav_items %}
+    <a href="{% url item.url_name %}"
+       class="nav-link{% if item.is_active %} nav-link--active{% endif %}"
+       {% if item.is_active %}aria-current="page"{% endif %}>{{ item.label }}</a>
+  {% endfor %}
+</nav>
