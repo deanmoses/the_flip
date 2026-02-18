@@ -19,7 +19,7 @@
 {% endblock %}
 {% block sidebar %}
   {% sidebar_section label="Log Entry" %}
-  <div class="sidebar__subtitle space-above-sm">{{ entry|log_entry_meta }}</div>
+  <div class="sidebar__subtitle space-above-sm">{% log_entry_meta entry %}</div>
 {% endsidebar_section %}
 {% sidebar_section label="Machine" %}
 {% include "components/machine_sidebar_card.html" with machine=machine %}

@@ -6,11 +6,13 @@ import mimetypes
 from pathlib import Path
 
 from django.conf import settings
+from django.contrib.auth.decorators import login_not_required
 from django.core.exceptions import SuspiciousFileOperation
 from django.http import FileResponse, Http404
 from django.utils._os import safe_join
 
 
+@login_not_required  # uses re_path, can't use access= on our path()
 def serve_media(request, path: str):
     """Serve user-uploaded media files from MEDIA_ROOT."""
     if not getattr(settings, "MEDIA_ROOT", None):

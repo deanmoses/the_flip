@@ -8,11 +8,13 @@
      data-model-name="{{ model_name|default:'LogEntryMedia' }}">
   <div class="card__header">
     <div class="card__title">Media</div>
-    <div class="card__actions">
-      <button type="button"
-              class="btn btn--secondary btn--sm"
-              data-media-upload-btn>Upload</button>
-    </div>
+    {% if user.is_authenticated %}
+      <div class="card__actions">
+        <button type="button"
+                class="btn btn--secondary btn--sm"
+                data-media-upload-btn>Upload</button>
+      </div>
+    {% endif %}
   </div>
   <div class="media-grid" data-media-container>
     {% if media_items %}
@@ -29,19 +31,23 @@
               {% endif %}
             </a>
           {% endif %}
-          <button type="button"
-                  class="media-grid__delete"
-                  data-media-id="{{ media.id }}"
-                  aria-label="Delete media">×</button>
+          {% if user.is_authenticated %}
+            <button type="button"
+                    class="media-grid__delete"
+                    data-media-id="{{ media.id }}"
+                    aria-label="Delete media">×</button>
+          {% endif %}
         </div>
       {% endfor %}
     {% else %}
       <p class="text-muted" data-no-media-message>No media.</p>
     {% endif %}
   </div>
-  <input type="file"
-         accept="{% media_accept %}"
-         multiple
-         class="hidden"
-         data-media-file-input>
+  {% if user.is_authenticated %}
+    <input type="file"
+           accept="{% media_accept %}"
+           multiple
+           class="hidden"
+           data-media-file-input>
+  {% endif %}
 </div>

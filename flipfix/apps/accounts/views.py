@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, cast
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
@@ -11,8 +10,6 @@ from django.urls import reverse, reverse_lazy
 from django.utils.html import format_html
 from django.views import View
 from django.views.generic import FormView, ListView, UpdateView
-
-from flipfix.apps.core.mixins import CanManageTerminalsMixin
 
 from .forms import (
     InvitationRegistrationForm,
@@ -77,7 +74,7 @@ def invitation_register(request, token):
     )
 
 
-class ProfileUpdateView(SuccessMessageMixin, LoginRequiredMixin, UpdateView):
+class ProfileUpdateView(SuccessMessageMixin, UpdateView):
     """Allow users to update their profile information."""
 
     form_class = ProfileForm
@@ -89,7 +86,7 @@ class ProfileUpdateView(SuccessMessageMixin, LoginRequiredMixin, UpdateView):
         return self.request.user
 
 
-class TerminalListView(CanManageTerminalsMixin, ListView):
+class TerminalListView(ListView):
     """List all shared terminal accounts."""
 
     template_name = "accounts/terminal_list.html"
@@ -99,7 +96,7 @@ class TerminalListView(CanManageTerminalsMixin, ListView):
         return Maintainer.objects.filter(is_shared_account=True).select_related("user")
 
 
-class TerminalLoginView(CanManageTerminalsMixin, View):
+class TerminalLoginView(View):
     """Log in as a shared terminal account."""
 
     def post(self, request, pk):
@@ -111,7 +108,7 @@ class TerminalLoginView(CanManageTerminalsMixin, View):
         return redirect("home")
 
 
-class TerminalCreateView(CanManageTerminalsMixin, FormView):
+class TerminalCreateView(FormView):
     """Create a new shared terminal account."""
 
     template_name = "accounts/terminal_form.html"
@@ -147,7 +144,7 @@ class TerminalCreateView(CanManageTerminalsMixin, FormView):
         return super().form_valid(form)
 
 
-class TerminalUpdateView(CanManageTerminalsMixin, FormView):
+class TerminalUpdateView(FormView):
     """Edit a shared terminal account."""
 
     template_name = "accounts/terminal_form.html"
@@ -187,7 +184,7 @@ class TerminalUpdateView(CanManageTerminalsMixin, FormView):
         return super().form_valid(form)
 
 
-class TerminalDeactivateView(CanManageTerminalsMixin, View):
+class TerminalDeactivateView(View):
     """Deactivate a shared terminal account."""
 
     def post(self, request, pk):
@@ -205,7 +202,7 @@ class TerminalDeactivateView(CanManageTerminalsMixin, View):
         return redirect("terminal-list")
 
 
-class TerminalReactivateView(CanManageTerminalsMixin, View):
+class TerminalReactivateView(View):
     """Reactivate a shared terminal account."""
 
     def post(self, request, pk):

@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
-from django.urls import path, re_path
+from django.urls import re_path
 from django.views.generic import RedirectView
 
 from flipfix.apps.accounts.forms import SimplePasswordChangeForm
@@ -28,6 +28,7 @@ from flipfix.apps.catalog.views import (
 )
 from flipfix.apps.catalog.views_inline import MachineInlineUpdateView
 from flipfix.apps.core.admin_views import admin_debug_view
+from flipfix.apps.core.routing import path
 from flipfix.apps.core.views.feed import GlobalActivityFeedPartialView
 from flipfix.apps.core.views.health import healthz
 from flipfix.apps.core.views.home import HomeView
@@ -94,39 +95,51 @@ from flipfix.apps.wiki.views import (
 from flipfix.views import serve_media
 
 urlpatterns = [
-    #
+    ###
     # Home and health check
-    #
-    path("", HomeView.as_view(), name="home"),  # Landing page
+    ###
+    # Landing page
+    path("", HomeView.as_view(), name="home", access="always_public"),
+    # AJAX: infinite scroll for global activity feed
     path(
         "activity/entries/",
         GlobalActivityFeedPartialView.as_view(),
         name="global-activity-feed-entries",
-    ),  # AJAX: infinite scroll for global activity feed
-    path("healthz", healthz, name="healthz"),  # Health check for Railway
-    #
+    ),
+    # Health check for Railway
+    path("healthz", healthz, name="healthz", access="always_public"),
+    ###
     # Django admin
-    #
-    path("admin/tools/debug/", admin_debug_view, name="admin-debug-dashboard"),  # Debug dashboard
-    path("admin/", admin.site.urls),  # Django admin app
-    #
+    ###
+    # Debug dashboard
+    path("admin/tools/debug/", admin_debug_view, name="admin-debug-dashboard"),
+    # Django admin app
+    path("admin/", admin.site.urls),
+    ###
     # Authentication
-    #
+    ###
+    # Login page
     path(
         "login/",
         auth_views.LoginView.as_view(template_name="registration/login.html"),
         name="login",
-    ),  # Login page
-    path("logout/", auth_views.LogoutView.as_view(), name="logout"),  # Logout
+        access="always_public",
+    ),
+    # Logout
+    path("logout/", auth_views.LogoutView.as_view(), name="logout", access="always_public"),
+    # Invitation-based registration
     path(
         "register/<str:token>/",
         invitation_register,
         name="invitation-register",
-    ),  # Invitation-based registration
-    #
+        access="always_public",
+    ),
+    ###
     # Profile
-    #
-    path("profile/", ProfileUpdateView.as_view(), name="profile"),  # Edit profile
+    ###
+    # Edit profile
+    path("profile/", ProfileUpdateView.as_view(), name="profile", access="authenticated"),
+    # Change password form
     path(
         "profile/password/",
         auth_views.PasswordChangeView.as_view(
@@ -134,301 +147,347 @@ urlpatterns = [
             form_class=SimplePasswordChangeForm,
         ),
         name="password_change",
-    ),  # Change password form
+        access="authenticated",
+    ),
+    # Password change confirmation
     path(
         "profile/password/done/",
         auth_views.PasswordChangeDoneView.as_view(
             template_name="registration/password_change_done.html"
         ),
         name="password_change_done",
-    ),  # Password change confirmation
-    #
+        access="authenticated",
+    ),
+    ###
     # Shared terminal accounts
-    #
-    path("terminals/", TerminalListView.as_view(), name="terminal-list"),  # List terminals
-    path("terminals/add/", TerminalCreateView.as_view(), name="terminal-add"),  # Create terminal
+    ###
+    path("terminals/", TerminalListView.as_view(), name="terminal-list", access="superuser"),
+    path("terminals/add/", TerminalCreateView.as_view(), name="terminal-add", access="superuser"),
     path(
-        "terminals/<int:pk>/login/", TerminalLoginView.as_view(), name="terminal-login"
-    ),  # Login as terminal
+        "terminals/<int:pk>/login/",
+        TerminalLoginView.as_view(),
+        name="terminal-login",
+        access="superuser",
+    ),
     path(
-        "terminals/<int:pk>/edit/", TerminalUpdateView.as_view(), name="terminal-edit"
-    ),  # Edit terminal
+        "terminals/<int:pk>/edit/",
+        TerminalUpdateView.as_view(),
+        name="terminal-edit",
+        access="superuser",
+    ),
     path(
         "terminals/<int:pk>/deactivate/",
         TerminalDeactivateView.as_view(),
         name="terminal-deactivate",
-    ),  # Deactivate terminal
+        access="superuser",
+    ),
     path(
         "terminals/<int:pk>/reactivate/",
         TerminalReactivateView.as_view(),
         name="terminal-reactivate",
-    ),  # Reactivate terminal
-    #
+        access="superuser",
+    ),
+    ###
     # Public pages (no login required)
-    #
+    ###
+    # Public machine detail
     path(
-        "m/<slug:slug>/", MachineDetailViewForPublic.as_view(), name="public-machine-detail"
-    ),  # Public machine detail
+        "m/<slug:slug>/",
+        MachineDetailViewForPublic.as_view(),
+        name="public-machine-detail",
+        access="always_public",
+    ),
+    # Public problem report form (from QR code)
     path(
         "p/<slug:slug>/",
         PublicProblemReportCreateView.as_view(),
         name="public-problem-report-create",
-    ),  # Public problem report form (from QR code)
-    #
-    # Problem reports (maintainer)
-    #
+        access="always_public",
+    ),
+    ###
+    # Problem reports
+    ###
+    # List all problem reports
     path(
         "problem-reports/",
         ProblemReportListView.as_view(),
         name="problem-report-list",
-    ),  # List all problem reports
+        access="public",
+    ),
+    # Create problem report (no machine pre-selected)
     path(
         "problem-reports/new/",
         ProblemReportCreateView.as_view(),
         name="problem-report-create",
-    ),  # Create problem report (no machine pre-selected)
+    ),
+    # Create problem report for specific machine
     path(
         "machines/<slug:slug>/problem-reports/new/",
         ProblemReportCreateView.as_view(),
         name="problem-report-create-machine",
-    ),  # Create problem report for specific machine
+    ),
+    # Problem report detail page
     path(
         "problem-reports/<int:pk>/",
         ProblemReportDetailView.as_view(),
         name="problem-report-detail",
-    ),  # Problem report detail page
+        access="public",
+    ),
+    # Edit problem report metadata
     path(
         "problem-reports/<int:pk>/edit/",
         ProblemReportEditView.as_view(),
         name="problem-report-edit",
-    ),  # Edit problem report metadata
+    ),
+    # AJAX: infinite scroll for log entries on problem report
     path(
         "problem-reports/<int:pk>/log-entries/",
         ProblemReportLogEntriesPartialView.as_view(),
         name="problem-report-log-entries",
-    ),  # AJAX: infinite scroll for log entries on problem report
-    #
+        access="public",
+    ),
+    ###
     # Wall display
-    #
-    path("wall/", WallDisplaySetupView.as_view(), name="wall-display-setup"),  # Wall display setup
-    path(
-        "wall/board/", WallDisplayBoardView.as_view(), name="wall-display-board"
-    ),  # Wall display board
-    #
-    # Machines (maintainer)
-    #
-    path(
-        "machines/", MachineListView.as_view(), name="maintainer-machine-list"
-    ),  # List all machines
-    path(
-        "machines/new/", MachineCreateLandingView.as_view(), name="machine-create-landing"
-    ),  # Landing page: select model
+    ###
+    # Wall display setup
+    path("wall/", WallDisplaySetupView.as_view(), name="wall-display-setup"),
+    # Wall display board
+    path("wall/board/", WallDisplayBoardView.as_view(), name="wall-display-board"),
+    ###
+    # Machines
+    ###
+    # List all machines
+    path("machines/", MachineListView.as_view(), name="maintainer-machine-list", access="public"),
+    # Landing page: select model
+    path("machines/new/", MachineCreateLandingView.as_view(), name="machine-create-landing"),
+    # Create new model + instance
     path(
         "machines/new/model-does-not-exist/",
         MachineCreateModelDoesNotExistView.as_view(),
         name="machine-create-model-does-not-exist",
-    ),  # Create new model + instance
+    ),
+    # Add instance of existing model
     path(
         "machines/new/<slug:model_slug>/",
         MachineCreateModelExistsView.as_view(),
         name="machine-create-model-exists",
-    ),  # Add instance of existing model
+    ),
+    # Machine detail/feed page
     path(
         "machines/<slug:slug>/",
         MachineFeedView.as_view(),
         name="maintainer-machine-detail",
-    ),  # Machine detail/feed page
+        access="public",
+    ),
+    # AJAX: infinite scroll for machine feed (supports ?f= filter)
     path(
         "machines/<slug:slug>/entries/",
         MachineFeedPartialView.as_view(),
         name="machine-feed-entries",
-    ),  # AJAX: infinite scroll for machine feed (supports ?f= filter)
-    path(
-        "machines/<slug:slug>/edit/", MachineUpdateView.as_view(), name="machine-edit"
-    ),  # Edit machine
-    path("machines/<slug:slug>/qr/", MachineQRView.as_view(), name="machine-qr"),  # QR code page
-    path("qr_codes/", MachineBulkQRCodeView.as_view(), name="machine-qr-bulk"),  # Bulk QR codes
+        access="public",
+    ),
+    # Edit machine
+    path("machines/<slug:slug>/edit/", MachineUpdateView.as_view(), name="machine-edit"),
+    # QR code page
+    path("machines/<slug:slug>/qr/", MachineQRView.as_view(), name="machine-qr"),
+    # Bulk QR codes
+    path("qr_codes/", MachineBulkQRCodeView.as_view(), name="machine-qr-bulk"),
+    # AJAX: update machine status/location from dropdown
     path(
         "machines/<slug:slug>/update/",
         MachineInlineUpdateView.as_view(),
         name="machine-inline-update",
-    ),  # AJAX: update machine status/location from dropdown
-    #
+    ),
+    ###
     # Machine models
-    #
-    path(
-        "models/<slug:slug>/edit/", MachineModelUpdateView.as_view(), name="machine-model-edit"
-    ),  # Edit machine model
-    #
+    ###
+    # Edit machine model
+    path("models/<slug:slug>/edit/", MachineModelUpdateView.as_view(), name="machine-model-edit"),
+    ###
     # API endpoints
-    #
+    ###
+    # Worker: download source video for transcoding
     path(
         "api/transcoding/download/<str:model_name>/<int:media_id>/",
         ServeSourceMediaView.as_view(),
         name="api-transcoding-download",
-    ),  # Worker: download source video for transcoding
+        access="always_public",
+    ),
+    # Worker: upload transcoded video and poster
     path(
         "api/transcoding/upload/<str:model_name>/<int:media_id>/",
         ReceiveTranscodedMediaView.as_view(),
         name="api-transcoding-upload",
-    ),  # Worker: upload transcoded video and poster
+        access="always_public",
+    ),
+    # Discord bot: upload media file
     path(
         "api/media/<str:model_name>/<int:parent_id>/",
         ReceiveMediaView.as_view(),
         name="api-media-upload",
-    ),  # Discord bot: upload media file
+        access="always_public",
+    ),
+    # AJAX: poll video transcode status
     path(
         "api/transcoding/status/",
         TranscodeStatusView.as_view(),
         name="api-transcoding-status",
-    ),  # AJAX: poll video transcode status
+    ),
+    # AJAX: maintainer autocomplete for forms
     path(
         "api/maintainers/",
         MaintainerAutocompleteView.as_view(),
         name="api-maintainer-autocomplete",
-    ),  # AJAX: maintainer autocomplete for forms
+    ),
+    # AJAX: machine autocomplete for forms
     path(
         "api/machines/",
         MachineAutocompleteView.as_view(),
         name="api-machine-autocomplete",
-    ),  # AJAX: machine autocomplete for forms
+    ),
+    # AJAX: problem report autocomplete for log entry reassignment
     path(
         "api/problem-reports/",
         ProblemReportAutocompleteView.as_view(),
         name="api-problem-report-autocomplete",
-    ),  # AJAX: problem report autocomplete for log entry reassignment
-    #
+    ),
+    ###
     # Log entries
-    #
-    path("logs/", LogListView.as_view(), name="log-list"),  # List all log entries
-    path(
-        "logs/entries/", LogListPartialView.as_view(), name="log-list-entries"
-    ),  # AJAX: infinite scroll for log list
-    path(
-        "logs/new/", MachineLogCreateView.as_view(), name="log-create-global"
-    ),  # Create log entry (no machine pre-selected)
-    path(
-        "logs/<int:pk>/", LogEntryDetailView.as_view(), name="log-detail"
-    ),  # Log entry detail page
-    path(
-        "logs/<int:pk>/edit/", LogEntryEditView.as_view(), name="log-entry-edit"
-    ),  # Edit log entry metadata
+    ###
+    # List all log entries
+    path("logs/", LogListView.as_view(), name="log-list", access="public"),
+    # AJAX: infinite scroll for log list
+    path("logs/entries/", LogListPartialView.as_view(), name="log-list-entries", access="public"),
+    # Create log entry (no machine pre-selected)
+    path("logs/new/", MachineLogCreateView.as_view(), name="log-create-global"),
+    # Log entry detail page
+    path("logs/<int:pk>/", LogEntryDetailView.as_view(), name="log-detail", access="public"),
+    # Edit log entry metadata
+    path("logs/<int:pk>/edit/", LogEntryEditView.as_view(), name="log-entry-edit"),
+    # Create log entry for specific machine
     path(
         "logs/new/<slug:slug>/",
         MachineLogCreateView.as_view(),
         name="log-create-machine",
-    ),  # Create log entry for specific machine
+    ),
+    # Create log entry linked to problem report
     path(
         "logs/new/problem-report/<int:pk>/",
         MachineLogCreateView.as_view(),
         name="log-create-problem-report",
-    ),  # Create log entry linked to problem report
-    #
+    ),
+    ###
     # Parts requests
-    #
-    path(
-        "parts/", PartRequestListView.as_view(), name="part-request-list"
-    ),  # List all part requests
+    ###
+    # List all part requests
+    path("parts/", PartRequestListView.as_view(), name="part-request-list"),
+    # AJAX: infinite scroll for part request list
     path(
         "parts/entries/",
         PartRequestListPartialView.as_view(),
         name="part-request-list-entries",
-    ),  # AJAX: infinite scroll for part request list
-    path(
-        "parts/new/", PartRequestCreateView.as_view(), name="part-request-create"
-    ),  # Create part request (no machine pre-selected)
+    ),
+    # Create part request (no machine pre-selected)
+    path("parts/new/", PartRequestCreateView.as_view(), name="part-request-create"),
+    # Create part request for specific machine
     path(
         "parts/new/<slug:slug>/",
         PartRequestCreateView.as_view(),
         name="part-request-create-machine",
-    ),  # Create part request for specific machine
+    ),
+    # Part request detail page
     path(
         "parts/<int:pk>/",
         PartRequestDetailView.as_view(),
         name="part-request-detail",
-    ),  # Part request detail page
+    ),
+    # Edit part request metadata
     path(
         "parts/<int:pk>/edit/",
         PartRequestEditView.as_view(),
         name="part-request-edit",
-    ),  # Edit part request metadata
+    ),
+    # Create update/comment on part request (form page)
     path(
         "parts/<int:pk>/update/",
         PartRequestUpdateCreateView.as_view(),
         name="part-request-update-create",
-    ),  # Create update/comment on part request (form page)
+    ),
+    # AJAX: update part request status from dropdown
     path(
         "parts/<int:pk>/status/",
         PartRequestStatusUpdateView.as_view(),
         name="part-request-status-update",
-    ),  # AJAX: update part request status from dropdown
+    ),
+    # AJAX: infinite scroll for updates on part request detail
     path(
         "parts/<int:pk>/updates/",
         PartRequestUpdatesPartialView.as_view(),
         name="part-request-updates",
-    ),  # AJAX: infinite scroll for updates on part request detail
+    ),
+    # Part request update detail page
     path(
         "parts/updates/<int:pk>/",
         PartRequestUpdateDetailView.as_view(),
         name="part-request-update-detail",
-    ),  # Part request update detail page
+    ),
+    # Edit part request update metadata
     path(
         "parts/updates/<int:pk>/edit/",
         PartRequestUpdateEditView.as_view(),
         name="part-request-update-edit",
-    ),  # Edit part request update metadata
-    #
+    ),
+    ###
     # Cross-record link autocomplete API
-    #
-    path(
-        "api/link-types/",
-        LinkTypesView.as_view(),
-        name="api-link-types",
-    ),  # AJAX: available link types for [[ type picker
-    path(
-        "api/link-targets/",
-        LinkTargetsView.as_view(),
-        name="api-link-targets",
-    ),  # AJAX: link target autocomplete for [[ syntax
-    #
+    ###
+    # AJAX: available link types for [[ type picker
+    path("api/link-types/", LinkTypesView.as_view(), name="api-link-types"),
+    # AJAX: link target autocomplete for [[ syntax
+    path("api/link-targets/", LinkTargetsView.as_view(), name="api-link-targets"),
+    ###
     # Wiki
-    #
-    path("wiki/", WikiHomeView.as_view(), name="wiki-home"),  # Wiki home/index
-    path("wiki/search/", WikiSearchView.as_view(), name="wiki-search"),  # Wiki search
-    path("wiki/create/", WikiPageCreateView.as_view(), name="wiki-page-create"),  # Create page
-    path("wiki/reorder/", WikiReorderView.as_view(), name="wiki-reorder"),  # Reorder nav
+    ###
+    # Wiki home/index
+    path("wiki/", WikiHomeView.as_view(), name="wiki-home"),
+    # Wiki search
+    path("wiki/search/", WikiSearchView.as_view(), name="wiki-search"),
+    # Create page
+    path("wiki/create/", WikiPageCreateView.as_view(), name="wiki-page-create"),
+    # Reorder nav
+    path("wiki/reorder/", WikiReorderView.as_view(), name="wiki-reorder"),
+    # Template block → pre-fill create form
     path(
         "wiki/templates/<int:page_pk>/<str:template_name>/",
         WikiTemplatePrefillView.as_view(),
         name="wiki-template-prefill",
-    ),  # Template block → pre-fill create form
-    path(
-        "doc/<path:path>", WikiPageDetailView.as_view(), name="wiki-page-detail"
-    ),  # Wiki page detail (shorter URL, not under /wiki/)
+    ),
+    # Wiki page detail (shorter URL, not under /wiki/)
+    path("doc/<path:path>", WikiPageDetailView.as_view(), name="wiki-page-detail"),
+    # 301 redirect: old /wiki/doc/ → new /doc/
     path(
         "wiki/doc/<path:path>",
         RedirectView.as_view(pattern_name="wiki-page-detail", permanent=True),
-    ),  # 301 redirect: old /wiki/doc/ → new /doc/
-    path("wiki/edit/<path:path>", WikiPageEditView.as_view(), name="wiki-page-edit"),  # Edit page
-    path(
-        "wiki/delete/<path:path>", WikiPageDeleteView.as_view(), name="wiki-page-delete"
-    ),  # Delete page
-    path(
-        "api/wiki/tags/", WikiTagAutocompleteView.as_view(), name="api-wiki-tag-autocomplete"
-    ),  # AJAX: wiki tag autocomplete
-    path(
-        "api/wiki/reorder/", WikiReorderSaveView.as_view(), name="api-wiki-reorder"
-    ),  # AJAX: save wiki nav reorder
+    ),
+    # Edit page
+    path("wiki/edit/<path:path>", WikiPageEditView.as_view(), name="wiki-page-edit"),
+    # Delete page
+    path("wiki/delete/<path:path>", WikiPageDeleteView.as_view(), name="wiki-page-delete"),
+    # AJAX: wiki tag autocomplete
+    path("api/wiki/tags/", WikiTagAutocompleteView.as_view(), name="api-wiki-tag-autocomplete"),
+    # AJAX: save wiki nav reorder
+    path("api/wiki/reorder/", WikiReorderSaveView.as_view(), name="api-wiki-reorder"),
+    # AJAX: list matching template options for create forms
     path(
         "api/wiki/templates/",
         WikiTemplateListView.as_view(),
         name="api-wiki-template-list",
-    ),  # AJAX: list matching template options for create forms
+    ),
+    # AJAX: fetch template block content
     path(
         "api/wiki/templates/<int:page_pk>/<str:template_name>/content/",
         WikiTemplateContentView.as_view(),
         name="api-wiki-template-content",
-    ),  # AJAX: fetch template block content
+    ),
 ]
 
 # Serve user-uploaded media files

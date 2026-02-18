@@ -6,7 +6,7 @@
   <a href="{% url 'log-detail' entry.pk %}" class="timeline__card-link">
     <div class="timeline__header">
       <span class="timeline__title timeline__title--log">Log Entry</span>
-      <span class="timeline__meta">{{ entry|log_entry_meta }}</span>
+      <span class="timeline__meta">{% log_entry_meta entry %}</span>
     </div>
   </a>
   <div class="timeline__body markdown-content markdown-content--compact">{{ entry.text|render_markdown }}</div>

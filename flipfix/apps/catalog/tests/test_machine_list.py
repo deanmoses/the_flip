@@ -29,11 +29,11 @@ class MaintainerMachineListViewTests(AccessControlTestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("/login/", response.url)
 
-    def test_list_view_requires_maintainer_access(self):
-        """Non-maintainer users should be denied access (403)."""
+    def test_non_maintainer_can_browse_public_route(self):
+        """Non-maintainer users can browse public routes (read-only)."""
         self.client.force_login(self.regular_user)
         response = self.client.get(self.list_url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
 
     def test_list_view_accessible_to_maintainer(self):
         """Maintainer users should be able to access the list page."""

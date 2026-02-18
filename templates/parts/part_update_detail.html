@@ -2,6 +2,7 @@
 {% load static %}
 {% load ui_tags %}
 {% load sidebar_tags %}
+{% load parts_tags %}
 {% block title %}
   {% if part_request.machine %}{{ part_request.machine.short_display_name }} ·{% endif %}
   Parts Request #{{ part_request.pk }} · Update #{{ update.pk }} · {{ block.super }}
@@ -29,12 +30,12 @@
       {% endif %}
     </div>
     {# Update info #}
-    <div class="mobile-meta__row text-muted text-sm">
-      This update posted by {{ update.poster_display }} on {{ update.occurred_at|smart_date }}
-    </div>
+    <div class="mobile-meta__row text-muted text-sm">{% part_update_meta update %}</div>
   </div>
-  <a href="{% url 'part-request-update-edit' update.pk %}"
-     class="btn btn--secondary btn--full">{% icon "pen" class="meta" label="Edit Details" %}</a>
+  {% if user.is_authenticated %}
+    <a href="{% url 'part-request-update-edit' update.pk %}"
+       class="btn btn--secondary btn--full">{% icon "pen" class="meta" label="Edit Details" %}</a>
+  {% endif %}
 {% endblock %}
 {% block sidebar %}
   {% include "components/history_link.html" with history_url=update.get_admin_history_url %}
@@ -51,7 +52,7 @@
 {% endsidebar_section %}
 {% endif %}
 {% sidebar_section label="Posted" %}
-<div class="sidebar__subtitle">{{ update.poster_display }} · {{ update.occurred_at|smart_date }}</div>
+<div class="sidebar__subtitle">{% part_update_meta update %}</div>
 {% endsidebar_section %}
 {% if update.new_status %}
   {% sidebar_section label="Status Change" %}
@@ -60,13 +61,15 @@
   </div>
 {% endsidebar_section %}
 {% endif %}
-{% sidebar_section %}
-<a href="{% url 'part-request-update-edit' update.pk %}"
-   class="btn btn--secondary btn--full">
-  {% icon "pen" class="meta" %}
-  Edit Details
-</a>
+{% if user.is_authenticated %}
+  {% sidebar_section %}
+  <a href="{% url 'part-request-update-edit' update.pk %}"
+     class="btn btn--secondary btn--full">
+    {% icon "pen" class="meta" %}
+    Edit Details
+  </a>
 {% endsidebar_section %}
+{% endif %}
 {% endblock %}
 {% block main %}
   <!-- DESCRIPTION CARD -->
@@ -75,8 +78,10 @@
   {% include "core/partials/media_card_editable.html" with media_items=update.media.all alt="Update photo" model_name="PartRequestUpdateMedia" %}
 {% endblock %}
 {% block extra_scripts %}
-  {% include "core/partials/markdown_textarea_scripts.html" %}
-  {% include "core/partials/markdown_inline_edit_scripts.html" %}
-  <script src="{% static 'core/media_grid.js' %}" defer></script>
   <script src="{% static 'core/video_transcode_poll.js' %}" defer></script>
+  {% if user.is_authenticated %}
+    {% include "core/partials/markdown_textarea_scripts.html" %}
+    {% include "core/partials/markdown_inline_edit_scripts.html" %}
+    <script src="{% static 'core/media_grid.js' %}" defer></script>
+  {% endif %}
 {% endblock %}

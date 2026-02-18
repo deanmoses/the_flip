@@ -7,7 +7,7 @@ This view handles four URL patterns via query params:
 - /machines/slug/?f=parts → parts requests and updates only
 """
 
-from django.test import TestCase, tag
+from django.test import RequestFactory, TestCase, tag
 from django.urls import reverse
 
 from flipfix.apps.accounts.models import Maintainer
@@ -42,11 +42,11 @@ class MachineFeedAccessControlTests(AccessControlTestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("/login/", response.url)
 
-    def test_requires_maintainer_access(self):
-        """Non-maintainer users should be denied access (403)."""
+    def test_non_maintainer_can_browse_public_route(self):
+        """Non-maintainer users can browse public routes (read-only)."""
         self.client.force_login(self.regular_user)
         response = self.client.get(self.feed_url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
 
     def test_accessible_to_maintainer(self):
         """Maintainer users should be able to access the feed."""
@@ -367,6 +367,8 @@ class RenderLatestLogEntryQueryTests(TestDataMixin, TestCase):
     def setUp(self):
         super().setUp()
         self.view = MachineInlineUpdateView()
+        self.request = RequestFactory().get("/")
+        self.request.user = self.maintainer_user
 
         # Create a log entry with related objects that would trigger N+1 queries
         self.log_entry = create_log_entry(machine=self.machine, text="Test work")
@@ -407,7 +409,7 @@ class RenderLatestLogEntryQueryTests(TestDataMixin, TestCase):
         """
         # 4 queries: log+problem_report, maintainers, users, media
         with self.assertNumQueries(4):
-            html = self.view._render_latest_log_entry(self.machine)
+            html = self.view._render_latest_log_entry(self.machine, self.request)
 
         # Verify the HTML contains expected content
         self.assertIn("Test work", html)
@@ -421,7 +423,7 @@ class RenderLatestLogEntryQueryTests(TestDataMixin, TestCase):
         # 3 queries: log+problem_report, maintainers (empty), media (empty)
         # The user query is skipped because there are no maintainers to fetch users for
         with self.assertNumQueries(3):
-            html = self.view._render_latest_log_entry(self.machine)
+            html = self.view._render_latest_log_entry(self.machine, self.request)
 
         self.assertIn("Simple work", html)
 
@@ -432,6 +434,6 @@ class RenderLatestLogEntryQueryTests(TestDataMixin, TestCase):
 
         # Just 1 query to check for log entry (returns None)
         with self.assertNumQueries(1):
-            html = self.view._render_latest_log_entry(self.machine)
+            html = self.view._render_latest_log_entry(self.machine, self.request)
 
         self.assertEqual(html, "")

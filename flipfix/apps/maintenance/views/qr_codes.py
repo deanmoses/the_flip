@@ -6,11 +6,10 @@ from django.urls import reverse
 from django.views.generic import DetailView, TemplateView
 
 from flipfix.apps.catalog.models import MachineInstance
-from flipfix.apps.core.mixins import CanAccessMaintainerPortalMixin
 from flipfix.apps.core.qr import QR_BOX_SIZE_BULK, generate_qr_code_base64
 
 
-class MachineQRView(CanAccessMaintainerPortalMixin, DetailView):
+class MachineQRView(DetailView):
     """Generate and display a printable QR code for a machine's public info page."""
 
     model = MachineInstance
@@ -33,7 +32,7 @@ class MachineQRView(CanAccessMaintainerPortalMixin, DetailView):
         return context
 
 
-class MachineBulkQRCodeView(CanAccessMaintainerPortalMixin, TemplateView):
+class MachineBulkQRCodeView(TemplateView):
     """Printable grid of QR codes for all machines."""
 
     template_name = "maintenance/machine_qr_bulk.html"

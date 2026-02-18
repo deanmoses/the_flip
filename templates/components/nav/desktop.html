@@ -1,26 +1,24 @@
 {% load ui_tags %}
-{% if perms.accounts.can_access_maintainer_portal %}
-  <nav class="nav nav--desktop" aria-label="Main navigation">
-    {% for item in nav_items %}
-      <a href="{% url item.url_name %}"
-         class="nav-link {% if item.is_active %}nav-link--active{% endif %}"
-         {% if item.is_active %}aria-current="page"{% endif %}>{{ item.label }}</a>
-    {% endfor %}
-    {% if user.is_superuser %}
-      <div class="dropdown">
-        <button type="button"
-                class="nav-link dropdown__toggle {% if admin_active %}nav-link--active{% endif %}"
-                aria-haspopup="true"
-                aria-expanded="false"
-                onclick="toggleDropdown(this)">Admin {% icon "caret-down" class="meta" %}</button>
-        <div class="dropdown__menu dropdown__menu--left hidden">
-          {% for item in admin_items %}
-            <a href="{% url item.url_name %}"
-               class="dropdown__item {% if item.is_active %}dropdown__item--selected{% endif %}"
-               {% if item.is_active %}aria-current="page"{% endif %}>{% icon item.icon class="space-right-sm" %} {{ item.label }}</a>
-          {% endfor %}
-        </div>
+<nav class="nav nav--desktop" aria-label="Main navigation">
+  {% for item in nav_items %}
+    <a href="{% url item.url_name %}"
+       class="nav-link {% if item.is_active %}nav-link--active{% endif %}"
+       {% if item.is_active %}aria-current="page"{% endif %}>{{ item.label }}</a>
+  {% endfor %}
+  {% if user.is_superuser %}
+    <div class="dropdown">
+      <button type="button"
+              class="nav-link dropdown__toggle {% if admin_active %}nav-link--active{% endif %}"
+              aria-haspopup="true"
+              aria-expanded="false"
+              onclick="toggleDropdown(this)">Admin {% icon "caret-down" class="meta" %}</button>
+      <div class="dropdown__menu dropdown__menu--left hidden">
+        {% for item in admin_items %}
+          <a href="{% url item.url_name %}"
+             class="dropdown__item {% if item.is_active %}dropdown__item--selected{% endif %}"
+             {% if item.is_active %}aria-current="page"{% endif %}>{% icon item.icon class="space-right-sm" %} {{ item.label }}</a>
+        {% endfor %}
       </div>
-    {% endif %}
-  </nav>
-{% endif %}
+    </div>
+  {% endif %}
+</nav>

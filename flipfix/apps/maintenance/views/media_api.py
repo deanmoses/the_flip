@@ -76,10 +76,10 @@ def _validate_media_file(uploaded_file) -> None:
 
 @method_decorator(csrf_exempt, name="dispatch")
 class ReceiveMediaView(View):
-    """
-    API endpoint to upload media.
+    """API endpoint to upload media.
 
-    Used by the Discord Bot to upload photos and videos from Discord when creating Flipfix records from Discord posts.
+    Used by the Discord Bot to upload photos and videos from Discord when
+    creating Flipfix records from Discord posts.
 
     POST /api/media/<model_name>/<parent_id>/
 

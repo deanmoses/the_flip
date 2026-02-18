@@ -6,7 +6,6 @@ from functools import cached_property
 from typing import TYPE_CHECKING, Any, cast
 
 from django.conf import settings
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.http import JsonResponse
@@ -27,7 +26,7 @@ def can_access_maintainer_portal(user: AbstractUser | Any) -> bool:
     """
     Check if user can access the maintainer portal.
 
-    Used by CanAccessMaintainerPortalMixin and inline permission checks.
+    Used by ``MaintainerAccessMiddleware`` and inline permission checks.
     Uses permission-based check. Superusers automatically pass via has_perm().
     """
     return user.has_perm("accounts.can_access_maintainer_portal")
@@ -101,34 +100,6 @@ class SharedAccountMixin:
         context = super().get_context_data(**kwargs)
         context["is_shared_account"] = self.is_shared_account
         return context
-
-
-class CanAccessMaintainerPortalMixin(LoginRequiredMixin, UserPassesTestMixin):
-    """
-    Mixin requiring maintainer portal access.
-
-    Behavior:
-    - Unauthenticated users -> redirect to login
-    - Authenticated but unauthorized -> 403
-    """
-
-    request: HttpRequest  # Provided by View
-
-    def test_func(self) -> bool:
-        return can_access_maintainer_portal(self.request.user)
-
-
-class CanManageTerminalsMixin(LoginRequiredMixin, UserPassesTestMixin):
-    """
-    Mixin requiring terminal management access.
-
-    Currently checks is_superuser.
-    """
-
-    request: HttpRequest  # Provided by View
-
-    def test_func(self) -> bool:
-        return self.request.user.is_superuser
 
 
 class MediaUploadMixin:

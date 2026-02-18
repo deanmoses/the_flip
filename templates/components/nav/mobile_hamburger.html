@@ -1,32 +1,32 @@
 {% load ui_tags %}
-{% if perms.accounts.can_access_maintainer_portal %}
-  <div class="dropdown nav-priority__menu nav--mobile">
-    <button type="button"
-            class="nav-priority__menu-btn {% if hamburger_active %}nav-priority__menu-btn--active{% endif %}{% if hamburger_active_for_logs %} nav-priority__menu-btn--active-for-logs{% endif %}{% if hamburger_active_for_parts %} nav-priority__menu-btn--active-for-parts{% endif %}"
-            aria-haspopup="true"
-            aria-expanded="false"
-            aria-label="Site menu"
-            onclick="toggleDropdown(this)">{% icon "bars" %}</button>
-    <div class="dropdown__menu nav-priority__dropdown hidden">
+<div class="dropdown nav-priority__menu nav--mobile">
+  <button type="button"
+          class="nav-priority__menu-btn {% if hamburger_active %}nav-priority__menu-btn--active{% endif %}{% if hamburger_active_for_logs %} nav-priority__menu-btn--active-for-logs{% endif %}{% if hamburger_active_for_parts %} nav-priority__menu-btn--active-for-parts{% endif %}"
+          aria-haspopup="true"
+          aria-expanded="false"
+          aria-label="Site menu"
+          onclick="toggleDropdown(this)">{% icon "bars" %}</button>
+  <div class="dropdown__menu nav-priority__dropdown hidden">
+    <div class="nav-priority__dropdown-group">
+      {% for item in nav_items %}
+        <a href="{% url item.url_name %}"
+           class="dropdown__item {% if item.is_active %}dropdown__item--selected{% endif %}"
+           {% if item.is_active %}aria-current="page"{% endif %}>
+          {% icon item.icon class="space-right-sm" %} {{ item.label }}
+        </a>
+      {% endfor %}
+    </div>
+    {% if user.is_superuser %}
       <div class="nav-priority__dropdown-group">
-        {% for item in nav_items %}
+        <p class="nav-priority__dropdown-heading">Admin</p>
+        {% for item in admin_items %}
           <a href="{% url item.url_name %}"
              class="dropdown__item {% if item.is_active %}dropdown__item--selected{% endif %}"
-             {% if item.is_active %}aria-current="page"{% endif %}>
-            {% icon item.icon class="space-right-sm" %} {{ item.label }}
-          </a>
+             {% if item.is_active %}aria-current="page"{% endif %}>{% icon item.icon class="space-right-sm" %} {{ item.label }}</a>
         {% endfor %}
       </div>
-      {% if user.is_superuser %}
-        <div class="nav-priority__dropdown-group">
-          <p class="nav-priority__dropdown-heading">Admin</p>
-          {% for item in admin_items %}
-            <a href="{% url item.url_name %}"
-               class="dropdown__item {% if item.is_active %}dropdown__item--selected{% endif %}"
-               {% if item.is_active %}aria-current="page"{% endif %}>{% icon item.icon class="space-right-sm" %} {{ item.label }}</a>
-          {% endfor %}
-        </div>
-      {% endif %}
+    {% endif %}
+    {% if user.is_authenticated %}
       <div class="nav-priority__dropdown-group">
         <p class="nav-priority__dropdown-heading">{{ user.username }}</p>
         <a href="{% url 'profile' %}"
@@ -39,6 +39,10 @@
           </button>
         </form>
       </div>
-    </div>
+    {% else %}
+      <div class="nav-priority__dropdown-group">
+        <a href="{% url 'login' %}" class="dropdown__item">{% icon "right-to-bracket" class="space-right-sm" %} Log in</a>
+      </div>
+    {% endif %}
   </div>
-{% endif %}
+</div>

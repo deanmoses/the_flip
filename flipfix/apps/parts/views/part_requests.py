@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils.html import format_html
+from django.utils.text import Truncator
 from django.views.generic import DetailView, FormView, TemplateView, UpdateView, View
 
 from flipfix.apps.accounts.models import Maintainer
@@ -26,7 +27,6 @@ from flipfix.apps.core.forms import SearchForm
 from flipfix.apps.core.markdown_links import sync_references
 from flipfix.apps.core.media_upload import attach_media_files
 from flipfix.apps.core.mixins import (
-    CanAccessMaintainerPortalMixin,
     FormPrefillMixin,
     InfiniteScrollMixin,
     InlineTextEditMixin,
@@ -53,7 +53,7 @@ def _latest_update_prefetch():
     )
 
 
-class PartRequestListView(CanAccessMaintainerPortalMixin, TemplateView):
+class PartRequestListView(TemplateView):
     """List of all part requests. Maintainer-only access."""
 
     template_name = "parts/part_request_list.html"
@@ -93,12 +93,16 @@ class PartRequestListView(CanAccessMaintainerPortalMixin, TemplateView):
                 "part_requests": page_obj.object_list,
                 "search_form": SearchForm(initial={"q": search_query}),
                 "stats": stats,
+                "meta_description": (
+                    "Parts requests for pinball machines at The Flip,"
+                    " Chicago's playable pinball museum."
+                ),
             }
         )
         return context
 
 
-class PartRequestListPartialView(CanAccessMaintainerPortalMixin, InfiniteScrollMixin, View):
+class PartRequestListPartialView(InfiniteScrollMixin, View):
     """AJAX endpoint for infinite scrolling in the part request list."""
 
     item_template = "parts/partials/part_list_entry.html"
@@ -113,9 +117,7 @@ class PartRequestListPartialView(CanAccessMaintainerPortalMixin, InfiniteScrollM
         )
 
 
-class PartRequestCreateView(
-    FormPrefillMixin, SharedAccountMixin, CanAccessMaintainerPortalMixin, FormView
-):
+class PartRequestCreateView(FormPrefillMixin, SharedAccountMixin, FormView):
     """Create a new part request."""
 
     template_name = "parts/part_request_new.html"
@@ -196,9 +198,7 @@ class PartRequestCreateView(
         return redirect("part-request-detail", pk=part_request.pk)
 
 
-class PartRequestDetailView(
-    InlineTextEditMixin, CanAccessMaintainerPortalMixin, MediaUploadMixin, DetailView
-):
+class PartRequestDetailView(InlineTextEditMixin, MediaUploadMixin, DetailView):
     """Detail view for a part request. Maintainer-only access."""
 
     model = PartRequest
@@ -233,6 +233,7 @@ class PartRequestDetailView(
         context["updates"] = page_obj.object_list
         context["update_count"] = paginator.count
         context["search_query"] = search_query
+        context["meta_description"] = Truncator(self.object.text).chars(155)
         return context
 
     def post(self, request, *args, **kwargs):
@@ -251,7 +252,7 @@ class PartRequestDetailView(
         return JsonResponse({"success": False, "error": f"Unknown action: {action}"}, status=400)
 
 
-class PartRequestEditView(CanAccessMaintainerPortalMixin, UpdateView):
+class PartRequestEditView(UpdateView):
     """Edit a part request's metadata (requester, timestamp)."""
 
     model = PartRequest
@@ -308,7 +309,7 @@ class PartRequestEditView(CanAccessMaintainerPortalMixin, UpdateView):
         return reverse("part-request-detail", kwargs={"pk": self.object.pk})
 
 
-class PartRequestUpdatesPartialView(CanAccessMaintainerPortalMixin, InfiniteScrollMixin, View):
+class PartRequestUpdatesPartialView(InfiniteScrollMixin, View):
     """AJAX endpoint for infinite scrolling updates on a part request detail page."""
 
     item_template = "parts/partials/part_update_entry.html"
@@ -328,7 +329,7 @@ class PartRequestUpdatesPartialView(CanAccessMaintainerPortalMixin, InfiniteScro
         return {"update": item}
 
 
-class PartRequestStatusUpdateView(CanAccessMaintainerPortalMixin, View):
+class PartRequestStatusUpdateView(View):
     """AJAX-only endpoint to update part request status."""
 
     def post(self, request, *args, **kwargs):
@@ -374,6 +375,7 @@ class PartRequestStatusUpdateView(CanAccessMaintainerPortalMixin, View):
         update_html = render_to_string(
             "parts/partials/part_update_entry.html",
             {"update": update},
+            request=request,
         )
 
         return JsonResponse(

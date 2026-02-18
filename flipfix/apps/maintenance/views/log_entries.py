@@ -15,6 +15,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
+from django.utils.text import Truncator
 from django.views import View
 from django.views.generic import DetailView, FormView, TemplateView, UpdateView
 
@@ -29,7 +30,6 @@ from flipfix.apps.core.forms import SearchForm
 from flipfix.apps.core.markdown_links import sync_references
 from flipfix.apps.core.media_upload import attach_media_files
 from flipfix.apps.core.mixins import (
-    CanAccessMaintainerPortalMixin,
     FormPrefillMixin,
     InfiniteScrollMixin,
     InlineTextEditMixin,
@@ -62,9 +62,7 @@ def get_log_entry_queryset(search_query: str = ""):
     return queryset
 
 
-class MachineLogCreateView(
-    FormPrefillMixin, SharedAccountMixin, CanAccessMaintainerPortalMixin, FormView
-):
+class MachineLogCreateView(FormPrefillMixin, SharedAccountMixin, FormView):
     """Create a new log entry for a machine or problem report."""
 
     template_name = "maintenance/log_entry_new.html"
@@ -255,7 +253,7 @@ class MachineLogCreateView(
             )
 
 
-class LogListView(CanAccessMaintainerPortalMixin, TemplateView):
+class LogListView(TemplateView):
     """Global list of all log entries across all machines. Maintainer-only access."""
 
     template_name = "maintenance/log_entry_list.html"
@@ -280,12 +278,16 @@ class LogListView(CanAccessMaintainerPortalMixin, TemplateView):
                 "search_form": SearchForm(initial={"q": search_query}),
                 "this_week_count": this_week_count,
                 "total_count": total_count,
+                "meta_description": (
+                    "Maintenance logs for pinball machines at The Flip,"
+                    " Chicago's playable pinball museum."
+                ),
             }
         )
         return context
 
 
-class LogListPartialView(CanAccessMaintainerPortalMixin, InfiniteScrollMixin, View):
+class LogListPartialView(InfiniteScrollMixin, View):
     """AJAX endpoint for infinite scrolling in the global log list."""
 
     item_template = "maintenance/partials/global_log_entry.html"
@@ -295,9 +297,7 @@ class LogListPartialView(CanAccessMaintainerPortalMixin, InfiniteScrollMixin, Vi
         return get_log_entry_queryset(search_query)
 
 
-class LogEntryDetailView(
-    InlineTextEditMixin, MediaUploadMixin, CanAccessMaintainerPortalMixin, DetailView
-):
+class LogEntryDetailView(InlineTextEditMixin, MediaUploadMixin, DetailView):
     """Detail page for a single log entry with media upload support."""
 
     model = LogEntry
@@ -311,6 +311,11 @@ class LogEntryDetailView(
 
     def get_media_model(self):
         return LogEntryMedia
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["meta_description"] = Truncator(self.object.text).chars(155)
+        return context
 
     def post(self, request, *args, **kwargs):
         """Handle AJAX updates to the log entry."""
@@ -551,7 +556,7 @@ class LogEntryDetailView(
         )
 
 
-class LogEntryEditView(CanAccessMaintainerPortalMixin, UpdateView):
+class LogEntryEditView(UpdateView):
     """Edit a log entry's metadata (maintainer, timestamp)."""
 
     model = LogEntry

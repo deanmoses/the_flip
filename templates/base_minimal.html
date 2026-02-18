@@ -23,6 +23,16 @@
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'core/styles.css' %}">
+    {% block meta_tags %}
+      {% if meta_description %}<meta name="description" content="{{ meta_description }}">{% endif %}
+      <meta property="og:title"
+            content="{% block og_title %}The Flip{% endblock %}">
+      <meta property="og:description"
+            content="{{ meta_description|default:"Chicago's playable pinball museum — machines, repairs, and maintenance logs." }}">
+      <meta property="og:site_name"
+            content="The Flip — Chicago's Playable Pinball Museum">
+      <meta property="og:type" content="website">
+    {% endblock meta_tags %}
     {% block extra_head %}{% endblock %}
   </head>
   <body class="{% block body_class %}{% endblock %}">

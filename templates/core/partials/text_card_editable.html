@@ -5,14 +5,16 @@
 <div class="card card--padded" data-text-card>
   <div class="card__header">
     <div class="card__title">Description</div>
-    <div class="card__actions">
-      <button type="button" class="btn btn--secondary btn--sm" data-text-edit-btn>Edit</button>
-      <div class="hidden" data-text-edit-actions>
-        <button type="button" class="btn btn--primary btn--sm" data-text-save-btn>Save</button>
-        <button type="button" class="btn btn--secondary btn--sm" data-text-cancel-btn>Cancel</button>
+    {% if user.is_authenticated %}
+      <div class="card__actions">
+        <button type="button" class="btn btn--secondary btn--sm" data-text-edit-btn>Edit</button>
+        <div class="hidden" data-text-edit-actions>
+          <button type="button" class="btn btn--primary btn--sm" data-text-save-btn>Save</button>
+          <button type="button" class="btn btn--secondary btn--sm" data-text-cancel-btn>Cancel</button>
+        </div>
+        <span class="status-indicator" data-text-status></span>
       </div>
-      <span class="status-indicator" data-text-status></span>
-    </div>
+    {% endif %}
   </div>
   <div data-text-view-mode>
     <div class="markdown-content" data-text-display>
@@ -23,11 +25,13 @@
       {% endif %}
     </div>
   </div>
-  <div class="hidden" data-text-edit-mode>
-    <textarea class="form-input form-textarea"
-              data-text-textarea
-              data-link-autocomplete
-              data-link-api-url="{% url 'api-link-targets' %}"
-              data-markdown-shortcuts>{{ content|storage_to_authoring }}</textarea>
-  </div>
+  {% if user.is_authenticated %}
+    <div class="hidden" data-text-edit-mode>
+      <textarea class="form-input form-textarea"
+                data-text-textarea
+                data-link-autocomplete
+                data-link-api-url="{% url 'api-link-targets' %}"
+                data-markdown-shortcuts>{{ content|storage_to_authoring }}</textarea>
+    </div>
+  {% endif %}
 </div>

@@ -11,15 +11,15 @@ class NavigationTests(TestCase):
     """Tests for navigation display based on auth state."""
 
     def test_nav_shows_login_when_not_authenticated(self):
-        """Navigation should show login link when not authenticated."""
+        """Navigation should show login link and public nav items when not authenticated."""
         response = self.client.get(reverse("home"))
         self.assertContains(response, f'href="{reverse("login")}"')
         # When not authenticated, no avatar/dropdown should be present
         self.assertNotContains(response, 'class="avatar"')
-        # Nav links should be hidden
-        self.assertNotContains(response, f'href="{reverse("maintainer-machine-list")}"')
-        self.assertNotContains(response, f'href="{reverse("problem-report-list")}"')
-        self.assertNotContains(response, f'href="{reverse("log-list")}"')
+        # Public nav items should be visible to guests
+        self.assertContains(response, f'href="{reverse("maintainer-machine-list")}"')
+        self.assertContains(response, f'href="{reverse("problem-report-list")}"')
+        self.assertContains(response, f'href="{reverse("log-list")}"')
 
     def test_nav_shows_user_menu_when_authenticated(self):
         """Navigation should show user menu when authenticated."""
@@ -67,14 +67,14 @@ class NavigationTests(TestCase):
         self.assertContains(response, f'href="{reverse("problem-report-list")}"')
         self.assertContains(response, f'href="{reverse("log-list")}"')
 
-    def test_nav_hides_links_for_user_without_permission(self):
-        """Navigation should hide nav links for authenticated users without permission."""
+    def test_nav_shows_public_links_for_user_without_permission(self):
+        """Navigation should show public nav items for authenticated users without permission."""
         user = create_user(username="regular")
         self.client.force_login(user)
         response = self.client.get(reverse("home"))
         # User is logged in, so avatar should be present
         self.assertContains(response, 'class="avatar"')
-        # But nav links should be hidden (no maintainer permission)
-        self.assertNotContains(response, f'href="{reverse("maintainer-machine-list")}"')
-        self.assertNotContains(response, f'href="{reverse("problem-report-list")}"')
-        self.assertNotContains(response, f'href="{reverse("log-list")}"')
+        # Public nav items should be visible (same as guest navigation)
+        self.assertContains(response, f'href="{reverse("maintainer-machine-list")}"')
+        self.assertContains(response, f'href="{reverse("problem-report-list")}"')
+        self.assertContains(response, f'href="{reverse("log-list")}"')

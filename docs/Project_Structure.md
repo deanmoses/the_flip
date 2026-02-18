@@ -9,6 +9,7 @@ flipfix/
 ├── railway.toml / runtime.txt
 ├── requirements.txt / requirements.dev.txt
 ├── docs/                     # development guides, deployment docs, and plans
+├── public/                   # Static files served from site root (robots.txt) — see docs/SEO.md
 ├── templates/                # Django templates organized by app
 └── flipfix/                 # Django project package
     ├── __init__.py

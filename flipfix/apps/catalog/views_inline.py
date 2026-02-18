@@ -6,11 +6,10 @@ from django.template.loader import render_to_string
 from django.views import View
 
 from flipfix.apps.catalog.models import Location, MachineInstance
-from flipfix.apps.core.mixins import CanAccessMaintainerPortalMixin
 from flipfix.apps.maintenance.models import LogEntry
 
 
-class MachineInlineUpdateView(CanAccessMaintainerPortalMixin, View):
+class MachineInlineUpdateView(View):
     """AJAX-only endpoint to update machine status/location."""
 
     def post(self, request, *args, **kwargs):
@@ -47,7 +46,7 @@ class MachineInlineUpdateView(CanAccessMaintainerPortalMixin, View):
                 "status": "success",
                 "operational_status": status,
                 "operational_status_display": self.machine.get_operational_status_display(),
-                "log_entry_html": self._render_latest_log_entry(self.machine),
+                "log_entry_html": self._render_latest_log_entry(self.machine, request),
                 "entry_type": "log",
             }
         )
@@ -68,7 +67,7 @@ class MachineInlineUpdateView(CanAccessMaintainerPortalMixin, View):
                     "status": "success",
                     "location": "",
                     "location_display": "",
-                    "log_entry_html": self._render_latest_log_entry(self.machine),
+                    "log_entry_html": self._render_latest_log_entry(self.machine, request),
                     "entry_type": "log",
                 }
             )
@@ -91,12 +90,12 @@ class MachineInlineUpdateView(CanAccessMaintainerPortalMixin, View):
                 "location": location.slug,
                 "location_display": location.name,
                 "celebration": location.slug == "floor",
-                "log_entry_html": self._render_latest_log_entry(self.machine),
+                "log_entry_html": self._render_latest_log_entry(self.machine, request),
                 "entry_type": "log",
             }
         )
 
-    def _render_latest_log_entry(self, machine):
+    def _render_latest_log_entry(self, machine, request):
         """Render the most recent log entry as HTML for injection into the feed."""
         log_entry = (
             LogEntry.objects.filter(machine=machine)
@@ -110,4 +109,5 @@ class MachineInlineUpdateView(CanAccessMaintainerPortalMixin, View):
         return render_to_string(
             "maintenance/partials/log_entry.html",
             {"entry": log_entry},
+            request=request,
         )

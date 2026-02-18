@@ -18,11 +18,10 @@ from django.views import View
 
 from flipfix.apps.accounts.models import Maintainer
 from flipfix.apps.catalog.models import MachineInstance
-from flipfix.apps.core.mixins import CanAccessMaintainerPortalMixin
 from flipfix.apps.maintenance.models import ProblemReport
 
 
-class MaintainerAutocompleteView(CanAccessMaintainerPortalMixin, View):
+class MaintainerAutocompleteView(View):
     """JSON endpoint for maintainer name autocomplete."""
 
     def get(self, request, *args, **kwargs):
@@ -56,7 +55,7 @@ class MaintainerAutocompleteView(CanAccessMaintainerPortalMixin, View):
         return JsonResponse({"maintainers": results})
 
 
-class MachineAutocompleteView(CanAccessMaintainerPortalMixin, View):
+class MachineAutocompleteView(View):
     """JSON endpoint for machine autocomplete (maintainer-only)."""
 
     def get(self, request, *args, **kwargs):
@@ -117,7 +116,7 @@ class MachineAutocompleteView(CanAccessMaintainerPortalMixin, View):
         return JsonResponse({"machines": results})
 
 
-class ProblemReportAutocompleteView(CanAccessMaintainerPortalMixin, View):
+class ProblemReportAutocompleteView(View):
     """JSON endpoint for problem report autocomplete (maintainer-only).
 
     Returns open problem reports grouped by machine, with current machine first.

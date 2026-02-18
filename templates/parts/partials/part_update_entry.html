@@ -1,6 +1,7 @@
 {% load ui_tags %}
 {% load list_tags %}
 {% load markdown_tags %}
+{% load parts_tags %}
 {% timeline_entry icon="comment" variant="log" %}
 <article class="card card--log timeline__card">
   <a href="{% url 'part-request-update-detail' update.pk %}"
@@ -12,7 +13,7 @@
         </span>
         {% if update.new_status %}<span class="pill pill--neutral">{{ update.get_new_status_display }}</span>{% endif %}
       </div>
-      <span class="timeline__meta">{{ update.poster_display }} · <strong>{{ update.occurred_at|smart_date }}</strong></span>
+      <span class="timeline__meta">{% part_update_meta update %}</span>
     </div>
   </a>
   <div class="timeline__body markdown-content markdown-content--compact">{{ update.text|render_markdown }}</div>

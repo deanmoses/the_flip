@@ -3,6 +3,7 @@
 {% load ui_tags %}
 {% load list_tags %}
 {% load catalog_tags %}
+{% load maintenance_tags %}
 {% block title %}{{ machine.short_display_name }}{{ title_suffix }} · {{ block.super }}{% endblock %}
 {% block content %}
   <!-- BREADCRUMBS -->
@@ -22,22 +23,21 @@
          data-update-url="{% url 'machine-inline-update' machine.slug %}">
       {% settable_machine_status_pill machine trigger_style="button" %}
       {% settable_machine_location_pill machine locations trigger_style="button" %}
-      <a href="{% url 'machine-edit' machine.slug %}"
-         class="btn btn--icon-only btn--secondary"
-         aria-label="Edit machine"
-         title="Edit machine">{% icon "pencil" %}</a>
-      <a href="{% url 'problem-report-create-machine' machine.slug %}"
-         class="btn btn--report"
-         title="Report a problem">
-        {% icon "bug" class="meta" %}
-        Report
-      </a>
-      <a href="{% url 'log-create-machine' machine.slug %}"
-         class="btn btn--log"
-         title="Log maintenance work">
-        {% icon "screwdriver-wrench" class="meta" %}
-        Log
-      </a>
+      {% if user.is_authenticated %}
+        <a href="{% url 'machine-edit' machine.slug %}"
+           class="btn btn--icon-only btn--secondary"
+           aria-label="Edit machine"
+           title="Edit machine">{% icon "pencil" %}</a>
+      {% endif %}
+      {% report_problem_button machine btn_class="btn btn--report" label="Report" %}
+      {% if user.is_authenticated %}
+        <a href="{% url 'log-create-machine' machine.slug %}"
+           class="btn btn--log"
+           title="Log maintenance work">
+          {% icon "screwdriver-wrench" class="meta" %}
+          Log
+        </a>
+      {% endif %}
     </div>
     <!-- SIDEBAR (desktop only) -->
     <aside class="two-column__sidebar">
@@ -56,26 +56,26 @@
         <!-- ACTIONS -->
         <div class="sidebar__section">
           <div class="flex stack-tight stack-column">
-            <a href="{% url 'machine-edit' machine.slug %}"
-               class="btn btn--secondary btn--full">
-              {% icon "pencil" class="meta" %}
-              Edit Machine
-            </a>
-            <a href="{% url 'part-request-create-machine' machine.slug %}"
-               class="btn btn--secondary btn--full">
-              {% icon "box-open" class="meta" %}
-              Request Parts
-            </a>
-            <a href="{% url 'problem-report-create-machine' machine.slug %}"
-               class="btn btn--report btn--full">
-              {% icon "bug" class="meta" %}
-              Report Problem
-            </a>
-            <a href="{% url 'log-create-machine' machine.slug %}"
-               class="btn btn--log btn--full">
-              {% icon "screwdriver-wrench" class="meta" %}
-              Log Work
-            </a>
+            {% if user.is_authenticated %}
+              <a href="{% url 'machine-edit' machine.slug %}"
+                 class="btn btn--secondary btn--full">
+                {% icon "pencil" class="meta" %}
+                Edit Machine
+              </a>
+              <a href="{% url 'part-request-create-machine' machine.slug %}"
+                 class="btn btn--secondary btn--full">
+                {% icon "box-open" class="meta" %}
+                Request Parts
+              </a>
+            {% endif %}
+            {% report_problem_button machine btn_class="btn btn--report btn--full" %}
+            {% if user.is_authenticated %}
+              <a href="{% url 'log-create-machine' machine.slug %}"
+                 class="btn btn--log btn--full">
+                {% icon "screwdriver-wrench" class="meta" %}
+                Log Work
+              </a>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -140,7 +140,9 @@
 {% endblock %}
 {% block extra_scripts %}
   <script src="{% static 'core/infinite_scroll.js' %}" defer></script>
-  <script src="{% static 'core/settable_pill.js' %}" defer></script>
-  <script src="{% static 'core/machine_pill_effects.js' %}" defer></script>
   <script src="{% static 'core/video_transcode_poll.js' %}" defer></script>
+  {% if user.is_authenticated %}
+    <script src="{% static 'core/settable_pill.js' %}" defer></script>
+    <script src="{% static 'core/machine_pill_effects.js' %}" defer></script>
+  {% endif %}
 {% endblock extra_scripts %}

@@ -10,6 +10,9 @@ from dataclasses import dataclass, field
 
 from django import template
 
+from flipfix.apps.core.mixins import can_access_maintainer_portal
+from flipfix.apps.core.routing import get_public_url_names
+
 register = template.Library()
 
 # ---- Nav item data ----------------------------------------------------------
@@ -120,8 +123,13 @@ def _is_active(item: _NavItem, url_name: str) -> bool:
     return item.active_contains != "" and item.active_contains in url_name
 
 
-def _resolve_nav_items(url_name: str) -> list[dict[str, str | bool]]:
-    """Build nav item context dicts with active state resolved."""
+def _resolve_nav_items(url_name: str, *, public_only: bool = False) -> list[dict[str, str | bool]]:
+    """Build nav item context dicts with active state resolved.
+
+    When ``public_only`` is True, only items whose ``url_name`` is in the
+    public URL name registry are included.  Used for guest navigation.
+    """
+    public_names = get_public_url_names() if public_only else None
     return [
         {
             "label": item.label,
@@ -132,6 +140,7 @@ def _resolve_nav_items(url_name: str) -> list[dict[str, str | bool]]:
             "mobile_extra_class": item.mobile_extra_class,
         }
         for item in MAIN_NAV_ITEMS
+        if public_names is None or item.url_name in public_names
     ]
 
 
@@ -173,13 +182,16 @@ def desktop_nav(context: dict) -> dict:
         {% load nav_tags %}
         {% desktop_nav %}
     """
+    user = context["user"]
     url_name = _get_url_name(context)
     admin_items = _resolve_admin_items(url_name)
     return {
-        "nav_items": _resolve_nav_items(url_name),
+        "nav_items": _resolve_nav_items(
+            url_name, public_only=not can_access_maintainer_portal(user)
+        ),
         "admin_items": admin_items,
         "admin_active": any(item["is_active"] for item in admin_items),
-        "user": context.get("user"),
+        "user": user,
         "perms": context.get("perms"),
     }
 
@@ -195,8 +207,12 @@ def mobile_priority_bar(context: dict) -> dict:
         {% load nav_tags %}
         {% mobile_priority_bar %}
     """
+    user = context["user"]
     return {
-        "nav_items": _resolve_nav_items(_get_url_name(context)),
+        "nav_items": _resolve_nav_items(
+            _get_url_name(context), public_only=not can_access_maintainer_portal(user)
+        ),
+        "user": user,
         "perms": context.get("perms"),
     }
 
@@ -210,8 +226,9 @@ def mobile_hamburger(context: dict) -> dict:
         {% load nav_tags %}
         {% mobile_hamburger %}
     """
+    user = context["user"]
     url_name = _get_url_name(context)
-    nav_items = _resolve_nav_items(url_name)
+    nav_items = _resolve_nav_items(url_name, public_only=not can_access_maintainer_portal(user))
 
     # The hamburger button lights up when the current page is:
     # - A non-bar nav item that's active (e.g. Docs/wiki)
@@ -224,7 +241,7 @@ def mobile_hamburger(context: dict) -> dict:
     return {
         "nav_items": nav_items,
         "admin_items": _resolve_admin_items(url_name),
-        "user": context.get("user"),
+        "user": user,
         "perms": context.get("perms"),
         "hamburger_active": hamburger_active,
         "hamburger_active_for_logs": "log-" in url_name,
@@ -243,6 +260,6 @@ def user_dropdown(context: dict) -> dict:
         {% user_dropdown %}
     """
     return {
-        "user": context.get("user"),
+        "user": context["user"],
         "perms": context.get("perms"),
     }

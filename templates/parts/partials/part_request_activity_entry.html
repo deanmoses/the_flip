@@ -1,6 +1,7 @@
 {% load ui_tags %}
 {% load list_tags %}
 {% load markdown_tags %}
+{% load parts_tags %}
 {% timeline_entry icon="box-open" variant="log" %}
 <div class="card card--log timeline__card">
   <a href="{% url 'part-request-detail' entry.pk %}"
@@ -10,7 +11,7 @@
         <span class="timeline__title timeline__title--log">Parts Request #{{ entry.pk }}</span>
         <span class="pill pill--neutral">{{ entry.get_status_display }}</span>
       </div>
-      <span class="timeline__meta">{{ entry.requester_display }} · {{ entry.occurred_at|smart_date }}</span>
+      <span class="timeline__meta">{% part_request_meta entry %}</span>
     </div>
   </a>
   <div class="timeline__body {% if entry.media.all or entry.prefetched_updates %}space-below-sm{% endif %} markdown-content markdown-content--compact">

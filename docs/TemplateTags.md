@@ -38,7 +38,7 @@ Defines main nav items as data and renders each navigation variant with pre-comp
 | `mobile_hamburger`    | Inclusion tag | Mobile hamburger dropdown with all sections     |
 | `user_dropdown`       | Inclusion tag | Desktop avatar dropdown with account and logout |
 
-Also exports `MAIN_NAV_ITEMS` (tuple of `_NavItem` dataclasses) and `_is_active()` helper for testing.
+Also exports `MAIN_NAV_ITEMS` (tuple of `_NavItem` dataclasses) and `_is_active()` helper for testing. Navigation components automatically filter to public-accessible pages for unauthenticated users, using the URL name registry from `flipfix.apps.core.routing`. No template changes are needed — the filtering is internal to the tag.
 
 #### `ui_tags` — Atomic UI primitives
 
@@ -117,26 +117,29 @@ These live in each app's `templatetags/` directory.
 
 #### `maintenance_tags` — Problem/log display (`maintenance/templatetags/`)
 
-| Component                        | Type          | Description                                      |
-| -------------------------------- | ------------- | ------------------------------------------------ |
-| `settable_problem_status_pill`   | Inclusion tag | Clickable status dropdown for problem reports    |
-| `settable_problem_priority_pill` | Inclusion tag | Clickable priority dropdown (excludes Untriaged) |
-| `problem_report_status_pill`     | Inclusion tag | Read-only status pill                            |
-| `problem_report_type_pill`       | Inclusion tag | Read-only problem type pill                      |
-| `problem_report_priority_pill`   | Inclusion tag | Read-only priority pill                          |
-| `problem_report_summary`         | Filter        | Concise summary: type + description              |
-| `problem_report_meta`            | Filter        | Reporter name + timestamp                        |
-| `log_entry_meta`                 | Filter        | Maintainer names + timestamp                     |
-| `problem_status_css_class`       | Filter        | Pill CSS class for problem status                |
-| `problem_status_icon`            | Filter        | Icon for problem status                          |
-| `problem_priority_css_class`     | Filter        | Pill CSS class for problem priority              |
-| `problem_priority_icon`          | Filter        | Icon for problem priority                        |
+| Component                        | Type          | Description                                                   |
+| -------------------------------- | ------------- | ------------------------------------------------------------- |
+| `settable_problem_status_pill`   | Inclusion tag | Clickable status dropdown for problem reports                 |
+| `settable_problem_priority_pill` | Inclusion tag | Clickable priority dropdown (excludes Untriaged)              |
+| `problem_report_status_pill`     | Inclusion tag | Read-only status pill                                         |
+| `problem_report_type_pill`       | Inclusion tag | Read-only problem type pill                                   |
+| `problem_report_priority_pill`   | Inclusion tag | Read-only priority pill                                       |
+| `problem_report_summary`         | Filter        | Concise summary: type + description                           |
+| `problem_report_meta`            | Simple tag    | Reporter name + timestamp (guest-aware, hides names)          |
+| `log_entry_meta`                 | Simple tag    | Maintainer names + timestamp (guest-aware, hides names)       |
+| `report_problem_button`          | Inclusion tag | Guest-aware Report Problem button (public or maintainer form) |
+| `problem_status_css_class`       | Filter        | Pill CSS class for problem status                             |
+| `problem_status_icon`            | Filter        | Icon for problem status                                       |
+| `problem_priority_css_class`     | Filter        | Pill CSS class for problem priority                           |
+| `problem_priority_icon`          | Filter        | Icon for problem priority                                     |
 
 #### `parts_tags` — Parts display (`parts/templatetags/`)
 
-| Component                           | Type          | Description                                 |
-| ----------------------------------- | ------------- | ------------------------------------------- |
-| `settable_part_request_status_pill` | Inclusion tag | Clickable status dropdown for part requests |
+| Component                           | Type          | Description                                           |
+| ----------------------------------- | ------------- | ----------------------------------------------------- |
+| `settable_part_request_status_pill` | Inclusion tag | Clickable status dropdown for part requests           |
+| `part_request_meta`                 | Simple tag    | Requester name + timestamp (guest-aware, hides names) |
+| `part_update_meta`                  | Simple tag    | Poster name + timestamp (guest-aware, hides names)    |
 
 #### `accounts_tags` — User display (`accounts/templatetags/`)
 

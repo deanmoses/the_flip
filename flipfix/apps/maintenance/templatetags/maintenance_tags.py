@@ -1,8 +1,10 @@
 """Maintenance domain display: problem/log pills, status/priority filters, meta formatters."""
 
 from django import template
+from django.urls import reverse
 from django.utils.html import format_html
 
+from flipfix.apps.core.mixins import can_access_maintainer_portal
 from flipfix.apps.core.templatetags.ui_tags import _settable_pill_context, smart_date
 
 register = template.Library()
@@ -140,17 +142,21 @@ def problem_report_summary(report):
     return type_display
 
 
-@register.filter
-def problem_report_meta(report):
+@register.simple_tag(takes_context=True)
+def problem_report_meta(context, report):
     """Render reporter name (if present) followed by timestamp (emphasized).
 
-    Example: "Alice . <strong><time ...>...</time></strong>"
-    If no reporter, only render the timestamp emphasized.
+    Example: "Alice \u00b7 <strong><time ...>...</time></strong>"
+    If no reporter, or if the user is unauthenticated, only render the timestamp.
     """
     if not report:
         return ""
 
     ts = smart_date(getattr(report, "occurred_at", None))
+
+    if not context["user"].is_authenticated:
+        return format_html("<strong>{}</strong>", ts)
+
     name = (getattr(report, "reporter_display", "") or "").strip()
 
     if name:
@@ -158,25 +164,26 @@ def problem_report_meta(report):
     return format_html("<strong>{}</strong>", ts)
 
 
-@register.filter
-def log_entry_meta(entry):
+@register.simple_tag(takes_context=True)
+def log_entry_meta(context, entry):
     """Render maintainer name(s) (if present) followed by timestamp (emphasized).
 
-    Example: "Alice . <strong><time ...>...</time></strong>"
-    If no maintainer name, only render the timestamp emphasized.
+    Example: "Alice \u00b7 <strong><time ...>...</time></strong>"
+    If no maintainer name, or if the user is unauthenticated, only render the timestamp.
     """
     if not entry:
         return ""
 
     ts = smart_date(getattr(entry, "occurred_at", None))
+
+    if not context["user"].is_authenticated:
+        return format_html("<strong>{}</strong>", ts)
+
     names = ""
-    try:
-        if hasattr(entry, "maintainers") and entry.maintainers.exists():
-            names = ", ".join(str(m) for m in entry.maintainers.all())
-        elif getattr(entry, "maintainer_names", ""):
-            names = entry.maintainer_names
-    except Exception:
-        names = getattr(entry, "maintainer_names", "") or ""
+    if hasattr(entry, "maintainers") and entry.maintainers.exists():
+        names = ", ".join(str(m) for m in entry.maintainers.all())
+    elif getattr(entry, "maintainer_names", ""):
+        names = entry.maintainer_names
 
     names = (names or "").strip()
     if names:
@@ -187,14 +194,14 @@ def log_entry_meta(entry):
 # ---- Settable pills ---------------------------------------------------------
 
 
-@register.inclusion_tag("components/settable_pill.html")
-def settable_problem_status_pill(report):
+@register.inclusion_tag("components/settable_pill.html", takes_context=True)
+def settable_problem_status_pill(context, report):
     """Render a settable status dropdown pill for a problem report.
 
     Usage:
         {% settable_problem_status_pill report %}
     """
-    return _settable_pill_context(
+    ctx = _settable_pill_context(
         field="status",
         action="update_status",
         current_value=report.status,
@@ -211,10 +218,12 @@ def settable_problem_status_pill(report):
             for v, label in type(report).Status.choices
         ],
     )
+    ctx["user"] = context["user"]
+    return ctx
 
 
-@register.inclusion_tag("components/settable_pill.html")
-def settable_problem_priority_pill(report):
+@register.inclusion_tag("components/settable_pill.html", takes_context=True)
+def settable_problem_priority_pill(context, report):
     """Render a settable priority dropdown pill for a problem report.
 
     Excludes UNTRIAGED from the choices -- maintainers cannot set it.
@@ -222,9 +231,7 @@ def settable_problem_priority_pill(report):
     Usage:
         {% settable_problem_priority_pill report %}
     """
-    from flipfix.apps.maintenance.models import ProblemReport
-
-    return _settable_pill_context(
+    ctx = _settable_pill_context(
         field="priority",
         action="update_priority",
         current_value=report.priority,
@@ -238,6 +245,30 @@ def settable_problem_priority_pill(report):
                 "pill_class": problem_priority_css_class(v),
                 "icon": problem_priority_icon(v),
             }
-            for v, label in ProblemReport.Priority.maintainer_settable()
+            for v, label in type(report).Priority.maintainer_settable()
         ],
     )
+    ctx["user"] = context["user"]
+    return ctx
+
+
+# ---- Report problem button --------------------------------------------------
+
+
+@register.inclusion_tag("components/report_problem_button.html", takes_context=True)
+def report_problem_button(context, machine, btn_class="btn btn--report", label="Report Problem"):
+    """Render a Report Problem button with guest-aware URL.
+
+    Guests get the public QR-style form; maintainers get the full form.
+
+    Usage::
+
+        {% report_problem_button machine %}
+        {% report_problem_button machine btn_class="btn btn--report btn--full" %}
+        {% report_problem_button machine label="Report" %}
+    """
+    if can_access_maintainer_portal(context["user"]):
+        url = reverse("problem-report-create-machine", kwargs={"slug": machine.slug})
+    else:
+        url = reverse("public-problem-report-create", kwargs={"slug": machine.slug})
+    return {"url": url, "btn_class": btn_class, "label": label}

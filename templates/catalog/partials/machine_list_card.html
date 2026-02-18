@@ -20,20 +20,16 @@
     </div>
   </a>
   <div class="machine-card__actions">
-    <a href="{% url 'problem-report-create-machine' machine.slug %}"
-       class="btn btn--secondary btn--sm"
-       title="Report a problem">
-      {% icon "bug" %}
-      <span class="machine-card__btn-text--short">Report</span>
-      <span class="machine-card__btn-text--long">Report Problem</span>
-    </a>
-    <a href="{% url 'log-create-machine' machine.slug %}"
-       class="btn btn--secondary btn--sm"
-       title="Log maintenance work">
-      {% icon "screwdriver-wrench" %}
-      <span class="machine-card__btn-text--short">Log</span>
-      <span class="machine-card__btn-text--long">Log Work</span>
-    </a>
+    {% report_problem_button machine btn_class="btn btn--secondary btn--sm" %}
+    {% if user.is_authenticated %}
+      <a href="{% url 'log-create-machine' machine.slug %}"
+         class="btn btn--secondary btn--sm"
+         title="Log maintenance work">
+        {% icon "screwdriver-wrench" %}
+        <span class="machine-card__btn-text--short">Log</span>
+        <span class="machine-card__btn-text--long">Log Work</span>
+      </a>
+    {% endif %}
   </div>
   {% if machine.latest_open_report %}
     <a href="{% url 'problem-report-detail' machine.latest_open_report.0.pk %}"
