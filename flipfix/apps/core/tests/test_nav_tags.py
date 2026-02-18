@@ -285,6 +285,8 @@ class DesktopNavRenderTests(TestCase):
         html = _render_tag("{% desktop_nav %}", request)
         self.assertIn("nav--desktop", html)
         self.assertIn("Machines", html)
+        self.assertIn("Problems", html)
+        self.assertIn("Logs", html)
         self.assertNotIn("Parts", html)
         self.assertNotIn("Docs", html)
 

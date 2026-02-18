@@ -180,8 +180,9 @@ def log_entry_meta(context, entry):
         return format_html("<strong>{}</strong>", ts)
 
     names = ""
-    if hasattr(entry, "maintainers") and entry.maintainers.exists():
-        names = ", ".join(str(m) for m in entry.maintainers.all())
+    maintainers = list(entry.maintainers.all()) if hasattr(entry, "maintainers") else []
+    if maintainers:
+        names = ", ".join(str(m) for m in maintainers)
     elif getattr(entry, "maintainer_names", ""):
         names = entry.maintainer_names
 

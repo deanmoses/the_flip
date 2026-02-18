@@ -19,7 +19,7 @@ from flipfix.apps.parts.templatetags.parts_tags import (
 )
 
 
-@tag("views")
+@tag("templatetags")
 class PartRequestMetaTagTests(TestCase):
     """Tests for part_request_meta tag with auth awareness."""
 
@@ -49,7 +49,7 @@ class PartRequestMetaTagTests(TestCase):
         self.assertEqual(result, "")
 
 
-@tag("views")
+@tag("templatetags")
 class PartUpdateMetaTagTests(TestCase):
     """Tests for part_update_meta tag with auth awareness."""
 
