@@ -48,7 +48,7 @@ class RequestContextMiddleware:
 
 
 class MaintainerAccessMiddleware:
-    """Require maintainer portal permission for all views unless login_not_required.
+    """Require maintainer portal permission unless login-not-required or maintainer-not-required.
 
     Sits after ``LoginRequiredMiddleware``. At this point the user is guaranteed
     to be authenticated (or the view is explicitly public/infrastructure).

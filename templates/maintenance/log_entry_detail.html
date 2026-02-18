@@ -37,7 +37,7 @@
   {% include "components/machine_sidebar_card.html" with machine=entry.machine %}
 {% else %}
   {# Orphan log entry: machine is directly editable by maintainers #}
-  {% include "components/machine_sidebar_card.html" with machine=entry.machine editable=True %}
+  {% include "components/machine_sidebar_card.html" with machine=entry.machine editable=user.is_authenticated %}
 {% endif %}
 {% endsidebar_section %}
 {% if user.is_authenticated %}

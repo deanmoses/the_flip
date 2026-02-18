@@ -124,7 +124,7 @@ class PartRequestUpdateCreateView(SharedAccountMixin, FormView):
 
 
 class PartRequestUpdateDetailView(InlineTextEditMixin, MediaUploadMixin, DetailView):
-    """Detail view for a part request update. Maintainer-only access."""
+    """Detail view for a part request update."""
 
     model = PartRequestUpdate
     template_name = "parts/part_update_detail.html"

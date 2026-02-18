@@ -48,7 +48,7 @@
   <div class="sidebar__subtitle space-above-sm">{% problem_report_meta report %}</div>
 {% endsidebar_section %}
 {% sidebar_section label="Machine" %}
-{% include "components/machine_sidebar_card.html" with editable=True %}
+{% include "components/machine_sidebar_card.html" with editable=user.is_authenticated %}
 {% endsidebar_section %}
 {% if user.is_authenticated %}
   {% sidebar_section %}
